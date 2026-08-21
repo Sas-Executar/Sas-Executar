@@ -14,13 +14,15 @@ O repositório `Executar-26/next-forge` já contém o starter `next-forge` 6.0.2
 
 ## Adaptações obrigatórias ainda não concluídas
 
-1. Selecionar explicitamente o projeto Supabase do EXECUTAR; há mais de um projeto acessível e nenhum deve ser escolhido por suposição.
-2. Configurar Clerk como autenticação de terceiros no projeto Supabase selecionado.
+1. Criar um **projeto Supabase novo e dedicado ao EXECUTAR** somente na integração final; projetos existentes não serão reutilizados.
+2. Configurar Clerk como autenticação de terceiros nesse projeto Supabase novo.
 3. Adaptar `packages/database` de Neon para Supabase Postgres sem introduzir Supabase Auth.
 4. Adaptar `packages/storage` de Vercel Blob para Supabase Storage.
 5. Criar organização local vinculada ao `clerk_org_id`, recursos com `organization_id`, RLS e políticas de Storage.
 6. Cobrir SELECT, INSERT, UPDATE e DELETE entre organizações distintas no mesmo PR da autorização.
 7. Vincular o projeto Vercel correto à raiz `apps/app` e configurar variáveis.
+
+Esses itens bloqueiam integração/produção, mas não bloqueiam a implementação localmente verificável das Ondas 2 e 3. O checklist operacional está em `INTEGRACAO_FINAL.md`.
 
 ## Variáveis exigidas
 
@@ -52,4 +54,4 @@ O membership continua sob autoridade do Clerk; não criar tabela paralela de mem
 
 ## Critério de parada
 
-A presença de arquivos, um starter importado ou um PR aberto não equivale a login funcional, banco aplicado, RLS verificado, Storage isolado ou deploy aprovado. Gate 1 somente passa com evidência real desses estados.
+A presença de arquivos, um starter importado ou um PR aberto não equivale a login funcional, banco aplicado, RLS verificado, Storage isolado ou deploy aprovado. O gate de código pode avançar com testes locais; o gate de integração da Onda 1 somente passa com evidência real desses estados.

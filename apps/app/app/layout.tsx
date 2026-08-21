@@ -11,7 +11,7 @@ interface RootLayoutProperties {
 }
 
 const RootLayout = ({ children }: RootLayoutProperties) => (
-  <html className={fonts} lang="en" suppressHydrationWarning>
+  <html className={fonts} lang="pt-BR" suppressHydrationWarning>
     <body>
       <AnalyticsProvider>
         <DesignSystemProvider
@@ -31,3 +31,4 @@ const RootLayout = ({ children }: RootLayoutProperties) => (
 );
 
 export default RootLayout;
+

@@ -10,6 +10,8 @@ Este diretório contém o handoff canônico para evoluir a PWA atual do `Sprint-
 - Rota executável: `/legado/sprint-operacional/`.
 - Inventário de migração: `INVENTARIO_LEGADO.md`.
 - Fundação existente: o starter `next-forge` já está presente; adapte-o sem duplicação.
+- Provisionamento: o Supabase do SaaS será um projeto novo, criado somente na integração final.
+- Checklist de deploy, secrets, dependências, CI e serviços reais: `INTEGRACAO_FINAL.md`.
 
 ## Ordem de leitura
 
@@ -39,3 +41,5 @@ Evoluir o Sprint Operacional para um SaaS de gestão visual de projetos e proces
 ## Regra de continuidade
 
 A PWA atual é a referência funcional de UX e lógica operacional. Antes de substituir qualquer fluxo, o sucessor deve reproduzir e testar o comportamento correspondente.
+
+A falta de serviços externos não bloqueia a implementação verificável do produto e do Copiloto. Gates de código local, integração real e produção devem ser reportados separadamente.

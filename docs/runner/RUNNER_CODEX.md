@@ -39,17 +39,17 @@ A PWA preservada em `apps/app/public/legado/sprint-operacional/` é evidência e
 - registre um inventário curto de preservar/portar/substituir/descartar;
 - valide as versões atuais dos starters/dependências antes de fixá-las.
 
-### 2. Trabalhe em uma onda por vez
+### 2. Trabalhe por desbloqueio real
 
-Não fragmente o plano em dezenas de fases artificiais. Cada onda pode conter PRs menores por risco, mas deve manter um único resultado de negócio.
+Não fragmente o plano em dezenas de fases artificiais. Cada onda pode conter PRs menores por risco, mas deve manter um único resultado de negócio. Pela instrução vigente, a falta de provisionamento externo não impede portar o produto nem desenvolver o Copiloto: avance o código das ondas seguintes com adaptadores locais e registre a integração real para o final.
 
 ### 3. Priorize dependências
 
 A ordem padrão é:
 
-`identidade → tenant → RLS → dados → domínio → UI → agente → integrações → mobile`.
+`identidade/tenant local → domínio → UI → agente → provisionamento novo → RLS/dados reais → integrações → mobile`.
 
-Não puxe sucessores apenas para ocupar capacidade.
+O projeto Supabase deve ser criado do zero apenas na integração final. Não puxe sucessores que dependam materialmente de nuvem funcional; domínio, interface e Copiloto local podem avançar antes dela.
 
 ### 4. Branches e PRs
 
@@ -140,7 +140,7 @@ Se um segredo bloquear uma integração:
 5. registre a única ação manual necessária;
 6. continue o restante da onda que não dependa do segredo.
 
-Não pare o desenvolvimento inteiro por causa de uma única chave.
+Não pare o desenvolvimento inteiro por causa de uma única chave, projeto não provisionado, instalação adiada, CI hospedado ou deployment Vercel. Use `INTEGRACAO_FINAL.md` para registrar essas pendências e nunca declare RLS/produção aprovados sem teste real.
 
 ## Eficiência
 

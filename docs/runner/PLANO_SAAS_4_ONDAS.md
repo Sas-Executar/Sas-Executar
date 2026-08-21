@@ -24,6 +24,14 @@ Evoluir o `Sprint-Operacional` atual para uma fundação SaaS pronta para GTM/MV
 - Expo é o caminho mobile para Android e iOS.
 - Vercel é a plataforma de publicação.
 
+## Política vigente de execução sem bloqueio externo
+
+- O SaaS usará um projeto Supabase **novo**, dedicado e provisionado apenas na integração final; não reutilizar projetos existentes.
+- Produto, regras, interface e Copiloto podem avançar com estado local-first isolado pela organização Clerk.
+- Secrets, instalação/sincronização de dependências, CI hospedado, RLS real, Storage, deployment Vercel e integrações de terceiros ficam no checklist `INTEGRACAO_FINAL.md`.
+- A ausência desses serviços não bloqueia um gate de código local; continua bloqueando os gates de integração e produção.
+- Mobile continua bloqueado até a fundação web e a sincronização real estarem aprovadas.
+
 ---
 
 # ONDA 1 · FUNDAÇÃO SAAS + PRESERVAÇÃO DO PRODUTO

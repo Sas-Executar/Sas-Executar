@@ -46,6 +46,14 @@ A direção arquitetural é:
 - Expo para Android e iOS quando a base web estiver validada.
 - Vercel para publicação.
 
+## Prioridade vigente: desenvolver antes de provisionar
+
+- O Supabase do SaaS EXECUTAR será obrigatoriamente um projeto novo, criado na integração final; nunca reutilize ou modifique projetos existentes por suposição.
+- Continue as ondas de produto e Copiloto quando faltarem secrets, projeto Supabase, instalação de dependências, CI hospedado ou deployment Vercel, desde que o código possa ser validado localmente.
+- Reutilize Clerk, o starter e adaptadores locais isolados por organização até a integração real.
+- Distinga explicitamente gate de código, gate de integração e gate de produção; testes locais não comprovam RLS, sincronização em nuvem nem deployment.
+- O checklist canônico de provisionamento está em `docs/runner/INTEGRACAO_FINAL.md`.
+
 ## Restrições
 
 - Não fazer reescrita visual radical.
@@ -72,4 +80,4 @@ Cada onda deve terminar com:
 5. riscos/bloqueios reais;
 6. gate da onda marcado como PASSOU ou NÃO PASSOU.
 
-Se faltar segredo externo, credencial ou ação de console, implemente todo o código possível, gere `.env.example`, descreva exatamente o campo necessário e continue o restante que não depender dele.
+Se faltar segredo externo, credencial ou ação de console, implemente todo o código possível, gere `.env.example`, descreva exatamente o campo necessário e continue as entregas das ondas seguintes que não dependerem dele.

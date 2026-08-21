@@ -28,7 +28,7 @@ jobs:
           node --check apps/app/public/legado/sprint-operacional/data.js
           node --check apps/app/public/legado/sprint-operacional/sw.js
       - name: Verificar produto e handoff canônico
-        run: node --test tests/onda-1/*.test.mjs
+        run: node --test tests/onda-1/*.test.mjs tests/ondas/*.test.mjs
 
   fundacao:
     name: Instalação, tipos, lint, testes e build
