@@ -11,6 +11,18 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["tests/**/*.mjs"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "useTopLevelRegex": "off"
+          }
+        }
+      }
+    }
+  ],
   "files": {
     "includes": [
       "**/*",

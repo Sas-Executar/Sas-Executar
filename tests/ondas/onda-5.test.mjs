@@ -519,6 +519,23 @@ test("restauração colaborativa conserva campos dinâmicos com type guard segur
   assert.match(source, /\(mention: unknown\) => typeof mention === "string"/);
 });
 
+test("lint mantém regras de produção e flexibiliza regex somente nos testes", async () => {
+  const configuration = JSON.parse(
+    await readFile(new URL("../../biome.jsonc", import.meta.url), "utf8")
+  );
+  const testOverride = configuration.overrides.find((entry) =>
+    entry.includes.includes("tests/**/*.mjs")
+  );
+
+  assert.equal(
+    testOverride.linter.rules.performance.useTopLevelRegex,
+    "off"
+  );
+  assert.ok(
+    !("useTopLevelRegex" in configuration.linter.rules.performance)
+  );
+});
+
 test("diagnóstico de ambiente lista nomes, nunca divulga valores", () => {
   const result = diagnosticarAmbienteFinal({
     CLERK_SECRET_KEY: "segredo-real-jamais-exposto",

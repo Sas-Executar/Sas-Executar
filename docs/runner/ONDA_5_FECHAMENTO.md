@@ -72,6 +72,8 @@ dependências para as Ondas 1–4 e o fechamento final.
   gráficos ao Recharts v3 e os painéis acessíveis às primitivas da versão 4.
 - A restauração de colaboração preserva os campos dinâmicos no type guard e
   mantém o isolamento de organização sem enfraquecer a tipagem TypeScript.
+- O lint mantém suas regras sobre código produtivo; a micro-otimização de
+  expressões regulares é dispensada somente nos testes operacionais.
 - Produção e Android/iOS permanecem bloqueados pelos predecessores reais.
 - A fila inicial aponta sessão Clerk real e runner Actions como próximos itens
   externos; eles dependem de autorização explícita para a integração final.
@@ -89,12 +91,12 @@ Os testes abrangem grafo, gates, isolamento de tenant, qualidade de evidência,
 diagnóstico do runner, segurança de variáveis, sessão Clerk, projeto Supabase
 novo, caminho de evidência, exportação canônica e os contratos SQL/RLS/Storage.
 
-Resultado local verificado: **268 testes aprovados, 0 falhas**, incluindo
-**66 testes específicos da Onda 5**.
+Resultado local verificado: **269 testes aprovados, 0 falhas**, incluindo
+**67 testes específicos da Onda 5**.
 
 ## Gates reais
 
-- Gate de código da Onda 5: **PASSOU**, com 268 testes locais verdes.
+- Gate de código da Onda 5: **PASSOU**, com 269 testes locais verdes.
 - Gate de integração: **NÃO PASSOU** até projeto Supabase novo, migration
   aplicada, RLS real, sincronização e serviços externos terem evidência real.
 - Gate de produção: **NÃO PASSOU** até CI verde, Vercel, smoke tests e
