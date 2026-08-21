@@ -19,6 +19,7 @@
 - Aprovações são vinculadas a organização, projeto, entrega e revisão; envelopes adulterados ou vencidos são recusados.
 - Contratos preparados para AI SDK e MCP usam `inputSchema`, autoridade do Clerk e limites de execução, sem escolher modelo ou provedor.
 - A Onda 4 adiciona colaboração isolada, notificações derivadas, provedores Liveblocks/Knock opcionais, marketing EXECUTAR e preparo Expo bloqueado pelos gates web; consulte `ONDA_4_STATUS.md`.
+- A Onda 5 adiciona fechamento auditável, contratos Clerk/Supabase, template SQL/RLS/Storage e uma matriz executável de dependências; consulte `ONDA_5_FECHAMENTO.md`.
 
 ## Testes locais
 
@@ -26,7 +27,7 @@
 node --test tests/onda-1/*.test.mjs tests/ondas/*.test.mjs
 ```
 
-Resultado verificado: **202 testes aprovados; 0 falhas**.
+Resultado verificado após a Onda 5: **262 testes aprovados; 0 falhas**.
 
 ## Gates
 
@@ -34,6 +35,7 @@ Resultado verificado: **202 testes aprovados; 0 falhas**.
 - Gate de código do produto operacional: **PASSOU**.
 - Gate de código do Copiloto executor e aprovação humana: **PASSOU**.
 - Gate de código de colaboração, notificações e GTM: **PASSOU**.
+- Gate de código do fechamento, dos contratos de integração e do template SQL: **PASSOU** quando validado pela suíte local.
 - Gate de integração da Onda 1: **NÃO PASSOU**; Supabase novo, RLS/Storage reais, CI hospedado e Vercel ainda não foram provisionados/verificados.
 - Gate completo da Onda 2: **NÃO PASSOU**; persistência remota, sincronização entre aparelhos e Stripe continuam pendentes.
 - Gate completo da Onda 3: **NÃO PASSOU**; modelo real, AI SDK em execução, MCP autenticado e aprovação validada no servidor continuam pendentes.

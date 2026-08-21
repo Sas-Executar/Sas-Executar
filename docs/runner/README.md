@@ -15,6 +15,7 @@ Este diretório contém o handoff canônico para evoluir a PWA atual do `Sprint-
 - Status detalhado do produto editável e persistência local-first: `ONDA_2_STATUS.md`.
 - Status detalhado do Copiloto executor, aprovações e preparação AI SDK/MCP: `ONDA_3_STATUS.md`.
 - Status detalhado de colaboração, avisos, GTM e bloqueios mobile/Actions: `ONDA_4_STATUS.md`.
+- Fechamento adicional das quatro ondas, matriz executável de gates e template SQL: `ONDA_5_FECHAMENTO.md`.
 
 ## Ordem de leitura
 
@@ -46,3 +47,7 @@ Evoluir o Sprint Operacional para um SaaS de gestão visual de projetos e proces
 A PWA atual é a referência funcional de UX e lógica operacional. Antes de substituir qualquer fluxo, o sucessor deve reproduzir e testar o comportamento correspondente.
 
 A falta de serviços externos não bloqueia a implementação verificável do produto e do Copiloto. Gates de código local, integração real e produção devem ser reportados separadamente.
+
+A Onda 5 é uma etapa adicional de fechamento autorizada posteriormente. Ela não
+substitui o plano canônico de quatro ondas nem autoriza automaticamente o
+provisionamento externo reservado à integração final.
