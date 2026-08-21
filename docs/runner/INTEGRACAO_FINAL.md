@@ -15,7 +15,7 @@ Essas pendências continuam bloqueando produção, sincronização em nuvem e qu
 5. Adaptar os pacotes existentes `packages/database` e `packages/storage`; não criar um segundo starter.
 6. Aplicar Postgres, RLS, Storage e Realtime com vínculo ao `clerk_org_id`.
 7. Executar testes reais de SELECT, INSERT, UPDATE, DELETE e Storage entre organizações distintas.
-8. Só então conectar o estado local-first do produto ao repositório remoto.
+8. Só então conectar o estado local-first do produto ao repositório remoto usando eventos versionados, identificadores idempotentes e reconciliação explícita de conflitos.
 
 ## Demais itens da integração final
 
@@ -36,4 +36,3 @@ Essas pendências continuam bloqueando produção, sincronização em nuvem e qu
 - **Gate de produção:** integração aprovada, segurança, disponibilidade, custo e experiência final demonstrados.
 
 A aprovação de um gate de código nunca implica aprovação automática de integração ou produção.
-

@@ -14,6 +14,7 @@
 - O Copiloto consulta o mesmo estado do produto; não mantém uma fila operacional paralela.
 - Ferramentas locais distinguem leitura, escrita reversível e conclusão relevante com aprovação humana.
 - A sincronização futura deriva eventos do estado canônico e rejeita tenant divergente.
+- A Onda 2 agora inclui projetos múltiplos, CRUD de entregas, importação/exportação e calendário dinâmico; consulte `ONDA_2_STATUS.md`.
 
 ## Testes locais
 
@@ -21,7 +22,7 @@
 node --test tests/onda-1/*.test.mjs tests/ondas/*.test.mjs
 ```
 
-Resultado verificado: **54 testes aprovados; 0 falhas**.
+Resultado verificado: **101 testes aprovados; 0 falhas**.
 
 ## Gates
 
@@ -34,4 +35,3 @@ Resultado verificado: **54 testes aprovados; 0 falhas**.
 - Gate da Onda 4: **NÃO PASSOU**; colaboração real, mobile e produção não foram implementados.
 
 Essas pendências são de integração final; não invalidam os testes de domínio executados localmente. Consulte `INTEGRACAO_FINAL.md`.
-

@@ -3,21 +3,36 @@
 import { OrganizationSwitcher, UserButton } from "@repo/auth/client";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import {
+  adicionarEntrega,
   assumirFoco,
+  atualizarCapacidadeProjeto,
+  calendarioProjeto,
+  caminhoCritico,
   chaveOrganizacao,
+  ciclosProjeto,
   concluirEntrega,
+  criarProjeto,
   dependenciasPendentes,
+  editarEntrega,
+  entregasAtivas,
   estadoEntrega,
   executarCopiloto,
+  exportarPlano,
   filaBloqueada,
   filaPronta,
   focoAtual,
+  importarPlano,
   novoEstado,
   progresso,
+  projetoAtivo,
   registrarEvidencia,
   registrarPasso,
+  removerEntrega,
+  renomearProjeto,
   restaurarEstado,
   ROTULOS_ESTADO,
+  selecionarProjeto,
+  type ArquivoEvidencia,
   type Entrega,
   type EstadoOperacional,
 } from "@/lib/executar/domain";
@@ -75,16 +90,53 @@ function formatarMinutos(minutes: number): string {
     : `${minutes} min`;
 }
 
+function lerArquivoEvidencia(file: File): Promise<ArquivoEvidencia> {
+  if (file.size > 2_500_000) {
+    return Promise.reject(
+      new Error("O arquivo da evidência deve ter no máximo 2,5 MB.")
+    );
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result !== "string") {
+        reject(new Error("Não foi possível ler o arquivo da evidência."));
+        return;
+      }
+
+      resolve({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        data: reader.result,
+      });
+    };
+    reader.onerror = () =>
+      reject(new Error("Não foi possível ler o arquivo da evidência."));
+    reader.readAsDataURL(file);
+  });
+}
+
 function Overview({
   state,
+  tasks,
   focus,
   changeView,
 }: {
   readonly state: EstadoOperacional;
+  readonly tasks: readonly Entrega[];
   readonly focus: Entrega | null;
   readonly changeView: (view: View) => void;
 }) {
-  const current = progresso(ENTREGAS_SPRINT, state);
+  const current = progresso(tasks, state);
+  const calendar = calendarioProjeto(state);
+  const protection = Math.max(
+    0,
+    calendar.length * projetoAtivo(state).dailyCapacityMinutes - current.total
+  );
+  const critical = caminhoCritico(tasks);
   const fronts = ["Desenvolvimento", "Criativo", "Operações"];
 
   return (
@@ -92,12 +144,16 @@ function Overview({
       <div className="kpis">
         {[
           ["Planejado", formatarMinutos(current.total), "para fechar a fase"],
-          ["Proteção", "5h45", "sem ampliar escopo"],
-          ["Não pode atrasar", "27h30", "caminho principal"],
+          ["Proteção", formatarMinutos(protection), "sem ampliar escopo"],
+          [
+            "Não pode atrasar",
+            formatarMinutos(critical.minutes),
+            "caminho principal",
+          ],
           [
             "Concluído",
             `${current.percentage}%`,
-            `${state.done.length} de ${ENTREGAS_SPRINT.length} entregas`,
+            `${state.done.length} de ${tasks.length} entregas`,
           ],
           ["Evidências", String(state.evidence.length), "registros salvos"],
         ].map(([label, value, detail]) => (
@@ -180,7 +236,7 @@ function Overview({
           </div>
           <div className="cardBody">
             {fronts.map((front) => {
-              const minutes = ENTREGAS_SPRINT.filter(
+              const minutes = tasks.filter(
                 (task) => task.front === front
               ).reduce((total, task) => total + task.mins, 0);
 
@@ -193,7 +249,7 @@ function Overview({
                   <div className="progress">
                     <span
                       style={{
-                        width: `${Math.round((minutes / current.total) * 100)}%`,
+                        width: `${current.total ? Math.round((minutes / current.total) * 100) : 0}%`,
                       }}
                     />
                   </div>
@@ -223,11 +279,13 @@ function Overview({
 
 function Focus({
   state,
+  tasks,
   focus,
   setState,
   openEvidence,
 }: {
   readonly state: EstadoOperacional;
+  readonly tasks: readonly Entrega[];
   readonly focus: Entrega | null;
   readonly setState: (state: EstadoOperacional) => void;
   readonly openEvidence: () => void;
@@ -241,10 +299,10 @@ function Focus({
     );
   }
 
-  const ready = filaPronta(ENTREGAS_SPRINT, state).filter(
+  const ready = filaPronta(tasks, state).filter(
     (task) => task.id !== focus.id
   );
-  const blocked = filaBloqueada(ENTREGAS_SPRINT, state);
+  const blocked = filaBloqueada(tasks, state);
   const steps = Math.max(1, Math.ceil(focus.mins / 15));
   const completedSteps = state.started[focus.id] ?? 0;
   const evidence = state.evidence.filter((proof) => proof.taskId === focus.id);
@@ -289,7 +347,7 @@ function Focus({
                 disabled={!task}
                 key={task?.id ?? `empty-${index}`}
                 onClick={() =>
-                  task && setState(assumirFoco(ENTREGAS_SPRINT, state, task.id))
+                  task && setState(assumirFoco(tasks, state, task.id))
                 }
                 type="button"
               >
@@ -319,7 +377,7 @@ function Focus({
             <button
               className="softBtn executarBotaoLargo"
               onClick={() =>
-                setState(registrarPasso(ENTREGAS_SPRINT, state, focus.id))
+                setState(registrarPasso(tasks, state, focus.id))
               }
               type="button"
             >
@@ -388,27 +446,34 @@ function TaskList({
 }
 
 function Calendar({ state }: { readonly state: EstadoOperacional }) {
+  const days = calendarioProjeto(state);
+  const cycles = ciclosProjeto(state);
+
   return (
     <>
       <div className="card">
         <div className="cardHead">
           <h2>Resultados por dia</h2>
-          <span>10 dias úteis</span>
+          <span>{days.length} dias operacionais</span>
         </div>
         <div className="cardBody calendarGrid">
-          {DIAS.map(([weekday, date, result], index) => {
-            const tasks = ENTREGAS_SPRINT.filter((task) => task.date === date);
-            const minutes = tasks.reduce((total, task) => total + task.mins, 0);
+          {days.map((day, index) => {
+            const original = DIAS.find(([, date]) => date === day.date);
+            const weekday = original?.[0] ?? "dia";
+            const result = original?.[2] ?? "Fechar entregas do projeto";
 
             return (
-              <div className={`dayCard ${index === 0 ? "now" : ""}`} key={date}>
+              <div className={`dayCard ${index === 0 ? "now" : ""}`} key={day.date}>
                 <div className="dow">{weekday}</div>
-                <div className="num">{date.slice(0, 2)}</div>
+                <div className="num">{day.date.slice(0, 2)}</div>
                 <h3>{result}</h3>
-                <p>{tasks.length} entregas programadas.</p>
+                <p>
+                  {day.tasks.length} entregas programadas.
+                  {day.overloaded && " Capacidade excedida."}
+                </p>
                 <footer>
-                  <span>{formatarMinutos(minutes)}</span>
-                  <span>{tasks.filter((task) => state.done.includes(task.id)).length} feitas</span>
+                  <span>{formatarMinutos(day.plannedMinutes)}</span>
+                  <span>{day.completedCount} feitas</span>
                 </footer>
               </div>
             );
@@ -421,16 +486,16 @@ function Calendar({ state }: { readonly state: EstadoOperacional }) {
           <span>resultado por bloco</span>
         </div>
         <div className="cardBody cycleLine">
-          {[
-            ["Ciclo 1", "24–26 ago"],
-            ["Ciclo 2", "27–31 ago"],
-            ["Ciclo 3", "01–03 set"],
-            ["Fechamento", "04 set"],
-          ].map(([title, dates], index) => (
-            <div className={`cycle ${index === 0 ? "now" : ""}`} key={title}>
+          {cycles.map((cycle, index) => (
+            <div className={`cycle ${index === 0 ? "now" : ""}`} key={cycle.number}>
               <i>{index === 0 ? "●" : ""}</i>
-              <b>{title}</b>
-              <small>{dates}</small>
+              <b>Ciclo {cycle.number}</b>
+              <small>
+                {cycle.dates[0]}
+                {cycle.dates.length > 1
+                  ? `–${cycle.dates[cycle.dates.length - 1]}`
+                  : ""}
+              </small>
             </div>
           ))}
         </div>
@@ -439,24 +504,32 @@ function Calendar({ state }: { readonly state: EstadoOperacional }) {
   );
 }
 
-function Path({ state }: { readonly state: EstadoOperacional }) {
+function Path({
+  state,
+  tasks,
+}: {
+  readonly state: EstadoOperacional;
+  readonly tasks: readonly Entrega[];
+}) {
+  const critical = new Set(caminhoCritico(tasks).taskIds);
+
   return (
     <div className="card pathCard">
       <div className="cardHead">
         <h2>O que libera o quê</h2>
-        <span>azul = entrega liberada; cinza = dependência pendente</span>
+        <span>azul = caminho crítico; cinza = dependência pendente</span>
       </div>
       <div className="cardBody executarPath">
         {[1, 2, 3, 4].map((stage) => (
           <section className="executarPathColumn" key={stage}>
             <h3>Etapa {stage}</h3>
-            {ENTREGAS_SPRINT.filter((task) => task.stage === stage).map((task) => {
+            {tasks.filter((task) => task.stage === stage).map((task) => {
               const status = estadoEntrega(task, state);
               const waiting = dependenciasPendentes(task, state);
 
               return (
                 <article
-                  className={`executarPathNode ${status === "READY" || status === "DOING" ? "hot" : ""}`}
+                  className={`executarPathNode ${critical.has(task.id) ? "hot" : ""}`}
                   key={task.id}
                 >
                   <b>{task.id} · {task.title}</b>
@@ -475,18 +548,466 @@ function Path({ state }: { readonly state: EstadoOperacional }) {
   );
 }
 
+function ProjectManager({
+  state,
+  setState,
+  onClose,
+}: {
+  readonly state: EstadoOperacional;
+  readonly setState: (state: EstadoOperacional) => void;
+  readonly onClose: () => void;
+}) {
+  const project = projetoAtivo(state);
+  const tasks = entregasAtivas(state);
+  const [projectName, setProjectName] = useState(project.name);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [dailyCapacity, setDailyCapacity] = useState(
+    String(project.dailyCapacityMinutes)
+  );
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [taskId, setTaskId] = useState("");
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskFront, setTaskFront] = useState("Operações");
+  const [taskDate, setTaskDate] = useState(
+    new Date().toLocaleDateString("pt-BR").slice(0, 5)
+  );
+  const [taskMinutes, setTaskMinutes] = useState("30");
+  const [taskDependencies, setTaskDependencies] = useState("");
+  const [taskStage, setTaskStage] = useState("1");
+  const [importContent, setImportContent] = useState("");
+  const [importMode, setImportMode] = useState<"append" | "replace">("append");
+  const [notice, setNotice] = useState("");
+  const [problem, setProblem] = useState("");
+
+  function execute(action: () => EstadoOperacional, success: string) {
+    try {
+      setState(action());
+      setProblem("");
+      setNotice(success);
+    } catch (error) {
+      setNotice("");
+      setProblem(
+        error instanceof Error ? error.message : "Não foi possível atualizar o projeto."
+      );
+    }
+  }
+
+  function createProject() {
+    try {
+      const created = criarProjeto(state, newProjectName);
+      const next = created.projects[created.projects.length - 1];
+      setState(selecionarProjeto(created, next.id));
+      setProjectName(next.name);
+      setDailyCapacity(String(next.dailyCapacityMinutes));
+      setNewProjectName("");
+      setProblem("");
+      setNotice("Projeto criado e selecionado.");
+    } catch (error) {
+      setProblem(error instanceof Error ? error.message : "Não foi possível criar.");
+    }
+  }
+
+  function saveTask(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const task: Entrega = {
+      id: taskId.trim(),
+      title: taskTitle.trim(),
+      front: taskFront.trim(),
+      date: taskDate.trim(),
+      mins: Number(taskMinutes),
+      deps: taskDependencies
+        .split(/[,;]+/)
+        .map((dependency) => dependency.trim())
+        .filter(Boolean),
+      stage: Number(taskStage),
+    };
+
+    execute(
+      () =>
+        editingId
+          ? editarEntrega(state, editingId, {
+              title: task.title,
+              front: task.front,
+              date: task.date,
+              mins: task.mins,
+              deps: task.deps,
+              stage: task.stage,
+            })
+          : adicionarEntrega(state, task),
+      editingId ? "Entrega atualizada." : "Entrega criada."
+    );
+  }
+
+  function editTask(task: Entrega) {
+    setEditingId(task.id);
+    setTaskId(task.id);
+    setTaskTitle(task.title);
+    setTaskFront(task.front);
+    setTaskDate(task.date);
+    setTaskMinutes(String(task.mins));
+    setTaskDependencies(task.deps.join(", "));
+    setTaskStage(String(task.stage));
+  }
+
+  function clearTask() {
+    setEditingId(null);
+    setTaskId("");
+    setTaskTitle("");
+    setTaskFront("Operações");
+    setTaskDependencies("");
+    setTaskMinutes("30");
+    setTaskStage("1");
+  }
+
+  function downloadPlan() {
+    const content = exportarPlano(state);
+    const file = new Blob([content], { type: "application/json" });
+    const address = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = address;
+    link.download = `${project.id}.executar.json`;
+    link.click();
+    URL.revokeObjectURL(address);
+    setNotice("Plano exportado com entregas, progresso e evidências.");
+  }
+
+  return (
+    <div className="executarEvidenceBackdrop">
+      <div
+        aria-labelledby="executar-projeto-titulo"
+        aria-modal="true"
+        className="executarProjectDialog"
+        role="dialog"
+      >
+        <div className="dialogHead executarProjectHead">
+          <div>
+            <small>PLANO OPERACIONAL</small>
+            <h3 id="executar-projeto-titulo">Projetos e entregas</h3>
+          </div>
+          <button
+            aria-label="Fechar gestão de projetos"
+            className="iconBtn"
+            onClick={onClose}
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+
+        <section className="executarProjectSection">
+          <label htmlFor="executar-projeto-ativo">Projeto ativo</label>
+          <select
+            id="executar-projeto-ativo"
+            onChange={(event) => {
+              const next = state.projects.find(
+                (candidate) => candidate.id === event.target.value
+              );
+
+              if (next) {
+                setState(selecionarProjeto(state, next.id));
+                setProjectName(next.name);
+                setDailyCapacity(String(next.dailyCapacityMinutes));
+                clearTask();
+              }
+            }}
+            value={state.activeProjectId}
+          >
+            {state.projects.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.name}
+              </option>
+            ))}
+          </select>
+          <div className="executarFieldRow">
+            <input
+              aria-label="Nome do projeto ativo"
+              onChange={(event) => setProjectName(event.target.value)}
+              value={projectName}
+            />
+            <button
+              className="softBtn"
+              onClick={() =>
+                execute(
+                  () => renomearProjeto(state, projectName),
+                  "Projeto renomeado."
+                )
+              }
+              type="button"
+            >
+              Renomear
+            </button>
+          </div>
+          <div className="executarFieldRow">
+            <input
+              aria-label="Nome do novo projeto"
+              onChange={(event) => setNewProjectName(event.target.value)}
+              placeholder="Nome de um novo projeto"
+              value={newProjectName}
+            />
+            <button className="primaryBtn" onClick={createProject} type="button">
+              Criar projeto
+            </button>
+          </div>
+          <div className="executarFieldRow">
+            <input
+              aria-label="Capacidade diária em minutos"
+              max="1440"
+              min="15"
+              onChange={(event) => setDailyCapacity(event.target.value)}
+              type="number"
+              value={dailyCapacity}
+            />
+            <button
+              className="softBtn"
+              onClick={() =>
+                execute(
+                  () =>
+                    atualizarCapacidadeProjeto(state, Number(dailyCapacity)),
+                  "Capacidade diária atualizada."
+                )
+              }
+              type="button"
+            >
+              Ajustar capacidade
+            </button>
+          </div>
+        </section>
+
+        <section className="executarProjectSection">
+          <h4>{editingId ? "Editar entrega" : "Nova entrega"}</h4>
+          <form className="executarTaskForm" onSubmit={saveTask}>
+            <input
+              aria-label="Código da entrega"
+              disabled={Boolean(editingId)}
+              onChange={(event) => setTaskId(event.target.value)}
+              placeholder="Código, ex.: APP-01"
+              required
+              value={taskId}
+            />
+            <input
+              aria-label="Título da entrega"
+              onChange={(event) => setTaskTitle(event.target.value)}
+              placeholder="O que precisa ser entregue?"
+              required
+              value={taskTitle}
+            />
+            <input
+              aria-label="Frente operacional"
+              onChange={(event) => setTaskFront(event.target.value)}
+              placeholder="Frente operacional"
+              required
+              value={taskFront}
+            />
+            <input
+              aria-label="Data no formato DD/MM"
+              onChange={(event) => setTaskDate(event.target.value)}
+              placeholder="DD/MM"
+              required
+              value={taskDate}
+            />
+            <input
+              aria-label="Esforço em minutos"
+              min="1"
+              onChange={(event) => setTaskMinutes(event.target.value)}
+              required
+              type="number"
+              value={taskMinutes}
+            />
+            <select
+              aria-label="Etapa da entrega"
+              onChange={(event) => setTaskStage(event.target.value)}
+              value={taskStage}
+            >
+              {[1, 2, 3, 4].map((stage) => (
+                <option key={stage} value={stage}>
+                  Etapa {stage}
+                </option>
+              ))}
+            </select>
+            <input
+              aria-label="Dependências separadas por vírgula"
+              className="executarTaskWide"
+              onChange={(event) => setTaskDependencies(event.target.value)}
+              placeholder="Dependências: APP-01, APP-02"
+              value={taskDependencies}
+            />
+            <div className="executarTaskWide executarFieldRow">
+              <button className="primaryBtn" type="submit">
+                {editingId ? "Salvar alterações" : "Adicionar entrega"}
+              </button>
+              {editingId && (
+                <button className="softBtn" onClick={clearTask} type="button">
+                  Cancelar edição
+                </button>
+              )}
+            </div>
+          </form>
+        </section>
+
+        <section className="executarProjectSection">
+          <div className="executarSectionHead">
+            <h4>Entregas do projeto</h4>
+            <span>{tasks.length}</span>
+          </div>
+          <div className="executarTaskList">
+            {tasks.map((task) => (
+              <div className="executarTaskRow" key={task.id}>
+                <div>
+                  <b>{task.id} · {task.title}</b>
+                  <small>
+                    {task.date} · {task.mins} min ·
+                    {" "}{ROTULOS_ESTADO[estadoEntrega(task, state)]}
+                  </small>
+                </div>
+                <button
+                  className="softBtn"
+                  onClick={() => editTask(task)}
+                  type="button"
+                >
+                  Editar
+                </button>
+                <button
+                  aria-label={`Remover ${task.id}`}
+                  className="iconBtn"
+                  onClick={() => {
+                    if (window.confirm(`Remover a entrega ${task.id}?`)) {
+                      execute(
+                        () => removerEntrega(state, task.id),
+                        "Entrega removida."
+                      );
+                    }
+                  }}
+                  type="button"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            {!tasks.length && <small>Nenhuma entrega. Adicione ou importe um plano.</small>}
+          </div>
+        </section>
+
+        <section className="executarProjectSection">
+          <h4>Importar ou exportar plano</h4>
+          <input
+            accept=".json,.csv,.md,.txt"
+            aria-label="Selecionar arquivo de plano"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+
+              if (file) {
+                void file.text().then(setImportContent).catch(() => {
+                  setProblem("Não foi possível ler o arquivo selecionado.");
+                });
+              }
+            }}
+            type="file"
+          />
+          <textarea
+            aria-label="Conteúdo do plano para importação"
+            onChange={(event) => setImportContent(event.target.value)}
+            placeholder="Cole um plano em JSON, CSV ou Markdown."
+            rows={4}
+            value={importContent}
+          />
+          <div className="executarFieldRow">
+            <select
+              aria-label="Modo de importação"
+              onChange={(event) =>
+                setImportMode(event.target.value as "append" | "replace")
+              }
+              value={importMode}
+            >
+              <option value="append">Adicionar ao plano</option>
+              <option value="replace">Substituir plano sem evidências</option>
+            </select>
+            <button
+              className="primaryBtn"
+              onClick={() =>
+                execute(
+                  () => importarPlano(state, importContent, importMode),
+                  "Plano importado; filas e dependências recalculadas."
+                )
+              }
+              type="button"
+            >
+              Importar
+            </button>
+            <button className="softBtn" onClick={downloadPlan} type="button">
+              Exportar
+            </button>
+          </div>
+        </section>
+
+        <section className="executarProjectSection">
+          <h4>Evidências registradas</h4>
+          <div className="executarHistory">
+            {state.evidence.map((proof) => (
+              <div
+                className="executarEvidenceItem"
+                key={`${proof.taskId}-${proof.createdAt}`}
+              >
+                <b>{proof.taskId}</b>
+                {proof.note && <small>{proof.note}</small>}
+                {proof.url && (
+                  <a href={proof.url} rel="noreferrer" target="_blank">
+                    Abrir ligação
+                  </a>
+                )}
+                {proof.file && (
+                  <a download={proof.file.name} href={proof.file.data}>
+                    Baixar {proof.file.name}
+                  </a>
+                )}
+              </div>
+            ))}
+            {!state.evidence.length && (
+              <small>Nenhuma evidência registrada neste projeto.</small>
+            )}
+          </div>
+        </section>
+
+        <section className="executarProjectSection">
+          <h4>Histórico deste projeto</h4>
+          <div className="executarHistory">
+            {state.events
+              .filter((entry) => entry.projectId === state.activeProjectId)
+              .slice(-6)
+              .reverse()
+              .map((entry) => (
+                <small key={`${entry.projectId}-${entry.revision}`}>
+                  {entry.action}
+                  {entry.taskId ? ` · ${entry.taskId}` : ""}
+                </small>
+              ))}
+          </div>
+        </section>
+
+        {notice && <p className="executarNotice" role="status">{notice}</p>}
+        {problem && <p className="executarErro" role="alert">{problem}</p>}
+      </div>
+    </div>
+  );
+}
+
+
 export function ExecutarOperacional({
   organizationId,
 }: ExecutarOperacionalProperties) {
-  const [state, setState] = useState(() => novoEstado(organizationId));
+  const [state, setState] = useState(() =>
+    novoEstado(organizationId, ENTREGAS_SPRINT)
+  );
   const [loaded, setLoaded] = useState(false);
   const [view, setView] = useState<View>("overview");
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [note, setNote] = useState("");
   const [url, setUrl] = useState("");
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState("");
   const [copilotOpen, setCopilotOpen] = useState(false);
+  const [projectManagerOpen, setProjectManagerOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<MensagemCopiloto[]>([
     {
@@ -497,7 +1018,7 @@ export function ExecutarOperacional({
 
   useEffect(() => {
     const stored = window.localStorage.getItem(chaveOrganizacao(organizationId));
-    setState(restaurarEstado(stored, organizationId));
+    setState(restaurarEstado(stored, organizationId, ENTREGAS_SPRINT));
     setLoaded(true);
   }, [organizationId]);
 
@@ -510,10 +1031,12 @@ export function ExecutarOperacional({
     }
   }, [loaded, organizationId, state]);
 
-  const focus = useMemo(() => focoAtual(ENTREGAS_SPRINT, state), [state]);
+  const tasks = useMemo(() => entregasAtivas(state), [state]);
+  const focus = useMemo(() => focoAtual(tasks, state), [state, tasks]);
+  const activeProject = projetoAtivo(state);
   const title = VIEWS.find((item) => item.id === view)?.label ?? "Visão geral";
 
-  function saveEvidence(event: FormEvent<HTMLFormElement>) {
+  async function saveEvidence(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!focus) {
@@ -521,19 +1044,24 @@ export function ExecutarOperacional({
     }
 
     try {
+      const file = evidenceFile
+        ? await lerArquivoEvidencia(evidenceFile)
+        : undefined;
       const withEvidence = registrarEvidencia(
-        ENTREGAS_SPRINT,
+        tasks,
         state,
         focus.id,
         note,
         url,
-        verified
+        verified,
+        file
       );
 
-      setState(concluirEntrega(ENTREGAS_SPRINT, withEvidence, focus.id));
+      setState(concluirEntrega(tasks, withEvidence, focus.id));
       setEvidenceOpen(false);
       setNote("");
       setUrl("");
+      setEvidenceFile(null);
       setVerified(false);
       setError("");
     } catch (problem) {
@@ -548,7 +1076,7 @@ export function ExecutarOperacional({
       return;
     }
 
-    const answer = executarCopiloto(ENTREGAS_SPRINT, state, message);
+    const answer = executarCopiloto(tasks, state, message);
     setMessages((previous) => [
       ...previous,
       { author: "pessoa", text: message.trim() },
@@ -579,6 +1107,29 @@ export function ExecutarOperacional({
               </button>
             ))}
           </nav>
+          <div className="executarProjectSwitch">
+            <label htmlFor="executar-sidebar-projeto">Projeto</label>
+            <select
+              id="executar-sidebar-projeto"
+              onChange={(event) =>
+                setState(selecionarProjeto(state, event.target.value))
+              }
+              value={state.activeProjectId}
+            >
+              {state.projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+            <button
+              className="softBtn"
+              onClick={() => setProjectManagerOpen(true)}
+              type="button"
+            >
+              Gerenciar plano
+            </button>
+          </div>
           <div className="sideFoot">
             <OrganizationSwitcher />
             <div className="executarConta">
@@ -590,11 +1141,20 @@ export function ExecutarOperacional({
         <main className="main">
           <header className="top">
             <div>
-              <div className="eyebrow">PRÓXIMO 1 POR VEZ</div>
+              <div className="eyebrow">
+                PRÓXIMO 1 POR VEZ · {activeProject.name}
+              </div>
               <h1>{view === "path" ? "Caminho do resultado" : title}</h1>
             </div>
             <div className="topActions">
               <span className="dateChip">24 ago — 04 set</span>
+              <button
+                className="softBtn executarMobileProject"
+                onClick={() => setProjectManagerOpen(true)}
+                type="button"
+              >
+                Projetos
+              </button>
               <button
                 aria-expanded={copilotOpen}
                 className="softBtn"
@@ -606,7 +1166,7 @@ export function ExecutarOperacional({
             </div>
           </header>
           {view === "overview" && (
-            <Overview changeView={setView} focus={focus} state={state} />
+            <Overview changeView={setView} focus={focus} state={state} tasks={tasks} />
           )}
           {view === "focus" && (
             <Focus
@@ -614,10 +1174,11 @@ export function ExecutarOperacional({
               openEvidence={() => setEvidenceOpen(true)}
               setState={setState}
               state={state}
+              tasks={tasks}
             />
           )}
           {view === "calendar" && <Calendar state={state} />}
-          {view === "path" && <Path state={state} />}
+          {view === "path" && <Path state={state} tasks={tasks} />}
         </main>
         <nav aria-label="Navegação móvel" className="bottomNav">
           {VIEWS.map((item) => (
@@ -633,6 +1194,13 @@ export function ExecutarOperacional({
           ))}
         </nav>
       </div>
+      {projectManagerOpen && (
+        <ProjectManager
+          onClose={() => setProjectManagerOpen(false)}
+          setState={setState}
+          state={state}
+        />
+      )}
       {copilotOpen && (
         <aside aria-label="Copiloto operacional" className="executarCopiloto">
           <div className="executarCopilotoHead">
@@ -718,6 +1286,15 @@ export function ExecutarOperacional({
                   value={url}
                 />
               </label>
+              <label className="filePick">
+                Adicionar arquivo · máximo 2,5 MB
+                <input
+                  onChange={(event) =>
+                    setEvidenceFile(event.target.files?.[0] ?? null)
+                  }
+                  type="file"
+                />
+              </label>
               <label className="executarVerificacao">
                 <input
                   checked={verified}
@@ -737,7 +1314,12 @@ export function ExecutarOperacional({
                 </button>
                 <button
                   className="primaryBtn"
-                  disabled={!(verified && (note.trim() || url.trim()))}
+                  disabled={
+                    !(
+                      verified &&
+                      (note.trim() || url.trim() || evidenceFile)
+                    )
+                  }
                   type="submit"
                 >
                   Salvar e concluir
@@ -750,4 +1332,3 @@ export function ExecutarOperacional({
     </>
   );
 }
-
