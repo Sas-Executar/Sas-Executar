@@ -68,6 +68,8 @@ dependências para as Ondas 1–4 e o fechamento final.
   typecheck, evitando imports inexistentes sem adicionar infraestrutura.
 - O pacote de notificações usa o construtor tipado Knock v1 e permanece
   desativado quando sua chave não foi configurada.
+- O design system preserva seus wrappers e aparência, ajustando os tipos de
+  gráficos ao Recharts v3 e os painéis acessíveis às primitivas da versão 4.
 - Produção e Android/iOS permanecem bloqueados pelos predecessores reais.
 - A fila inicial aponta sessão Clerk real e runner Actions como próximos itens
   externos; eles dependem de autorização explícita para a integração final.
@@ -85,12 +87,12 @@ Os testes abrangem grafo, gates, isolamento de tenant, qualidade de evidência,
 diagnóstico do runner, segurança de variáveis, sessão Clerk, projeto Supabase
 novo, caminho de evidência, exportação canônica e os contratos SQL/RLS/Storage.
 
-Resultado local verificado: **265 testes aprovados, 0 falhas**, incluindo
-**63 testes específicos da Onda 5**.
+Resultado local verificado: **267 testes aprovados, 0 falhas**, incluindo
+**65 testes específicos da Onda 5**.
 
 ## Gates reais
 
-- Gate de código da Onda 5: **PASSOU**, com 265 testes locais verdes.
+- Gate de código da Onda 5: **PASSOU**, com 267 testes locais verdes.
 - Gate de integração: **NÃO PASSOU** até projeto Supabase novo, migration
   aplicada, RLS real, sincronização e serviços externos terem evidência real.
 - Gate de produção: **NÃO PASSOU** até CI verde, Vercel, smoke tests e

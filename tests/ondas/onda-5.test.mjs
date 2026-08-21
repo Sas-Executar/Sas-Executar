@@ -470,6 +470,40 @@ test("Knock v1 usa options tipadas e degrada sem chave configurada", async () =>
   assert.doesNotMatch(source, /new Knock\(key\)/);
 });
 
+test("design system usa payload explícito compatível com Recharts v3", async () => {
+  const source = await readFile(
+    new URL(
+      "../../packages/design-system/components/ui/chart.tsx",
+      import.meta.url
+    ),
+    "utf8"
+  );
+
+  assert.match(source, /RechartsPrimitive\.TooltipPayloadEntry/);
+  assert.match(source, /RechartsPrimitive\.LegendPayload\[\]/);
+  assert.doesNotMatch(
+    source,
+    /Pick<RechartsPrimitive\.LegendProps, "payload" \| "verticalAlign">/
+  );
+});
+
+test("painéis preservam wrappers e usam primitivas acessíveis da versão 4", async () => {
+  const source = await readFile(
+    new URL(
+      "../../packages/design-system/components/ui/resizable.tsx",
+      import.meta.url
+    ),
+    "utf8"
+  );
+
+  assert.match(source, /ResizablePrimitive\.Group/);
+  assert.match(source, /ResizablePrimitive\.Separator/);
+  assert.match(source, /aria-\[orientation=vertical\]/);
+  assert.doesNotMatch(source, /ResizablePrimitive\.PanelGroup/);
+  assert.doesNotMatch(source, /ResizablePrimitive\.PanelResizeHandle/);
+  assert.match(source, /export \{ ResizablePanelGroup, ResizablePanel, ResizableHandle \}/);
+});
+
 test("diagnóstico de ambiente lista nomes, nunca divulga valores", () => {
   const result = diagnosticarAmbienteFinal({
     CLERK_SECRET_KEY: "segredo-real-jamais-exposto",
