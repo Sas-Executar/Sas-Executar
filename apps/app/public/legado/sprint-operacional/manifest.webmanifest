@@ -1,0 +1,18 @@
+{
+  "name": "Executar · Próximo 1 por vez",
+  "short_name": "Executar",
+  "start_url": "/legado/sprint-operacional/",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#f3f4f6",
+  "description": "Painel pessoal para executar projetos e processos uma entrega por vez.",
+  "icons": [
+    {
+      "src": "/legado/sprint-operacional/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "scope": "/legado/sprint-operacional/"
+}

@@ -1,3 +1,22 @@
+# EXECUTAR · repositório canônico
+
+Este é o repositório principal do SaaS EXECUTAR. O starter `next-forge` existente é o chassis do produto; a PWA `Sprint-Operacional` foi incorporada como referência funcional sem reescrita visual.
+
+## Pontos de entrada
+
+- Aplicação SaaS: `apps/app/`.
+- PWA preservada: `apps/app/public/legado/sprint-operacional/`.
+- Rota da PWA: `/legado/sprint-operacional/`.
+- Plano canônico: `docs/runner/PLANO_SAAS_4_ONDAS.md`.
+- Runner do Codex: `docs/runner/RUNNER_CODEX.md`.
+- Inventário: `docs/runner/INVENTARIO_LEGADO.md`.
+
+A PWA legada somente poderá ser removida após a versão SaaS reproduzir e testar Visão Geral, Foco, fila por dependências, Calendário, Caminho, Evidências e funcionamento PWA/offline.
+
+A migração preserva Clerk como autoridade de identidade e organizações. Supabase será a plataforma de Postgres, RLS, Storage e Realtime; não substitua Clerk por Supabase Auth.
+
+---
+
 # ▲ / next-forge
 
 **Production-grade Turborepo template for Next.js apps.**

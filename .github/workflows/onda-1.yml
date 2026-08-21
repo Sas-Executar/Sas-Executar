@@ -1,0 +1,59 @@
+name: Onda 1 · fundação e preservação
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: onda-1-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  preservacao:
+    name: Preservação da PWA e do runner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validar sintaxe do legado
+        run: |
+          node --check apps/app/public/legado/sprint-operacional/app.js
+          node --check apps/app/public/legado/sprint-operacional/data.js
+          node --check apps/app/public/legado/sprint-operacional/sw.js
+      - name: Verificar produto e handoff canônico
+        run: node --test tests/onda-1/*.test.mjs
+
+  fundacao:
+    name: Instalação, tipos, lint, testes e build
+    runs-on: ubuntu-latest
+    needs: preservacao
+    env:
+      CI: true
+      SKIP_ENV_VALIDATION: true
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/executar
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_WEB_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: http://localhost:3002
+      NEXT_PUBLIC_DOCS_URL: http://localhost:3004
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+      - name: Instalar dependências sem alterar lockfile
+        run: bun install --frozen-lockfile
+      - name: Verificar tipos do aplicativo SaaS
+        run: bunx turbo run typecheck --filter=app
+      - name: Verificar lint e formatação
+        run: bun run check
+      - name: Executar testes do aplicativo
+        run: bunx turbo run test --filter=app
+      - name: Construir o aplicativo SaaS
+        run: bunx turbo run build --filter=app

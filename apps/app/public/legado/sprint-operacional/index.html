@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f4f5f7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Executar">
+  <link rel="manifest" href="/legado/sprint-operacional/manifest.webmanifest">
+  <link rel="icon" href="/legado/sprint-operacional/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/legado/sprint-operacional/app.css">
+  <title>Executar · Próximo 1 por vez</title>
+</head>
+<body>
+<div id="app">
+  <aside class="side">
+    <div class="brand"><div class="brandMark">E</div><span>Executar</span></div>
+    <nav>
+      <button data-view="overview" class="navItem active"><span>▦</span><b>Visão geral</b></button>
+      <button data-view="focus" class="navItem"><span>▶</span><b>Foco</b></button>
+      <button data-view="calendar" class="navItem"><span>□</span><b>Calendário</b></button>
+      <button data-view="path" class="navItem"><span>↗</span><b>Caminho</b></button>
+    </nav>
+    <div class="sideFoot">
+      <button id="installBtn" class="softBtn hidden">Instalar aplicativo</button>
+      <small>Dados salvos neste dispositivo</small>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <div>
+        <div class="eyebrow">PRÓXIMO 1 POR VEZ</div>
+        <h1 id="viewTitle">Visão geral</h1>
+      </div>
+      <div class="topActions">
+        <span id="todayLabel" class="dateChip">24 ago — 04 set</span>
+        <button id="resetBtn" class="iconBtn" title="Reiniciar demonstração">↻</button>
+      </div>
+    </header>
+
+    <section id="overview" class="view active"></section>
+    <section id="focus" class="view"></section>
+    <section id="calendar" class="view"></section>
+    <section id="path" class="view"></section>
+  </main>
+
+  <nav class="bottomNav">
+    <button data-view="overview" class="active"><span>▦</span><small>Visão</small></button>
+    <button data-view="focus"><span>▶</span><small>Foco</small></button>
+    <button data-view="calendar"><span>□</span><small>Calendário</small></button>
+    <button data-view="path"><span>↗</span><small>Caminho</small></button>
+  </nav>
+</div>
+
+<dialog id="evidenceDialog">
+  <form method="dialog" class="dialogCard" id="evidenceForm">
+    <div class="dialogHead">
+      <div><small>COMPROVAR</small><h3 id="evidenceTaskTitle">Registrar evidência</h3></div>
+      <button class="iconBtn" value="cancel">×</button>
+    </div>
+    <label>O que comprova que terminou?
+      <textarea id="evidenceNote" rows="4" placeholder="Ex.: publicado, teste passou, registro salvo..."></textarea>
+    </label>
+    <label>Ligação opcional
+      <input id="evidenceUrl" type="url" placeholder="https://">
+    </label>
+    <label class="filePick">Adicionar arquivo
+      <input id="evidenceFile" type="file">
+    </label>
+    <div class="dialogActions">
+      <button class="softBtn" value="cancel">Cancelar</button>
+      <button type="button" id="saveEvidenceBtn" class="primaryBtn">Salvar e concluir</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="/legado/sprint-operacional/data.js"></script>
+<script src="/legado/sprint-operacional/app.js"></script>
+</body>
+</html>
