@@ -458,6 +458,18 @@ test("database gera cliente Prisma antes do typecheck exigido pelo starter", asy
   assert.ok(command.indexOf("prisma generate") < command.indexOf("tsc --noEmit"));
 });
 
+test("Knock v1 usa options tipadas e degrada sem chave configurada", async () => {
+  const source = await readFile(
+    new URL("../../packages/notifications/index.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /new Knock\(\{ apiKey: key \}\)/);
+  assert.match(source, /key \? new Knock/);
+  assert.match(source, /: undefined/);
+  assert.doesNotMatch(source, /new Knock\(key\)/);
+});
+
 test("diagnóstico de ambiente lista nomes, nunca divulga valores", () => {
   const result = diagnosticarAmbienteFinal({
     CLERK_SECRET_KEY: "segredo-real-jamais-exposto",

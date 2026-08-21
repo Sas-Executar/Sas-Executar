@@ -27,7 +27,7 @@
 node --test tests/onda-1/*.test.mjs tests/ondas/*.test.mjs
 ```
 
-Resultado verificado após a Onda 5: **264 testes aprovados; 0 falhas**.
+Resultado verificado após a Onda 5: **265 testes aprovados; 0 falhas**.
 
 ## Gates
 
