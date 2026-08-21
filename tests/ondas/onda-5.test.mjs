@@ -433,6 +433,18 @@ test("Actions verde exige steps executados e jobs bem-sucedidos", () => {
   assert.equal(result.executedSteps, 3);
 });
 
+test("pacote somente de configuração não executa typecheck na raiz do monorepo", async () => {
+  const configurationPackage = JSON.parse(
+    await readFile(
+      new URL("../../packages/typescript-config/package.json", import.meta.url),
+      "utf8"
+    )
+  );
+
+  assert.equal(configurationPackage.name, "@repo/typescript-config");
+  assert.ok(!("typecheck" in configurationPackage.scripts));
+});
+
 test("diagnóstico de ambiente lista nomes, nunca divulga valores", () => {
   const result = diagnosticarAmbienteFinal({
     CLERK_SECRET_KEY: "segredo-real-jamais-exposto",
