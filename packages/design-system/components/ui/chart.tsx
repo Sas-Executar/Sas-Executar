@@ -123,7 +123,7 @@ function ChartTooltipContent({
     active?: boolean
     payload?: RechartsPrimitive.TooltipPayloadEntry<
       RechartsPrimitive.TooltipValueType,
-      string
+      string | number
     >[]
     label?: string | number
     hideLabel?: boolean
@@ -194,14 +194,14 @@ function ChartTooltipContent({
 
             return (
               <div
-                key={item.dataKey}
+                key={String(item.dataKey ?? item.name ?? index)}
                 className={cn(
                   "[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5",
                   indicator === "dot" && "items-center"
                 )}
               >
                 {formatter && item?.value !== undefined && item.name ? (
-                  formatter(item.value, item.name, item, index, item.payload)
+                  formatter(item.value, item.name, item, index, payload)
                 ) : (
                   <>
                     {itemConfig?.icon ? (

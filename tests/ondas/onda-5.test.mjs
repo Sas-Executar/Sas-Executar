@@ -480,7 +480,12 @@ test("design system usa payload explícito compatível com Recharts v3", async (
   );
 
   assert.match(source, /RechartsPrimitive\.TooltipPayloadEntry/);
+  assert.match(source, /string \| number/);
   assert.match(source, /RechartsPrimitive\.LegendPayload\[\]/);
+  assert.match(
+    source,
+    /formatter\(item\.value, item\.name, item, index, payload\)/
+  );
   assert.doesNotMatch(
     source,
     /Pick<RechartsPrimitive\.LegendProps, "payload" \| "verticalAlign">/
