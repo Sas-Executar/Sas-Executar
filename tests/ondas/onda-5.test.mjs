@@ -445,6 +445,19 @@ test("pacote somente de configuração não executa typecheck na raiz do monorep
   assert.ok(!("typecheck" in configurationPackage.scripts));
 });
 
+test("database gera cliente Prisma antes do typecheck exigido pelo starter", async () => {
+  const databasePackage = JSON.parse(
+    await readFile(
+      new URL("../../packages/database/package.json", import.meta.url),
+      "utf8"
+    )
+  );
+  const command = databasePackage.scripts.typecheck;
+
+  assert.match(command, /^prisma generate --no-hints --schema=/);
+  assert.ok(command.indexOf("prisma generate") < command.indexOf("tsc --noEmit"));
+});
+
 test("diagnóstico de ambiente lista nomes, nunca divulga valores", () => {
   const result = diagnosticarAmbienteFinal({
     CLERK_SECRET_KEY: "segredo-real-jamais-exposto",
