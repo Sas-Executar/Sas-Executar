@@ -16,7 +16,7 @@ import {
   editarEntrega,
   entregasAtivas,
   estadoEntrega,
-  executarCopiloto,
+  executarAcaoCopiloto,
   exportarPlano,
   filaBloqueada,
   filaPronta,
@@ -29,9 +29,11 @@ import {
   registrarPasso,
   removerEntrega,
   renomearProjeto,
+  resolverAprovacaoCopiloto,
   restaurarEstado,
   ROTULOS_ESTADO,
   selecionarProjeto,
+  type AprovacaoCopiloto,
   type ArquivoEvidencia,
   type Entrega,
   type EstadoOperacional,
@@ -574,6 +576,7 @@ function ProjectManager({
   const [taskMinutes, setTaskMinutes] = useState("30");
   const [taskDependencies, setTaskDependencies] = useState("");
   const [taskStage, setTaskStage] = useState("1");
+  const [taskDod, setTaskDod] = useState("");
   const [importContent, setImportContent] = useState("");
   const [importMode, setImportMode] = useState<"append" | "replace">("append");
   const [notice, setNotice] = useState("");
@@ -621,6 +624,7 @@ function ProjectManager({
         .map((dependency) => dependency.trim())
         .filter(Boolean),
       stage: Number(taskStage),
+      ...(taskDod.trim() ? { dod: taskDod.trim() } : {}),
     };
 
     execute(
@@ -633,6 +637,7 @@ function ProjectManager({
               mins: task.mins,
               deps: task.deps,
               stage: task.stage,
+              ...(task.dod ? { dod: task.dod } : {}),
             })
           : adicionarEntrega(state, task),
       editingId ? "Entrega atualizada." : "Entrega criada."
@@ -648,6 +653,7 @@ function ProjectManager({
     setTaskMinutes(String(task.mins));
     setTaskDependencies(task.deps.join(", "));
     setTaskStage(String(task.stage));
+    setTaskDod(task.dod ?? "");
   }
 
   function clearTask() {
@@ -658,6 +664,7 @@ function ProjectManager({
     setTaskDependencies("");
     setTaskMinutes("30");
     setTaskStage("1");
+    setTaskDod("");
   }
 
   function downloadPlan() {
@@ -831,6 +838,13 @@ function ProjectManager({
               onChange={(event) => setTaskDependencies(event.target.value)}
               placeholder="Dependências: APP-01, APP-02"
               value={taskDependencies}
+            />
+            <input
+              aria-label="Critério de conclusão da entrega"
+              className="executarTaskWide"
+              onChange={(event) => setTaskDod(event.target.value)}
+              placeholder="Conclui quando... (critério de aceitação)"
+              value={taskDod}
             />
             <div className="executarTaskWide executarFieldRow">
               <button className="primaryBtn" type="submit">
@@ -1007,6 +1021,8 @@ export function ExecutarOperacional({
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState("");
   const [copilotOpen, setCopilotOpen] = useState(false);
+  const [pendingApproval, setPendingApproval] =
+    useState<AprovacaoCopiloto | null>(null);
   const [projectManagerOpen, setProjectManagerOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<MensagemCopiloto[]>([
@@ -1076,13 +1092,68 @@ export function ExecutarOperacional({
       return;
     }
 
-    const answer = executarCopiloto(tasks, state, message);
-    setMessages((previous) => [
-      ...previous,
-      { author: "pessoa", text: message.trim() },
-      { author: "copiloto", text: answer.reply },
-    ]);
+    const question = message.trim();
+
+    try {
+      const answer = executarAcaoCopiloto(state, question);
+
+      if (answer.state !== state) {
+        setState(answer.state);
+      }
+
+      setPendingApproval(answer.approval);
+      setMessages((previous) => [
+        ...previous,
+        { author: "pessoa", text: question },
+        { author: "copiloto", text: answer.reply },
+      ]);
+    } catch (problem) {
+      setMessages((previous) => [
+        ...previous,
+        { author: "pessoa", text: question },
+        {
+          author: "copiloto",
+          text:
+            problem instanceof Error
+              ? problem.message
+              : "Não foi possível executar a ação solicitada.",
+        },
+      ]);
+    }
+
     setMessage("");
+  }
+
+  function decideApproval(approved: boolean) {
+    if (!pendingApproval) {
+      return;
+    }
+
+    try {
+      const result = resolverAprovacaoCopiloto(
+        state,
+        pendingApproval,
+        approved
+      );
+      setState(result.state);
+      setMessages((previous) => [
+        ...previous,
+        { author: "copiloto", text: result.reply },
+      ]);
+    } catch (problem) {
+      setMessages((previous) => [
+        ...previous,
+        {
+          author: "copiloto",
+          text:
+            problem instanceof Error
+              ? problem.message
+              : "Não foi possível aplicar a aprovação.",
+        },
+      ]);
+    }
+
+    setPendingApproval(null);
   }
 
   return (
@@ -1226,9 +1297,39 @@ export function ExecutarOperacional({
                 {entry.text}
               </div>
             ))}
+            {pendingApproval && (
+              <div className="executarAprovacao">
+                <strong>Aprovação humana necessária</strong>
+                <p>{pendingApproval.summary}</p>
+                <div className="executarFieldRow">
+                  <button
+                    className="primaryBtn"
+                    onClick={() => decideApproval(true)}
+                    type="button"
+                  >
+                    Aprovar ação
+                  </button>
+                  <button
+                    className="softBtn"
+                    onClick={() => decideApproval(false)}
+                    type="button"
+                  >
+                    Recusar
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
+          <details className="executarAjudaCopiloto">
+            <summary>Comandos para operar o plano</summary>
+            <small>/projeto criar Nome</small>
+            <small>/foco ID · /progresso · /concluir ID</small>
+            <small>/evidencia verificar descrição</small>
+            <small>/entrega atualizar ID data=DD/MM</small>
+            <small>/replanejamento ID data=DD/MM</small>
+          </details>
           <div className="executarComandos">
-            {["/agora", "/estado", "/fechardia"].map((command) => (
+            {["/agora", "/progresso", "/concluir"].map((command) => (
               <button
                 className="chip"
                 key={command}

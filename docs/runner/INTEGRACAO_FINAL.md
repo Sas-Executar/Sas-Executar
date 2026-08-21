@@ -24,7 +24,16 @@ Essas pendências continuam bloqueando produção, sincronização em nuvem e qu
 - Corrigir a execução de GitHub Actions e obter CI verde.
 - Validar login, organizações e tenant ativo com Clerk real.
 - Validar sincronização entre aparelhos e recuperação offline.
-- Conectar provedor de IA real somente após validar o Copiloto determinístico.
+- Escolher provedor/modelo e conectar AI SDK real somente na integração final,
+  aproveitando os contratos existentes `ToolLoopAgent`, `InferAgentUIMessage`,
+  `inputSchema`, `DefaultChatTransport` e `toUIMessageStreamResponse`.
+- Executar as ferramentas do agente no servidor com autoridade Clerk, contexto
+  derivado da sessão e limites reais de etapas/chamadas.
+- Persistir e validar aprovações humanas no servidor antes de concluir entrega,
+  remover dados ou substituir plano; a proteção local não substitui autenticação
+  e autorização remotas.
+- Conectar MCP autenticado sem aceitar organização, projeto, revisão ou
+  confirmação humana indicados pelo modelo.
 - Conectar notificações, colaboração e cobrança quando houver um caso funcional verificável.
 - Executar build, deployment, smoke tests e observabilidade na Vercel.
 - Preservar o PR em draft enquanto os checks externos obrigatórios não passarem.

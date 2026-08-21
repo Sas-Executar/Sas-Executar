@@ -393,7 +393,7 @@ test("produto preserva as quatro faces e o Copiloto usa o mesmo estado", async (
     assert.ok(component.includes(label), `Ausente: ${label}`);
   }
 
-  assert.match(component, /executarCopiloto\(tasks, state, message\)/);
+  assert.match(component, /executarAcaoCopiloto\(state, question\)/);
   assert.match(component, /entregasAtivas\(state\)/);
   assert.match(component, /chaveOrganizacao\(organizationId\)/);
 });

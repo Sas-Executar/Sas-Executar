@@ -13,6 +13,7 @@ Este diretório contém o handoff canônico para evoluir a PWA atual do `Sprint-
 - Provisionamento: o Supabase do SaaS será um projeto novo, criado somente na integração final.
 - Checklist de deploy, secrets, dependências, CI e serviços reais: `INTEGRACAO_FINAL.md`.
 - Status detalhado do produto editável e persistência local-first: `ONDA_2_STATUS.md`.
+- Status detalhado do Copiloto executor, aprovações e preparação AI SDK/MCP: `ONDA_3_STATUS.md`.
 
 ## Ordem de leitura
 

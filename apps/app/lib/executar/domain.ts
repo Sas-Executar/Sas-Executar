@@ -14,6 +14,7 @@ export interface Entrega {
   readonly mins: number;
   readonly deps: readonly string[];
   readonly stage: number;
+  readonly dod?: string;
 }
 
 export interface Evidencia {
@@ -39,6 +40,9 @@ export interface EventoOperacional {
   readonly action: string;
   readonly taskId: string | null;
   readonly at: string;
+  readonly actor?: "humano" | "copiloto";
+  readonly tool?: string;
+  readonly humanApproved?: boolean;
 }
 
 export interface ProgressoProjeto {
@@ -110,12 +114,52 @@ export interface ContratoFerramenta {
 export interface EntradaFerramenta {
   readonly organizationId: string;
   readonly name: string;
+  readonly projectId?: string;
+  readonly expectedRevision?: number;
   readonly taskId?: string;
+  readonly task?: Entrega;
+  readonly changes?: Partial<Omit<Entrega, "id">>;
+  readonly projectName?: string;
+  readonly targetProjectId?: string;
+  readonly planContent?: string;
+  readonly importMode?: "append" | "replace";
+  readonly dailyCapacityMinutes?: number;
   readonly note?: string;
   readonly url?: string;
   readonly verified?: boolean;
   readonly approved?: boolean;
 }
+
+export interface AprovacaoCopiloto {
+  readonly id: string;
+  readonly organizationId: string;
+  readonly projectId: string;
+  readonly expectedRevision: number;
+  readonly tool: string;
+  readonly taskId: string | null;
+  readonly summary: string;
+  readonly input: EntradaFerramenta;
+}
+
+export interface ResultadoAcaoCopiloto {
+  readonly state: EstadoOperacional;
+  readonly reply: string;
+  readonly action: string;
+  readonly affectedTaskIds: readonly string[];
+  readonly approval: AprovacaoCopiloto | null;
+}
+
+export interface ResultadoReplanejamento {
+  readonly state: EstadoOperacional;
+  readonly affectedTaskIds: readonly string[];
+}
+
+export const LIMITES_COPILOTO = {
+  maxSteps: 8,
+  maxToolCalls: 8,
+  maxInputCharacters: 25_000,
+  maxPlanTasks: 500,
+} as const;
 
 export const FERRAMENTAS_OPERACIONAIS: readonly ContratoFerramenta[] = [
   {
@@ -123,6 +167,54 @@ export const FERRAMENTAS_OPERACIONAIS: readonly ContratoFerramenta[] = [
     effect: "read",
     requiresApproval: false,
     purpose: "Ler foco, fila, progresso e bloqueios do estado canônico.",
+  },
+  {
+    name: "criar_projeto",
+    effect: "reversible-write",
+    requiresApproval: false,
+    purpose: "Criar um projeto operacional dentro da organização ativa.",
+  },
+  {
+    name: "selecionar_projeto",
+    effect: "reversible-write",
+    requiresApproval: false,
+    purpose: "Alternar projeto preservando foco, progresso e evidências.",
+  },
+  {
+    name: "renomear_projeto",
+    effect: "reversible-write",
+    requiresApproval: false,
+    purpose: "Atualizar o nome do projeto operacional ativo.",
+  },
+  {
+    name: "criar_entrega",
+    effect: "reversible-write",
+    requiresApproval: false,
+    purpose: "Criar entrega validando identificador, dependências e grafo.",
+  },
+  {
+    name: "atualizar_entrega",
+    effect: "reversible-write",
+    requiresApproval: false,
+    purpose: "Editar entrega sem quebrar dependências ou evidências.",
+  },
+  {
+    name: "importar_plano",
+    effect: "reversible-write",
+    requiresApproval: false,
+    purpose: "Acrescentar entregas válidas ao plano da organização ativa.",
+  },
+  {
+    name: "replanejar_subgrafo",
+    effect: "reversible-write",
+    requiresApproval: false,
+    purpose: "Alterar somente a raiz solicitada e identificar sucessores afetados.",
+  },
+  {
+    name: "ajustar_capacidade",
+    effect: "reversible-write",
+    requiresApproval: false,
+    purpose: "Ajustar capacidade diária dentro dos limites operacionais.",
   },
   {
     name: "assumir_foco",
@@ -141,6 +233,18 @@ export const FERRAMENTAS_OPERACIONAIS: readonly ContratoFerramenta[] = [
     effect: "reversible-write",
     requiresApproval: false,
     purpose: "Associar comprovação à entrega em foco na organização ativa.",
+  },
+  {
+    name: "substituir_plano",
+    effect: "relevant-write",
+    requiresApproval: true,
+    purpose: "Substituir plano sem evidências apenas após aprovação humana.",
+  },
+  {
+    name: "remover_entrega",
+    effect: "relevant-write",
+    requiresApproval: true,
+    purpose: "Remover entrega sem sucessores somente após aprovação humana.",
   },
   {
     name: "concluir_entrega",
@@ -284,6 +388,7 @@ function registrar(
         action,
         taskId,
         at: new Date().toISOString(),
+        actor: "humano",
       },
     ],
   };
@@ -349,6 +454,10 @@ function validarEntrega(task: Entrega): void {
 
   if (new Set(task.deps).size !== task.deps.length) {
     throw new Error("A entrega não pode repetir dependências.");
+  }
+
+  if (task.dod !== undefined && !task.dod.trim()) {
+    throw new Error("O critério de conclusão não pode ficar vazio.");
   }
 }
 
@@ -644,6 +753,8 @@ function normalizarImportacao(value: unknown): Entrega {
         .map((dependency) => dependency.trim())
         .filter(Boolean);
 
+  const dod = record.dod ?? record.criterio ?? record.conclui_quando;
+
   return {
     id: String(record.id ?? record.codigo ?? "").trim(),
     title: String(record.title ?? record.titulo ?? "").trim(),
@@ -652,6 +763,7 @@ function normalizarImportacao(value: unknown): Entrega {
     mins: Number(record.mins ?? record.minutos ?? record.minutes ?? 30),
     deps,
     stage: Number(record.stage ?? record.etapa ?? 1),
+    ...(dod === undefined ? {} : { dod: String(dod).trim() }),
   };
 }
 
@@ -1157,6 +1269,48 @@ export function subgrafoAfetado(
   return tasks.filter((task) => affected.has(task.id));
 }
 
+export function replanejarSubgrafo(
+  state: EstadoOperacional,
+  taskId: string,
+  changes: Partial<Omit<Entrega, "id">>
+): ResultadoReplanejamento {
+  const tasks = entregasAtivas(state);
+  const root = tasks.find((task) => task.id === taskId);
+
+  if (!root) {
+    throw new Error("A raiz do replanejamento não existe no projeto ativo.");
+  }
+
+  if (state.done.includes(taskId)) {
+    throw new Error("Uma entrega concluída não pode ser replanejada.");
+  }
+
+  if (!Object.keys(changes).length) {
+    throw new Error("Informe ao menos uma alteração para replanejar.");
+  }
+
+  const before = new Set(
+    subgrafoAfetado(tasks, taskId).map((task) => task.id)
+  );
+  const updated = tasks.map((task) =>
+    task.id === taskId ? { ...task, ...changes, id: task.id } : task
+  );
+  const changed = substituirEntregasProjeto(
+    state,
+    updated,
+    "plano.replanejado",
+    taskId
+  );
+  const after = subgrafoAfetado(updated, taskId).map((task) => task.id);
+
+  return {
+    state: changed,
+    affectedTaskIds: updated
+      .filter((task) => before.has(task.id) || after.includes(task.id))
+      .map((task) => task.id),
+  };
+}
+
 export function eventosPendentes(
   state: EstadoOperacional,
   organizationId: string,
@@ -1248,38 +1402,712 @@ export function executarFerramenta(
     throw new Error("Ferramenta não pode operar em outra organização.");
   }
 
+  if (input.projectId && input.projectId !== state.activeProjectId) {
+    throw new Error("Ferramenta não pode operar em outro projeto.");
+  }
+
+  if (
+    input.expectedRevision !== undefined &&
+    input.expectedRevision !== state.revision
+  ) {
+    throw new Error("O estado mudou; revise a ação antes de executá-la.");
+  }
+
   if (input.name === "consultar_estado") {
     return state;
   }
 
-  if (!input.taskId) {
-    throw new Error("A ferramenta precisa identificar a entrega.");
-  }
+  const audit = (next: EstadoOperacional): EstadoOperacional => {
+    if (entregasAtivas(next).length > LIMITES_COPILOTO.maxPlanTasks) {
+      throw new Error(
+        `O plano excede o limite de ${LIMITES_COPILOTO.maxPlanTasks} entregas do Copiloto.`
+      );
+    }
+
+    return {
+      ...next,
+      events: next.events.map((event) =>
+        event.revision > state.revision
+          ? {
+              ...event,
+              actor: "copiloto" as const,
+              tool: input.name,
+              ...(input.approved ? { humanApproved: true } : {}),
+            }
+          : event
+      ),
+    };
+  };
+
+  const requireTask = (): string => {
+    if (!input.taskId) {
+      throw new Error("A ferramenta precisa identificar a entrega.");
+    }
+
+    return input.taskId;
+  };
 
   switch (input.name) {
+    case "criar_projeto":
+      if (!input.projectName) {
+        throw new Error("Informe o nome do projeto.");
+      }
+
+      return audit(criarProjeto(state, input.projectName));
+    case "selecionar_projeto":
+      if (!input.targetProjectId) {
+        throw new Error("Informe o projeto a selecionar.");
+      }
+
+      return audit(selecionarProjeto(state, input.targetProjectId));
+    case "renomear_projeto":
+      if (!input.projectName) {
+        throw new Error("Informe o novo nome do projeto.");
+      }
+
+      return audit(renomearProjeto(state, input.projectName));
+    case "criar_entrega":
+      if (!input.task) {
+        throw new Error("Informe os dados completos da entrega.");
+      }
+
+      return audit(adicionarEntrega(state, input.task));
+    case "atualizar_entrega":
+      if (!input.changes || !Object.keys(input.changes).length) {
+        throw new Error("Informe as alterações da entrega.");
+      }
+
+      return audit(editarEntrega(state, requireTask(), input.changes));
+    case "importar_plano":
+      if (!input.planContent) {
+        throw new Error("Informe o conteúdo do plano.");
+      }
+
+      return audit(importarPlano(state, input.planContent, "append"));
+    case "substituir_plano":
+      if (!input.approved) {
+        throw new Error("Substituição exige aprovação humana explícita.");
+      }
+
+      if (!input.planContent) {
+        throw new Error("Informe o conteúdo do plano.");
+      }
+
+      return audit(importarPlano(state, input.planContent, "replace"));
+    case "remover_entrega":
+      if (!input.approved) {
+        throw new Error("Remoção exige aprovação humana explícita.");
+      }
+
+      return audit(removerEntrega(state, requireTask()));
+    case "replanejar_subgrafo":
+      if (!input.changes) {
+        throw new Error("Informe as alterações do replanejamento.");
+      }
+
+      return audit(
+        replanejarSubgrafo(state, requireTask(), input.changes).state
+      );
+    case "ajustar_capacidade":
+      if (input.dailyCapacityMinutes === undefined) {
+        throw new Error("Informe a capacidade diária em minutos.");
+      }
+
+      return audit(
+        atualizarCapacidadeProjeto(state, input.dailyCapacityMinutes)
+      );
     case "assumir_foco":
-      return assumirFoco(tasks, state, input.taskId);
+      return audit(assumirFoco(tasks, state, requireTask()));
     case "registrar_progresso":
-      return registrarPasso(tasks, state, input.taskId);
+      return audit(registrarPasso(tasks, state, requireTask()));
     case "registrar_evidencia":
-      return registrarEvidencia(
-        tasks,
-        state,
-        input.taskId,
-        input.note ?? "",
-        input.url ?? "",
-        input.verified ?? false
+      return audit(
+        registrarEvidencia(
+          tasks,
+          state,
+          requireTask(),
+          input.note ?? "",
+          input.url ?? "",
+          input.verified ?? false
+        )
       );
     case "concluir_entrega":
       if (!input.approved) {
         throw new Error("Conclusão exige aprovação humana explícita.");
       }
 
-      return concluirEntrega(tasks, state, input.taskId);
+      return audit(concluirEntrega(tasks, state, requireTask()));
     default:
       throw new Error("Ferramenta operacional desconhecida.");
   }
 }
+
+function propostaAprovacao(
+  state: EstadoOperacional,
+  input: EntradaFerramenta,
+  summary: string
+): AprovacaoCopiloto {
+  return {
+    id: `${state.organizationId}:${state.activeProjectId}:${input.name}:${input.taskId ?? "projeto"}:${state.revision}`,
+    organizationId: state.organizationId,
+    projectId: state.activeProjectId,
+    expectedRevision: state.revision,
+    tool: input.name,
+    taskId: input.taskId ?? null,
+    summary,
+    input,
+  };
+}
+
+export function resolverAprovacaoCopiloto(
+  state: EstadoOperacional,
+  approval: AprovacaoCopiloto,
+  approved: boolean
+): ResultadoAcaoCopiloto {
+  if (approval.organizationId !== state.organizationId) {
+    throw new Error("A aprovação pertence a outra organização.");
+  }
+
+  if (approval.projectId !== state.activeProjectId) {
+    throw new Error("A aprovação pertence a outro projeto.");
+  }
+
+  if (approval.expectedRevision !== state.revision) {
+    throw new Error("A aprovação expirou porque o estado operacional mudou.");
+  }
+
+  const expectedId = `${approval.organizationId}:${approval.projectId}:${approval.tool}:${approval.taskId ?? "projeto"}:${approval.expectedRevision}`;
+  const contract = FERRAMENTAS_OPERACIONAIS.find(
+    (tool) => tool.name === approval.tool
+  );
+
+  if (
+    approval.id !== expectedId ||
+    !contract?.requiresApproval ||
+    approval.input.name !== approval.tool ||
+    approval.input.organizationId !== approval.organizationId ||
+    approval.input.projectId !== approval.projectId ||
+    approval.input.expectedRevision !== approval.expectedRevision ||
+    (approval.input.taskId ?? null) !== approval.taskId ||
+    approval.input.approved !== undefined
+  ) {
+    throw new Error("Os dados da aprovação foram alterados ou não são válidos.");
+  }
+
+  if (!approved) {
+    const denied = registrar(
+      state,
+      "copiloto.aprovacao_recusada",
+      approval.taskId,
+      {}
+    );
+
+    return {
+      state: denied,
+      reply: "Ação recusada. Nenhuma entrega ou plano foi alterado.",
+      action: "aprovação recusada",
+      affectedTaskIds: [],
+      approval: null,
+    };
+  }
+
+  const next = executarFerramenta(entregasAtivas(state), state, {
+    ...approval.input,
+    approved: true,
+    expectedRevision: state.revision,
+  });
+
+  return {
+    state: next,
+    reply: `Ação aprovada e executada: ${approval.summary}`,
+    action: approval.tool,
+    affectedTaskIds: approval.taskId ? [approval.taskId] : [],
+    approval: null,
+  };
+}
+
+function alteracoesComando(
+  fields: string
+): Partial<Omit<Entrega, "id">> {
+  type AlteracoesMutaveis = {
+    -readonly [Field in keyof Omit<Entrega, "id">]?: Omit<Entrega, "id">[Field];
+  };
+  const text = fields.trim();
+
+  if (!text) {
+    return {};
+  }
+
+  if (text.startsWith("{")) {
+    const parsed: unknown = JSON.parse(text);
+
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("As alterações precisam ser um objeto JSON.");
+    }
+
+    const data = parsed as Record<string, unknown>;
+    const changes: AlteracoesMutaveis = {};
+
+    if (data.title !== undefined || data.titulo !== undefined) {
+      changes.title = String(data.title ?? data.titulo);
+    }
+
+    if (data.front !== undefined || data.frente !== undefined) {
+      changes.front = String(data.front ?? data.frente);
+    }
+
+    if (data.date !== undefined || data.data !== undefined) {
+      changes.date = String(data.date ?? data.data);
+    }
+
+    if (data.mins !== undefined || data.minutos !== undefined) {
+      changes.mins = Number(data.mins ?? data.minutos);
+    }
+
+    if (data.stage !== undefined || data.etapa !== undefined) {
+      changes.stage = Number(data.stage ?? data.etapa);
+    }
+
+    if (data.dod !== undefined || data.criterio !== undefined) {
+      changes.dod = String(data.dod ?? data.criterio);
+    }
+
+    const dependencies = data.deps ?? data.dependencias;
+
+    if (dependencies !== undefined) {
+      changes.deps = Array.isArray(dependencies)
+        ? dependencies.map(String)
+        : String(dependencies)
+            .split(",")
+            .map((dependency) => dependency.trim())
+            .filter(Boolean);
+    }
+
+    return changes;
+  }
+
+  const changes: AlteracoesMutaveis = {};
+
+  for (const section of text.split("|")) {
+    const equals = section.indexOf("=");
+
+    if (equals < 0) {
+      throw new Error(
+        "Use campos no formato data=DD/MM | minutos=30 | dependencias=ID."
+      );
+    }
+
+    const name = section.slice(0, equals).trim().toLocaleLowerCase("pt-BR");
+    const value = section.slice(equals + 1).trim();
+
+    switch (name) {
+      case "titulo":
+      case "title":
+        changes.title = value;
+        break;
+      case "frente":
+      case "front":
+        changes.front = value;
+        break;
+      case "data":
+      case "date":
+        changes.date = value;
+        break;
+      case "minutos":
+      case "mins":
+        changes.mins = Number(value);
+        break;
+      case "etapa":
+      case "stage":
+        changes.stage = Number(value);
+        break;
+      case "criterio":
+      case "dod":
+        changes.dod = value;
+        break;
+      case "dependencias":
+      case "deps":
+        changes.deps = value
+          .split(",")
+          .map((dependency) => dependency.trim())
+          .filter(Boolean);
+        break;
+      default:
+        throw new Error(`Campo de atualização desconhecido: ${name}.`);
+    }
+  }
+
+  return changes;
+}
+
+function normalizarMensagemCopiloto(message: string): string {
+  const text = message.trim();
+
+  if (/^(criar|novo)\s+(projeto|plano)\s+/i.test(text)) {
+    return text.replace(
+      /^(?:criar|novo)\s+(?:projeto|plano)\s+/i,
+      "/projeto criar "
+    );
+  }
+
+  if (/^assumir\s+(?:o\s+)?foco\s+/i.test(text)) {
+    return text.replace(/^assumir\s+(?:o\s+)?foco\s+/i, "/foco ");
+  }
+
+  if (/^(?:registrar|marcar)\s+(?:um\s+)?(?:progresso|passo)/i.test(text)) {
+    return "/progresso";
+  }
+
+  if (/^concluir\s+/i.test(text)) {
+    return text.replace(/^concluir\s+/i, "/concluir ");
+  }
+
+  if (/^replanejar\s+/i.test(text)) {
+    return text.replace(/^replanejar\s+/i, "/replanejamento ");
+  }
+
+  return text;
+}
+
+export function executarAcaoCopiloto(
+  state: EstadoOperacional,
+  input: string
+): ResultadoAcaoCopiloto {
+  if (input.length > LIMITES_COPILOTO.maxInputCharacters) {
+    throw new Error("A mensagem excede o limite de segurança do Copiloto.");
+  }
+
+  const message = normalizarMensagemCopiloto(input);
+
+  if (!message) {
+    throw new Error("Informe uma mensagem para o Copiloto.");
+  }
+
+  const context = {
+    organizationId: state.organizationId,
+    projectId: state.activeProjectId,
+    expectedRevision: state.revision,
+  };
+  const tasks = entregasAtivas(state);
+  const apply = (
+    action: EntradaFerramenta,
+    reply: string,
+    affectedTaskIds: readonly string[] = []
+  ): ResultadoAcaoCopiloto => ({
+    state: executarFerramenta(tasks, state, action),
+    reply,
+    action: action.name,
+    affectedTaskIds,
+    approval: null,
+  });
+
+  const createProject = message.match(/^\/(?:projeto|plano)\s+criar\s+(.+)$/is);
+
+  if (createProject) {
+    const created = executarFerramenta(tasks, state, {
+      ...context,
+      name: "criar_projeto",
+      projectName: createProject[1].trim(),
+    });
+    const project = created.projects[created.projects.length - 1];
+    const selected = executarFerramenta(entregasAtivas(created), created, {
+      organizationId: created.organizationId,
+      projectId: created.activeProjectId,
+      expectedRevision: created.revision,
+      name: "selecionar_projeto",
+      targetProjectId: project.id,
+    });
+
+    return {
+      state: selected,
+      reply: `Projeto criado e selecionado: ${project.name}. Adicione entregas ou importe um plano.`,
+      action: "criar_projeto",
+      affectedTaskIds: [],
+      approval: null,
+    };
+  }
+
+  const renameProject = message.match(/^\/(?:projeto|plano)\s+renomear\s+(.+)$/is);
+
+  if (renameProject) {
+    return apply(
+      {
+        ...context,
+        name: "renomear_projeto",
+        projectName: renameProject[1].trim(),
+      },
+      `Projeto atualizado: ${renameProject[1].trim()}.`
+    );
+  }
+
+  const selectProject = message.match(/^\/projeto\s+selecionar\s+(\S+)$/i);
+
+  if (selectProject) {
+    return apply(
+      {
+        ...context,
+        name: "selecionar_projeto",
+        targetProjectId: selectProject[1],
+      },
+      `Projeto selecionado: ${selectProject[1]}.`
+    );
+  }
+
+  const importPlan = message.match(/^\/plano\s+(importar|substituir)\s+([\s\S]+)$/i);
+
+  if (importPlan) {
+    const replace = importPlan[1].toLocaleLowerCase("pt-BR") === "substituir";
+    const action: EntradaFerramenta = {
+      ...context,
+      name: replace ? "substituir_plano" : "importar_plano",
+      planContent: importPlan[2],
+    };
+
+    if (replace) {
+      importarPlano(state, importPlan[2], "replace");
+      const approval = propostaAprovacao(
+        state,
+        action,
+        `substituir as ${tasks.length} entregas do projeto ${projetoAtivo(state).name}`
+      );
+
+      return {
+        state,
+        reply: "Substituir um plano exige confirmação humana explícita.",
+        action: action.name,
+        affectedTaskIds: [],
+        approval,
+      };
+    }
+
+    return apply(action, "Plano importado; filas e dependências foram atualizadas.");
+  }
+
+  const createTask = message.match(/^\/entrega\s+criar\s+([\s\S]+)$/i);
+
+  if (createTask) {
+    const content = createTask[1].trim();
+    let task: Entrega;
+
+    if (content.startsWith("{")) {
+      task = normalizarImportacao(JSON.parse(content));
+    } else {
+      const [id, title, front, date, mins, deps, stage, dod] = content
+        .split("|")
+        .map((field) => field.trim());
+      task = normalizarImportacao({ id, title, front, date, mins, deps, stage, dod });
+    }
+
+    return apply(
+      { ...context, name: "criar_entrega", task },
+      `Entrega criada: ${task.id} — ${task.title}.`,
+      [task.id]
+    );
+  }
+
+  const updateTask = message.match(
+    /^\/entrega\s+atualizar\s+([A-Za-z0-9_-]+)\s+([\s\S]+)$/i
+  );
+
+  if (updateTask) {
+    const changes = alteracoesComando(updateTask[2]);
+
+    return apply(
+      {
+        ...context,
+        name: "atualizar_entrega",
+        taskId: updateTask[1],
+        changes,
+      },
+      `Entrega atualizada: ${updateTask[1]}.`,
+      [updateTask[1]]
+    );
+  }
+
+  const removeTask = message.match(/^\/entrega\s+remover\s+([A-Za-z0-9_-]+)$/i);
+
+  if (removeTask) {
+    removerEntrega(state, removeTask[1]);
+    const action: EntradaFerramenta = {
+      ...context,
+      name: "remover_entrega",
+      taskId: removeTask[1],
+    };
+
+    return {
+      state,
+      reply: `Remover ${removeTask[1]} exige confirmação humana explícita.`,
+      action: action.name,
+      affectedTaskIds: [removeTask[1]],
+      approval: propostaAprovacao(
+        state,
+        action,
+        `remover a entrega ${removeTask[1]}`
+      ),
+    };
+  }
+
+  const focus = message.match(/^\/foco\s+([A-Za-z0-9_-]+)$/i);
+
+  if (focus) {
+    return apply(
+      { ...context, name: "assumir_foco", taskId: focus[1] },
+      `Foco assumido: ${focus[1]}. Próximo 1 por vez.`,
+      [focus[1]]
+    );
+  }
+
+  const progressCommand = message.match(
+    /^\/progresso(?:\s+([A-Za-z0-9_-]+))?$/i
+  );
+
+  if (progressCommand) {
+    const current = focoAtual(tasks, state);
+    const taskId = progressCommand[1] ?? current?.id;
+
+    if (!taskId) {
+      throw new Error("Não há entrega liberada para registrar progresso.");
+    }
+
+    return apply(
+      { ...context, name: "registrar_progresso", taskId },
+      `Progresso registrado em ${taskId}; próximo passo preservado.`,
+      [taskId]
+    );
+  }
+
+  const evidence = message.match(
+    /^\/evidencia\s+(registrar|verificar)\s+([\s\S]+)$/i
+  );
+
+  if (evidence) {
+    const current = focoAtual(tasks, state);
+
+    if (!current) {
+      throw new Error("Não há entrega ativa para registrar evidência.");
+    }
+
+    const verified = evidence[1].toLocaleLowerCase("pt-BR") === "verificar";
+
+    return apply(
+      {
+        ...context,
+        name: "registrar_evidencia",
+        taskId: current.id,
+        note: evidence[2].trim(),
+        verified,
+      },
+      verified
+        ? `Evidência verificada em ${current.id}; a conclusão ainda exige aprovação.`
+        : `Evidência registrada em ${current.id}; a verificação ainda está pendente.`,
+      [current.id]
+    );
+  }
+
+  const finish = message.match(
+    /^\/concluir(?:\s+([A-Za-z0-9_-]+))?$/i
+  );
+
+  if (finish) {
+    const current = focoAtual(tasks, state);
+    const taskId = finish[1] ?? current?.id;
+
+    if (!taskId) {
+      throw new Error("Não há entrega ativa para concluir.");
+    }
+
+    if (!current || current.id !== taskId) {
+      throw new Error("Somente a entrega em foco pode solicitar conclusão.");
+    }
+
+    if (
+      !state.evidence.some(
+        (proof) => proof.taskId === taskId && proof.verified
+      )
+    ) {
+      throw new Error(
+        "Conclusão bloqueada: informe evidência e verificação antes da aprovação."
+      );
+    }
+
+    const action: EntradaFerramenta = {
+      ...context,
+      name: "concluir_entrega",
+      taskId,
+    };
+
+    return {
+      state,
+      reply: `Aprovação necessária para concluir ${taskId}. Evidência e verificação estão presentes.`,
+      action: action.name,
+      affectedTaskIds: [taskId],
+      approval: propostaAprovacao(
+        state,
+        action,
+        `concluir a entrega ${taskId} — ${current.title}`
+      ),
+    };
+  }
+
+  const replan = message.match(
+    /^\/replanejamento\s+([A-Za-z0-9_-]+)(?:\s+([\s\S]+))?$/i
+  );
+
+  if (replan?.[2]) {
+    const changes = alteracoesComando(replan[2]);
+    const affected = replanejarSubgrafo(state, replan[1], changes);
+
+    return apply(
+      {
+        ...context,
+        name: "replanejar_subgrafo",
+        taskId: replan[1],
+        changes,
+      },
+      `Replanejamento aplicado somente ao subgrafo de ${replan[1]}: ${affected.affectedTaskIds.join(", ")}.`,
+      affected.affectedTaskIds
+    );
+  }
+
+  const capacity = message.match(/^\/capacidade\s+(\d+)$/i);
+
+  if (capacity) {
+    const minutes = Number(capacity[1]);
+
+    return apply(
+      {
+        ...context,
+        name: "ajustar_capacidade",
+        dailyCapacityMinutes: minutes,
+      },
+      `Capacidade diária ajustada para ${minutes} minutos.`
+    );
+  }
+
+  if (message.toLocaleLowerCase("pt-BR") === "/fechardia") {
+    const focus = focoAtual(tasks, state);
+    const verified = focus
+      ? state.evidence.some(
+          (evidence) => evidence.taskId === focus.id && evidence.verified
+        )
+      : false;
+
+    if (focus && verified) {
+      return executarAcaoCopiloto(state, `/concluir ${focus.id}`);
+    }
+  }
+
+  const response = executarCopiloto(tasks, state, message);
+
+  return {
+    state: response.state,
+    reply: response.reply,
+    action: response.command,
+    affectedTaskIds: [],
+    approval: null,
+  };
+}
+
 
 export function executarCopiloto(
   tasks: readonly Entrega[],
@@ -1314,7 +2142,7 @@ export function executarCopiloto(
       break;
     case "/agora":
       reply = focus
-        ? `Faça agora: ${focus.title} [${focus.id}]. Próximo 1 por vez; dependências liberadas.`
+        ? `AGORA: ${focus.id} — ${focus.title}. TEMPO: ${focus.mins} min. CONCLUI QUANDO: ${focus.dod ?? "resultado entregue e verificado"}. EVIDÊNCIA: comprovação registrada. PRÓXIMA: executar somente esta entrega.`
         : "Nenhuma entrega liberada. Confira dependências e bloqueios.";
       break;
     case "/estado":
