@@ -21,7 +21,11 @@ Essas pendências continuam bloqueando produção, sincronização em nuvem e qu
 
 - Configurar secrets e variáveis de ambiente no projeto Vercel correto.
 - Sincronizar e instalar dependências sem duplicar infraestrutura existente.
-- Corrigir a execução de GitHub Actions e obter CI verde.
+- Verificar autorização **e disponibilidade real do runner** do GitHub Actions;
+  reexecução autorizada não basta quando os jobs falham sem steps/logs.
+- Corrigir política, disponibilidade ou faturamento do runner conforme a causa
+  confirmada na conta; só então executar instalação, typecheck, lint, testes e
+  build completos até obter CI verde.
 - Validar login, organizações e tenant ativo com Clerk real.
 - Validar sincronização entre aparelhos e recuperação offline.
 - Escolher provedor/modelo e conectar AI SDK real somente na integração final,
@@ -34,6 +38,17 @@ Essas pendências continuam bloqueando produção, sincronização em nuvem e qu
   e autorização remotas.
 - Conectar MCP autenticado sem aceitar organização, projeto, revisão ou
   confirmação humana indicados pelo modelo.
+- Ativar `LIVEBLOCKS_SECRET` e validar salas `${clerk_org_id}:${project_id}`,
+  presença, comentários e menções entre membros reais de uma mesma organização;
+  provar que outro tenant não obtém acesso.
+- Configurar `KNOCK_SECRET_API_KEY`, `NEXT_PUBLIC_KNOCK_API_KEY` e
+  `NEXT_PUBLIC_KNOCK_FEED_CHANNEL_ID`, criando apenas workflows operacionais com
+  destinatário validado pelo Clerk.
+- Criar `apps/mobile` com Expo e EAS somente após web em produção,
+  sincronização remota, isolamento multi-tenant e autenticação Clerk móvel
+  estarem aprovados.
+- Definir preços públicos apenas depois da decisão comercial e da integração
+  Stripe; evitar checkout fictício ou alegações de disponibilidade inexistente.
 - Conectar notificações, colaboração e cobrança quando houver um caso funcional verificável.
 - Executar build, deployment, smoke tests e observabilidade na Vercel.
 - Preservar o PR em draft enquanto os checks externos obrigatórios não passarem.

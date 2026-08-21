@@ -1,72 +1,79 @@
-import type { Dictionary } from "@repo/internationalization";
-import { User } from "lucide-react";
+import {
+  Bot,
+  CalendarDays,
+  CheckCircle2,
+  GitBranch,
+  MessageSquareText,
+  Target,
+} from "lucide-react";
 
-interface FeaturesProps {
-  dictionary: Dictionary;
-}
+const capabilities = [
+  {
+    icon: Target,
+    title: "Foco que cabe no agora",
+    description:
+      "Uma entrega principal por vez, com esforço estimado e critério claro de conclusão.",
+  },
+  {
+    icon: GitBranch,
+    title: "Fila baseada em dependências",
+    description:
+      "Só entra no trabalho aquilo que realmente pode começar. O restante permanece visível e bloqueado.",
+  },
+  {
+    icon: CalendarDays,
+    title: "Calendário e caminho",
+    description:
+      "Visualize datas, capacidade, ciclos operacionais e dependências sem criar outro plano.",
+  },
+  {
+    icon: CheckCircle2,
+    title: "Resultado com evidência",
+    description:
+      "Registre comprovação, revise a entrega e confirme antes de marcar como concluída.",
+  },
+  {
+    icon: Bot,
+    title: "Copiloto que opera o plano",
+    description:
+      "Crie entregas, assuma foco, registre progresso e replaneje apenas o que foi afetado.",
+  },
+  {
+    icon: MessageSquareText,
+    title: "Contexto no lugar certo",
+    description:
+      "Comentários e avisos ficam associados à entrega e à organização correspondente.",
+  },
+] as const;
 
-export const Features = ({ dictionary }: FeaturesProps) => (
-  <div className="w-full py-20 lg:py-40">
+export const Features = () => (
+  <section aria-labelledby="executar-features-title" className="w-full py-20">
     <div className="container mx-auto">
-      <div className="flex flex-col gap-10">
-        <div className="flex flex-col items-start gap-4">
-          <div className="flex flex-col gap-2">
-            <h2 className="max-w-xl text-left font-regular text-3xl tracking-tighter md:text-5xl">
-              {dictionary.web.home.features.title}
-            </h2>
-            <p className="max-w-xl text-left text-lg text-muted-foreground leading-relaxed tracking-tight lg:max-w-lg">
-              {dictionary.web.home.features.description}
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="flex aspect-square h-full flex-col justify-between rounded-md bg-muted p-6 lg:col-span-2 lg:aspect-auto">
-            <User className="h-8 w-8 stroke-1" />
-            <div className="flex flex-col">
-              <h3 className="text-xl tracking-tight">
-                {dictionary.web.home.features.items[0].title}
-              </h3>
-              <p className="max-w-xs text-base text-muted-foreground">
-                {dictionary.web.home.features.items[0].description}
+      <div className="mb-12 flex max-w-2xl flex-col gap-3">
+        <h2
+          className="font-regular text-3xl tracking-tighter md:text-5xl"
+          id="executar-features-title"
+        >
+          Menos troca de contexto. Mais entregas concluídas.
+        </h2>
+        <p className="text-lg text-muted-foreground leading-relaxed">
+          Visão geral, foco, calendário, caminho e evidências trabalham sobre o
+          mesmo estado operacional.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {capabilities.map(({ icon: Icon, title, description }) => (
+          <article className="flex flex-col gap-4 rounded-xl border p-6" key={title}>
+            <Icon aria-hidden="true" className="h-6 w-6" />
+            <div className="flex flex-col gap-2">
+              <h3 className="font-medium text-lg">{title}</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                {description}
               </p>
             </div>
-          </div>
-          <div className="flex aspect-square flex-col justify-between rounded-md bg-muted p-6">
-            <User className="h-8 w-8 stroke-1" />
-            <div className="flex flex-col">
-              <h3 className="text-xl tracking-tight">
-                {dictionary.web.home.features.items[1].title}
-              </h3>
-              <p className="max-w-xs text-base text-muted-foreground">
-                {dictionary.web.home.features.items[1].description}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex aspect-square flex-col justify-between rounded-md bg-muted p-6">
-            <User className="h-8 w-8 stroke-1" />
-            <div className="flex flex-col">
-              <h3 className="text-xl tracking-tight">
-                {dictionary.web.home.features.items[2].title}
-              </h3>
-              <p className="max-w-xs text-base text-muted-foreground">
-                {dictionary.web.home.features.items[2].description}
-              </p>
-            </div>
-          </div>
-          <div className="flex aspect-square h-full flex-col justify-between rounded-md bg-muted p-6 lg:col-span-2 lg:aspect-auto">
-            <User className="h-8 w-8 stroke-1" />
-            <div className="flex flex-col">
-              <h3 className="text-xl tracking-tight">
-                {dictionary.web.home.features.items[3].title}
-              </h3>
-              <p className="max-w-xs text-base text-muted-foreground">
-                {dictionary.web.home.features.items[3].description}
-              </p>
-            </div>
-          </div>
-        </div>
+          </article>
+        ))}
       </div>
     </div>
-  </div>
+  </section>
 );

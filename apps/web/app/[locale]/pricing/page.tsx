@@ -1,156 +1,73 @@
 import { Button } from "@repo/design-system/components/ui/button";
-import { Check, Minus, MoveRight, PhoneCall } from "lucide-react";
+import { Check, Clock3 } from "lucide-react";
 import Link from "next/link";
 import { env } from "@/env";
 
+const available = [
+  "Projetos, entregas e dependências reais",
+  "Foco, calendário, caminho e evidências",
+  "Copiloto com aprovação humana",
+  "Comentários e avisos no estado operacional",
+] as const;
+
+const finalIntegration = [
+  "Sincronização remota entre dispositivos",
+  "Colaboração em tempo real e notificações externas",
+  "Cobrança e preços definidos com Stripe",
+  "Aplicativos Android e iOS após validação da base web",
+] as const;
+
 const Pricing = () => (
-  <div className="w-full py-20 lg:py-40">
-    <div className="container mx-auto">
-      <div className="flex flex-col items-center justify-center gap-4 text-center">
-        <div className="flex flex-col gap-2">
-          <h2 className="max-w-xl text-center font-regular text-3xl tracking-tighter md:text-5xl">
-            Prices that make sense!
-          </h2>
-          <p className="max-w-xl text-center text-lg text-muted-foreground leading-relaxed tracking-tight">
-            Managing a small business today is already tough.
-          </p>
-        </div>
-        <div className="grid w-full grid-cols-3 divide-x pt-20 text-left lg:grid-cols-4">
-          <div className="col-span-3 lg:col-span-1" />
-          <div className="flex flex-col gap-2 px-3 py-1 md:px-6 md:py-4">
-            <p className="text-2xl">Startup</p>
-            <p className="text-muted-foreground text-sm">
-              Our goal is to streamline SMB trade, making it easier and faster
-              than ever for everyone and everywhere.
-            </p>
-            <p className="mt-8 flex flex-col gap-2 text-xl lg:flex-row lg:items-center">
-              <span className="text-4xl">$40</span>
-              <span className="text-muted-foreground text-sm"> / month</span>
-            </p>
-            <Button asChild className="mt-8 gap-4" variant="outline">
-              <Link href={env.NEXT_PUBLIC_APP_URL}>
-                Try it <MoveRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          <div className="flex flex-col gap-2 px-3 py-1 md:px-6 md:py-4">
-            <p className="text-2xl">Growth</p>
-            <p className="text-muted-foreground text-sm">
-              Our goal is to streamline SMB trade, making it easier and faster
-              than ever for everyone and everywhere.
-            </p>
-            <p className="mt-8 flex flex-col gap-2 text-xl lg:flex-row lg:items-center">
-              <span className="text-4xl">$40</span>
-              <span className="text-muted-foreground text-sm"> / month</span>
-            </p>
-            <Button asChild className="mt-8 gap-4">
-              <Link href={env.NEXT_PUBLIC_APP_URL}>
-                Try it <MoveRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          <div className="flex flex-col gap-2 px-3 py-1 md:px-6 md:py-4">
-            <p className="text-2xl">Enterprise</p>
-            <p className="text-muted-foreground text-sm">
-              Our goal is to streamline SMB trade, making it easier and faster
-              than ever for everyone and everywhere.
-            </p>
-            <p className="mt-8 flex flex-col gap-2 text-xl lg:flex-row lg:items-center">
-              <span className="text-4xl">$40</span>
-              <span className="text-muted-foreground text-sm"> / month</span>
-            </p>
-            <Button asChild className="mt-8 gap-4" variant="outline">
-              <Link href="/contact">
-                Contact us <PhoneCall className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">
-            <b>Features</b>
-          </div>
-          <div />
-          <div />
-          <div />
-          {/* New Line */}
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">SSO</div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          {/* New Line */}
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">
-            AI Assistant
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Minus className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          {/* New Line */}
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">
-            Version Control
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Minus className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          {/* New Line */}
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">
-            Members
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <p className="text-muted-foreground text-sm">5 members</p>
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <p className="text-muted-foreground text-sm">25 members</p>
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <p className="text-muted-foreground text-sm">100+ members</p>
-          </div>
-          {/* New Line */}
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">
-            Multiplayer Mode
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Minus className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          {/* New Line */}
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">
-            Orchestration
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Minus className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-        </div>
+  <main aria-labelledby="executar-pricing-title" className="w-full py-20 lg:py-32">
+    <div className="container mx-auto flex max-w-5xl flex-col gap-12">
+      <header className="flex max-w-3xl flex-col gap-4">
+        <h1
+          className="font-regular text-4xl tracking-tighter md:text-6xl"
+          id="executar-pricing-title"
+        >
+          Disponibilidade transparente. Preços ainda em definição.
+        </h1>
+        <p className="text-lg text-muted-foreground leading-relaxed">
+          O EXECUTAR não apresenta valores, assinaturas ou recursos externos como
+          ativos antes da configuração comercial e técnica correspondente.
+        </p>
+      </header>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <section className="flex flex-col gap-5 rounded-xl border p-7">
+          <span className="text-muted-foreground text-sm">BASE OPERACIONAL</span>
+          <h2 className="text-2xl">O que já existe em código</h2>
+          <ul className="grid gap-3 text-sm">
+            {available.map((item) => (
+              <li className="flex items-start gap-3" key={item}>
+                <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+                {item}
+              </li>
+            ))}
+          </ul>
+          <Button asChild className="mt-auto">
+            <Link href={env.NEXT_PUBLIC_APP_URL}>Abrir aplicativo</Link>
+          </Button>
+        </section>
+
+        <section className="flex flex-col gap-5 rounded-xl border p-7">
+          <span className="text-muted-foreground text-sm">INTEGRAÇÃO FINAL</span>
+          <h2 className="text-2xl">O que depende de ativação</h2>
+          <ul className="grid gap-3 text-sm">
+            {finalIntegration.map((item) => (
+              <li className="flex items-start gap-3" key={item}>
+                <Clock3 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+                {item}
+              </li>
+            ))}
+          </ul>
+          <Button asChild className="mt-auto" variant="outline">
+            <Link href="/contact">Conversar sobre implantação</Link>
+          </Button>
+        </section>
       </div>
     </div>
-  </div>
+  </main>
 );
 
 export default Pricing;

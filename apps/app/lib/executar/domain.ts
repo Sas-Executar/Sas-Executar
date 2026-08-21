@@ -41,8 +41,52 @@ export interface EventoOperacional {
   readonly taskId: string | null;
   readonly at: string;
   readonly actor?: "humano" | "copiloto";
+  readonly fingerprint?: string;
+  readonly userId?: string;
   readonly tool?: string;
   readonly humanApproved?: boolean;
+}
+
+export interface AtorOperacional {
+  readonly organizationId: string;
+  readonly userId: string;
+  readonly displayName: string;
+}
+
+export interface PresencaOperacional {
+  readonly organizationId: string;
+  readonly projectId: string;
+  readonly userId: string;
+  readonly displayName: string;
+  readonly taskId: string | null;
+  readonly seenAt: string;
+}
+
+export interface ComentarioOperacional {
+  readonly id: string;
+  readonly organizationId: string;
+  readonly projectId: string;
+  readonly taskId: string;
+  readonly authorId: string;
+  readonly authorName: string;
+  readonly body: string;
+  readonly mentions: readonly string[];
+  readonly createdAt: string;
+  readonly revision: number;
+}
+
+export interface LeituraNotificacao {
+  readonly id: string;
+  readonly organizationId: string;
+  readonly projectId: string;
+  readonly userId: string;
+  readonly readAt: string;
+}
+
+export interface ColaboracaoOperacional {
+  readonly presence: readonly PresencaOperacional[];
+  readonly comments: readonly ComentarioOperacional[];
+  readonly notificationReads: readonly LeituraNotificacao[];
 }
 
 export interface ProgressoProjeto {
@@ -93,6 +137,7 @@ export interface EstadoOperacional {
   readonly focus: string | null;
   readonly evidence: readonly Evidencia[];
   readonly started: Readonly<Record<string, number>>;
+  readonly collaboration: ColaboracaoOperacional;
   readonly events: readonly EventoOperacional[];
   readonly revision: number;
 }
@@ -286,6 +331,11 @@ export function novoEstado(
     focus: null,
     evidence: [],
     started: {},
+    collaboration: {
+      presence: [],
+      comments: [],
+      notificationReads: [],
+    },
     events: [],
     revision: 0,
   };
@@ -297,6 +347,64 @@ export function chaveOrganizacao(organizationId: string): string {
   }
 
   return `executar:${organizationId}:v2`;
+}
+
+function restaurarColaboracao(
+  candidate: unknown,
+  organizationId: string,
+  projects: readonly ProjetoOperacional[]
+): ColaboracaoOperacional {
+  if (!candidate || typeof candidate !== "object") {
+    return { presence: [], comments: [], notificationReads: [] };
+  }
+
+  const value = candidate as Partial<ColaboracaoOperacional>;
+  const projectIds = new Set(projects.map((project) => project.id));
+  const belongs = (
+    item: unknown
+  ): item is { organizationId: string; projectId: string } =>
+    Boolean(
+      item &&
+        typeof item === "object" &&
+        "organizationId" in item &&
+        item.organizationId === organizationId &&
+        "projectId" in item &&
+        typeof item.projectId === "string" &&
+        projectIds.has(item.projectId)
+    );
+
+  return {
+    presence: Array.isArray(value.presence)
+      ? value.presence.filter(
+          (item): item is PresencaOperacional =>
+            belongs(item) &&
+            typeof item.userId === "string" &&
+            typeof item.displayName === "string" &&
+            typeof item.seenAt === "string"
+        )
+      : [],
+    comments: Array.isArray(value.comments)
+      ? value.comments.filter(
+          (item): item is ComentarioOperacional =>
+            belongs(item) &&
+            typeof item.id === "string" &&
+            typeof item.taskId === "string" &&
+            typeof item.authorId === "string" &&
+            typeof item.body === "string" &&
+            Array.isArray(item.mentions) &&
+            item.mentions.every((mention) => typeof mention === "string")
+        )
+      : [],
+    notificationReads: Array.isArray(value.notificationReads)
+      ? value.notificationReads.filter(
+          (item): item is LeituraNotificacao =>
+            belongs(item) &&
+            typeof item.id === "string" &&
+            typeof item.userId === "string" &&
+            typeof item.readAt === "string"
+        )
+      : [],
+  };
 }
 
 export function restaurarEstado(
@@ -358,6 +466,11 @@ export function restaurarEstado(
       organizationId,
       projects,
       activeProjectId,
+      collaboration: restaurarColaboracao(
+        state.collaboration,
+        organizationId,
+        projects
+      ),
       events,
       started:
         state.started && typeof state.started === "object" ? state.started : {},
@@ -374,6 +487,16 @@ function registrar(
   taskId: string | null,
   changes: Partial<EstadoOperacional>
 ): EstadoOperacional {
+  const serialized = JSON.stringify({ action, taskId, changes });
+  let fingerprint = 2_166_136_261;
+
+  for (let index = 0; index < serialized.length; index += 1) {
+    fingerprint = Math.imul(
+      fingerprint ^ serialized.charCodeAt(index),
+      16_777_619
+    );
+  }
+
   return {
     ...state,
     ...changes,
@@ -389,8 +512,30 @@ function registrar(
         taskId,
         at: new Date().toISOString(),
         actor: "humano",
+        fingerprint: (fingerprint >>> 0).toString(16).padStart(8, "0"),
       },
     ],
+  };
+}
+
+export function registrarEventoDistribuicao(
+  state: EstadoOperacional,
+  action: "colaboracao.presenca" | "colaboracao.comentario" | "notificacao.lida",
+  taskId: string | null,
+  collaboration: ColaboracaoOperacional,
+  userId: string
+): EstadoOperacional {
+  if (!userId.trim()) {
+    throw new Error("A ação colaborativa exige identidade Clerk válida.");
+  }
+
+  const next = registrar(state, action, taskId, { collaboration });
+
+  return {
+    ...next,
+    events: next.events.map((event) =>
+      event.revision === next.revision ? { ...event, userId } : event
+    ),
   };
 }
 

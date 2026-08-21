@@ -18,6 +18,7 @@
 - A Onda 3 agora cria e atualiza planos, assume foco, registra progresso e evidência, solicita aprovação humana e replaneja somente o subgrafo afetado; consulte `ONDA_3_STATUS.md`.
 - Aprovações são vinculadas a organização, projeto, entrega e revisão; envelopes adulterados ou vencidos são recusados.
 - Contratos preparados para AI SDK e MCP usam `inputSchema`, autoridade do Clerk e limites de execução, sem escolher modelo ou provedor.
+- A Onda 4 adiciona colaboração isolada, notificações derivadas, provedores Liveblocks/Knock opcionais, marketing EXECUTAR e preparo Expo bloqueado pelos gates web; consulte `ONDA_4_STATUS.md`.
 
 ## Testes locais
 
@@ -25,16 +26,17 @@
 node --test tests/onda-1/*.test.mjs tests/ondas/*.test.mjs
 ```
 
-Resultado verificado: **153 testes aprovados; 0 falhas**.
+Resultado verificado: **202 testes aprovados; 0 falhas**.
 
 ## Gates
 
 - Gate de código de preservação: **PASSOU**.
 - Gate de código do produto operacional: **PASSOU**.
 - Gate de código do Copiloto executor e aprovação humana: **PASSOU**.
+- Gate de código de colaboração, notificações e GTM: **PASSOU**.
 - Gate de integração da Onda 1: **NÃO PASSOU**; Supabase novo, RLS/Storage reais, CI hospedado e Vercel ainda não foram provisionados/verificados.
 - Gate completo da Onda 2: **NÃO PASSOU**; persistência remota, sincronização entre aparelhos e Stripe continuam pendentes.
 - Gate completo da Onda 3: **NÃO PASSOU**; modelo real, AI SDK em execução, MCP autenticado e aprovação validada no servidor continuam pendentes.
-- Gate da Onda 4: **NÃO PASSOU**; colaboração real, mobile e produção não foram implementados.
+- Gate completo da Onda 4: **NÃO PASSOU**; colaboração externa real, builds mobile, cobrança, runner GitHub e produção não foram verificados.
 
 Essas pendências são de integração final; não invalidam os testes de domínio executados localmente. Consulte `INTEGRACAO_FINAL.md`.

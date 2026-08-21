@@ -7,9 +7,11 @@ import { searchUsers } from "@/app/actions/users/search";
 
 export const CollaborationProvider = ({
   orgId,
+  projectId,
   children,
 }: {
   orgId: string;
+  projectId: string;
   children: ReactNode;
 }) => {
   const resolveUsers = async ({ userIds }: { userIds: string[] }) => {
@@ -36,9 +38,9 @@ export const CollaborationProvider = ({
     <Room
       authEndpoint="/api/collaboration/auth"
       fallback={
-        <div className="px-3 text-muted-foreground text-xs">Loading...</div>
+        <div className="px-3 text-muted-foreground text-xs">Carregando colaboração...</div>
       }
-      id={`${orgId}:presence`}
+      id={`${orgId}:${projectId}`}
       resolveMentionSuggestions={resolveMentionSuggestions}
       resolveUsers={resolveUsers}
     >
@@ -46,3 +48,4 @@ export const CollaborationProvider = ({
     </Room>
   );
 };
+
