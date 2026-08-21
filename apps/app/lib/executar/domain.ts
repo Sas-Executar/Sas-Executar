@@ -362,7 +362,10 @@ function restaurarColaboracao(
   const projectIds = new Set(projects.map((project) => project.id));
   const belongs = (
     item: unknown
-  ): item is { organizationId: string; projectId: string } =>
+  ): item is Record<string, unknown> & {
+    organizationId: string;
+    projectId: string;
+  } =>
     Boolean(
       item &&
         typeof item === "object" &&
@@ -392,7 +395,9 @@ function restaurarColaboracao(
             typeof item.authorId === "string" &&
             typeof item.body === "string" &&
             Array.isArray(item.mentions) &&
-            item.mentions.every((mention) => typeof mention === "string")
+            item.mentions.every(
+              (mention: unknown) => typeof mention === "string"
+            )
         )
       : [],
     notificationReads: Array.isArray(value.notificationReads)

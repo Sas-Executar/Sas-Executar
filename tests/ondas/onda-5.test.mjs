@@ -509,6 +509,16 @@ test("painéis preservam wrappers e usam primitivas acessíveis da versão 4", a
   assert.match(source, /export \{ ResizablePanelGroup, ResizablePanel, ResizableHandle \}/);
 });
 
+test("restauração colaborativa conserva campos dinâmicos com type guard seguro", async () => {
+  const source = await readFile(
+    new URL("../../apps/app/lib/executar/domain.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /item is Record<string, unknown> &/);
+  assert.match(source, /\(mention: unknown\) => typeof mention === "string"/);
+});
+
 test("diagnóstico de ambiente lista nomes, nunca divulga valores", () => {
   const result = diagnosticarAmbienteFinal({
     CLERK_SECRET_KEY: "segredo-real-jamais-exposto",
