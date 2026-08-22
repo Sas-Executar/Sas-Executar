@@ -56,6 +56,7 @@
     "apps/app": {
       "name": "app",
       "dependencies": {
+        "@repo/ai": "workspace:*",
         "@repo/analytics": "workspace:*",
         "@repo/auth": "workspace:*",
         "@repo/collaboration": "workspace:*",

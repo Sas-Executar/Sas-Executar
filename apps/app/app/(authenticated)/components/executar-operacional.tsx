@@ -3,6 +3,7 @@
 import { OrganizationSwitcher, UserButton, useUser } from "@repo/auth/client";
 import { NotificationsTrigger } from "@repo/notifications/components/trigger";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { lerFluxoCopiloto } from "@/lib/executar/copilot-stream";
 import {
   comentariosEntrega,
   etapasOnboarding,
@@ -1315,6 +1316,7 @@ export function ExecutarOperacional({
   const [syncNotice, setSyncNotice] = useState("");
   const [pendingApproval, setPendingApproval] =
     useState<AprovacaoCopiloto | null>(null);
+  const [copilotLoading, setCopilotLoading] = useState(false);
   const [projectManagerOpen, setProjectManagerOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<MensagemCopiloto[]>([
@@ -1653,15 +1655,7 @@ export function ExecutarOperacional({
     }
   }
 
-  function sendMessage(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!message.trim()) {
-      return;
-    }
-
-    const question = message.trim();
-
+  function executarCopilotoLocal(question: string) {
     try {
       const answer = executarAcaoCopiloto(state, question);
 
@@ -1719,8 +1713,139 @@ export function ExecutarOperacional({
         ),
       ]);
     }
+  }
+
+  async function atualizarEstadoDepoisIa(
+    latestRevision: number
+  ): Promise<void> {
+    if (latestRevision <= remoteRevision.current) {
+      return;
+    }
+
+    const updated = await fetch("/api/executar/state", {
+      cache: "no-store",
+    });
+
+    if (!updated.ok) {
+      throw new Error("Não foi possível atualizar a ação feita pela IA.");
+    }
+
+    const body = (await updated.json()) as {
+      state: EstadoOperacional | null;
+    };
+
+    if (body.state) {
+      const restored = restaurarEstado(
+        JSON.stringify(body.state),
+        organizationId,
+        ENTREGAS_SPRINT
+      );
+      remoteRevision.current = restored.revision;
+      setState(restored);
+    }
+  }
+
+  async function responderComIa(question: string): Promise<void> {
+    const userMessage = criarMensagemCopiloto("pessoa", question);
+    const assistantMessage = criarMensagemCopiloto("copiloto", "");
+    let receivedText = false;
+    let latestRevision = remoteRevision.current;
+
+    setCopilotLoading(true);
+    setMessages((previous) => [...previous, userMessage, assistantMessage]);
+
+    try {
+      const history = [...messages.slice(-10), userMessage]
+        .filter((entry) => entry.text.trim())
+        .map((entry) => ({
+          id: entry.id,
+          role: entry.author === "pessoa" ? "user" : "assistant",
+          parts: [{ type: "text", text: entry.text }],
+        }));
+      const response = await fetch("/api/executar/copilot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: history }),
+      });
+
+      if (!(response.ok && response.body)) {
+        throw new Error("A IA não está disponível neste ambiente.");
+      }
+
+      await lerFluxoCopiloto(response.body, {
+        text(value) {
+          receivedText = true;
+          setMessages((previous) =>
+            previous.map((entry) =>
+              entry.id === assistantMessage.id
+                ? { ...entry, text: entry.text + value }
+                : entry
+            )
+          );
+        },
+        mutation(revision) {
+          latestRevision = Math.max(latestRevision, revision);
+        },
+        approval(approval, approvalId) {
+          if (approval.organizationId !== organizationId) {
+            throw new Error("A aprovação não pertence à organização ativa.");
+          }
+
+          serverApprovals.current.set(approval.id, approvalId);
+          setPendingApproval(approval);
+        },
+      });
+
+      if (!receivedText) {
+        throw new Error("A IA não retornou uma resposta operacional.");
+      }
+
+      await atualizarEstadoDepoisIa(latestRevision);
+    } catch (problem) {
+      const notice =
+        problem instanceof Error
+          ? problem.message
+          : "A IA não está disponível neste ambiente.";
+
+      if (receivedText) {
+        setSyncNotice(notice);
+      } else {
+        setMessages((previous) =>
+          previous.filter(
+            (entry) =>
+              entry.id !== userMessage.id && entry.id !== assistantMessage.id
+          )
+        );
+        setSyncNotice(`${notice} O Copiloto operacional continua disponível.`);
+        executarCopilotoLocal(question);
+      }
+    } finally {
+      setCopilotLoading(false);
+    }
+  }
+
+  function sendMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!(message.trim() && !copilotLoading)) {
+      return;
+    }
+
+    const question = message.trim();
 
     setMessage("");
+
+    if (
+      question.startsWith("/") ||
+      !(PERSISTENCIA_REMOTA_HABILITADA && remoteReady)
+    ) {
+      executarCopilotoLocal(question);
+      return;
+    }
+
+    responderComIa(question).catch(() => {
+      setSyncNotice("Não foi possível iniciar a resposta do Copiloto.");
+    });
   }
 
   async function decideApproval(approved: boolean): Promise<void> {
@@ -2026,8 +2151,12 @@ export function ExecutarOperacional({
               placeholder="O que faço agora?"
               value={message}
             />
-            <button className="primaryBtn" type="submit">
-              Enviar
+            <button
+              className="primaryBtn"
+              disabled={copilotLoading}
+              type="submit"
+            >
+              {copilotLoading ? "Consultando" : "Enviar"}
             </button>
           </form>
         </aside>

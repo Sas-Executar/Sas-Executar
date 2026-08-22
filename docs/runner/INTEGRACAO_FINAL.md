@@ -81,9 +81,14 @@ ações, mas não configura recursos externos por presunção.
   build completos até obter CI verde.
 - Validar login, organizações e tenant ativo com Clerk real.
 - Validar sincronização entre aparelhos e recuperação offline.
-- Escolher provedor/modelo e conectar AI SDK real somente na integração final,
-  aproveitando os contratos existentes `ToolLoopAgent`, `InferAgentUIMessage`,
-  `inputSchema`, `DefaultChatTransport` e `toUIMessageStreamResponse`.
+- O Copiloto com IA usa o pacote `@repo/ai` já presente no monorepo, o Vercel AI
+  Gateway e o modelo padrão `openai/gpt-5.6-luna`; `EXECUTAR_AI_MODEL` permite
+  selecionar outro modelo `provedor/modelo` existente. Em deployment Vercel, o
+  Gateway usa o token OIDC da própria plataforma: não criar chave OpenAI nem
+  adicionar credenciais ao repositório. A integração real está na rota
+  `/api/executar/copilot` com `ToolLoopAgent`, `InferAgentUIMessage`, esquemas
+  estritos e `createAgentUIStreamResponse`. Inferência real só fica aprovada
+  após deployment funcional e uma chamada autenticada efetivamente concluída.
 - Executar as ferramentas do agente no servidor com autoridade Clerk, contexto
   derivado da sessão e limites reais de etapas/chamadas.
 - Persistir e validar aprovações humanas no servidor antes de concluir entrega,
@@ -100,6 +105,11 @@ ações, mas não configura recursos externos por presunção.
 - Criar `apps/mobile` com Expo e EAS somente após web em produção,
   sincronização remota, isolamento multi-tenant e autenticação Clerk móvel
   estarem aprovados.
+- Os templates preparatórios `docs/runner/mobile/eas.template.json` e
+  `docs/runner/mobile/app.config.template.json` definem Android APK interno,
+  Android App Bundle para Google Play, iOS para App Store, credenciais remotas e
+  Clerk como autoridade. Eles não criam um app, não comprovam assinatura e não
+  substituem contas Apple Developer, Google Play Console ou EAS.
 - Definir preços públicos apenas depois da decisão comercial e da integração
   Stripe; evitar checkout fictício ou alegações de disponibilidade inexistente.
 - Conectar notificações, colaboração e cobrança quando houver um caso funcional verificável.
@@ -147,3 +157,7 @@ A aprovação de um gate de código nunca implica aprovação automática de int
 
 Referências: [Vercel Environment Variables](https://vercel.com/docs/environment-variables)
 e [Supabase API keys](https://supabase.com/docs/guides/getting-started/api-keys).
+
+Para IA sem chave dedicada, consultar
+[AI Gateway OIDC](https://vercel.com/docs/ai-gateway/authentication-and-byok/oidc).
+Para distribuição, consultar [EAS Build](https://docs.expo.dev/eas/json/).
