@@ -49,6 +49,21 @@ jobs:
           bun-version: 1.3.10
       - name: Instalar dependências sem alterar lockfile
         run: bun install --frozen-lockfile
+      - name: Preparar ferramentas de lint para correção verificável
+        shell: bash
+        run: |
+          executar_biome="$(find node_modules -type f -path '*/@biomejs/cli-linux-x64/biome' -print -quit)"
+          test -n "$executar_biome"
+          mkdir -p /tmp/executar-lint/node_modules
+          cp "$executar_biome" /tmp/executar-lint/biome
+          cp -aL node_modules/ultracite /tmp/executar-lint/node_modules/ultracite
+          tar -czf /tmp/executar-lint-tools.tar.gz -C /tmp/executar-lint .
+      - name: Disponibilizar ferramentas temporárias de lint
+        uses: actions/upload-artifact@v4
+        with:
+          name: executar-lint-tools
+          path: /tmp/executar-lint-tools.tar.gz
+          retention-days: 1
       - name: Verificar tipos do aplicativo SaaS
         run: bunx turbo run typecheck --filter=app
       - name: Inventariar diagnósticos reais de lint
