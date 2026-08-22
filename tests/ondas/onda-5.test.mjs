@@ -492,6 +492,20 @@ test("database gera cliente Prisma antes do typecheck exigido pelo starter", asy
   );
 });
 
+test("layout mantém URLs legais válidas quando o build dispensa validação externa", async () => {
+  const source = await readFile(
+    new URL("../../apps/app/app/layout.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(
+    source,
+    /env\.NEXT_PUBLIC_WEB_URL \?\? "http:\/\/localhost:3001"/
+  );
+  assert.match(source, /new URL\("\/legal\/privacy", webUrl\)/);
+  assert.match(source, /new URL\("\/legal\/terms", webUrl\)/);
+});
+
 test("Knock v1 usa options tipadas e degrada sem chave configurada", async () => {
   const source = await readFile(
     new URL("../../packages/notifications/index.ts", import.meta.url),
