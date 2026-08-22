@@ -411,3 +411,43 @@ test("CI diagnostica apenas disponibilidade, sem imprimir valores de segredos", 
   assert.match(workflow, /value === 'true'/);
   assert.doesNotMatch(workflow, /console\.log\([^\n]*process\.env/);
 });
+
+test("env de produção versionado contém somente configuração pública", async () => {
+  const productionEnv = await readFile(
+    new URL("../../apps/app/.env.production", import.meta.url),
+    "utf8"
+  );
+  const assignments = productionEnv
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"));
+
+  assert.ok(assignments.length > 0);
+
+  for (const assignment of assignments) {
+    const [key, ...valueParts] = assignment.split("=");
+    const value = valueParts.join("=").replace(/^"|"$/g, "");
+
+    assert.match(key, /^NEXT_PUBLIC_[A-Z0-9_]+$/);
+    assert.ok(value.length > 0, `${key} precisa ter valor público explícito`);
+    assert.doesNotMatch(
+      key,
+      /SECRET|SERVICE_ROLE|DATABASE|DIRECT_URL|PASSWORD|ACCESS_TOKEN|VERCEL_TOKEN/
+    );
+    assert.doesNotMatch(value, /^(?:sb_secret_|sk_|whsec_)/);
+  }
+
+  assert.match(
+    productionEnv,
+    /NEXT_PUBLIC_SUPABASE_URL="https:\/\/aaaftocmuiztyxdgclqt\.supabase\.co"/
+  );
+  assert.match(
+    productionEnv,
+    /NEXT_PUBLIC_SUPABASE_PROJECT_REF="aaaftocmuiztyxdgclqt"/
+  );
+  assert.match(
+    productionEnv,
+    /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="sb_publishable_[A-Za-z0-9_-]+"/
+  );
+  assert.doesNotMatch(productionEnv, /eyJhbGciOi/);
+});

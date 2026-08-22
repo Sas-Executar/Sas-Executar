@@ -48,7 +48,21 @@ ações, mas não configura recursos externos por presunção.
 
 ## Demais itens da integração final
 
-- Configurar secrets e variáveis de ambiente no projeto Vercel correto.
+- A configuração pública conhecida de produção está versionada em
+  `apps/app/.env.production`: URL, referência e chave publishable do projeto
+  Supabase autorizado, além das rotas públicas do Clerk. O arquivo aceita
+  exclusivamente chaves `NEXT_PUBLIC_` sem segredo.
+- Depois de importar o repositório na Vercel com Root Directory `apps/app`,
+  cadastrar no painel da Vercel as variáveis que não podem entrar no Git:
+  `CLERK_SECRET_KEY`, `DATABASE_URL` e `DIRECT_URL`. Cadastrar também
+  `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, cujo valor público ainda não está
+  disponível neste repositório, e `CLERK_WEBHOOK_SECRET` quando o webhook de
+  organizações for habilitado.
+- Aplicar o escopo de Production e Preview deliberadamente. Preview não deve
+  receber, por padrão, acesso ao banco de produção.
+- Nunca adicionar `sb_secret_*`, `service_role`, senha do banco,
+  `SUPABASE_ACCESS_TOKEN`, `VERCEL_TOKEN` ou qualquer chave `sk_*` ao arquivo
+  versionado. Segredos permanecem no painel da Vercel ou em `.env.local`.
 - Sincronizar e instalar dependências sem duplicar infraestrutura existente.
 - Verificar autorização **e disponibilidade real do runner** do GitHub Actions;
   reexecução autorizada não basta quando os jobs falham sem steps/logs.
@@ -108,3 +122,16 @@ autorizada como prova de runner funcional quando o job possui zero steps.
 - **Gate de produção:** integração aprovada, segurança, disponibilidade, custo e experiência final demonstrados.
 
 A aprovação de um gate de código nunca implica aprovação automática de integração ou produção.
+
+## Handoff Git → Vercel
+
+1. Importar `Executar-26/next-forge` e selecionar `apps/app` como Root Directory.
+2. Manter o framework Next.js e o fluxo de build do monorepo detectados pela
+   Vercel.
+3. Cadastrar as variáveis privadas listadas acima antes do primeiro build real.
+4. Disparar o deployment pela sincronização Git.
+5. Validar login Clerk, organização ativa, gravação no Supabase, reload e
+   isolamento entre organizações antes de aprovar o Gate de integração.
+
+Referências: [Vercel Environment Variables](https://vercel.com/docs/environment-variables)
+e [Supabase API keys](https://supabase.com/docs/guides/getting-started/api-keys).
