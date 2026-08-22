@@ -204,16 +204,13 @@ export async function criarSessaoAgenteServidor(
   }
 
   let current = initial;
-  let candidate: EstadoOperacional | null = null;
   let pending: Promise<void> = Promise.resolve();
 
   const adapter = criarAdaptadorAgente(
     {
       organizationId: actor.organizationId,
       read: () => current,
-      commit: (next) => {
-        candidate = next;
-      },
+      commit: () => undefined,
     },
     FERRAMENTAS_OPERACIONAIS,
     executarFerramenta,
@@ -226,7 +223,6 @@ export async function criarSessaoAgenteServidor(
     args: Record<string, unknown>
   ): Promise<ResultadoFerramentaServidor> {
     const previous = current;
-    candidate = null;
 
     const result = adapter.invoke(name, args);
     let approvalId: string | null = null;
@@ -235,15 +231,6 @@ export async function criarSessaoAgenteServidor(
       approvalId = await persistence.solicitarAprovacao(result.approval);
     } else if (result.state !== previous) {
       const next = result.state;
-
-      if (candidate !== next) {
-        throw new ErroPersistenciaRemota(
-          "A ferramenta não confirmou a mutação operacional.",
-          409,
-          "MUTACAO_COPILOTO_INVALIDA"
-        );
-      }
-
       const saved = await persistence.salvar(next, actor, previous.revision);
 
       if (saved.revision !== next.revision) {
