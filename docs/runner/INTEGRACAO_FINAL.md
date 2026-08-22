@@ -37,8 +37,14 @@ ações, mas não configura recursos externos por presunção.
    organizações distintas; registrar as duas organizações e a evidência.
 10. Só então conectar o estado local-first do produto ao repositório remoto usando
    eventos versionados, identificadores idempotentes e reconciliação explícita de
-   conflitos; o adaptador inicial está em
-   `apps/app/lib/executar/integration-contract.ts`.
+   conflitos. O contrato está em `apps/app/lib/executar/integration-contract.ts`;
+   a implementação PostgREST/RPC está em
+   `apps/app/lib/executar/remote-persistence.ts`, com sessão Clerk derivada no
+   servidor em `apps/app/lib/executar/server-persistence.ts` e rotas
+   `/api/executar/state` e `/api/executar/approvals`.
+11. Configurar a integração oficial Clerk → Supabase antes de considerar a RPC
+   utilizável por usuários reais; testes SQL com claims simuladas comprovam RLS
+   e transação, mas não substituem JWT Clerk aceito pelo projeto.
 
 ## Demais itens da integração final
 

@@ -70,6 +70,10 @@ interface MensagemCopiloto {
 }
 
 const DEPENDENCY_SEPARATOR_PATTERN = /[,;]+/;
+const PERSISTENCIA_REMOTA_HABILITADA = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+);
 
 function criarMensagemCopiloto(
   author: MensagemCopiloto["author"],
@@ -1291,6 +1295,7 @@ export function ExecutarOperacional({
     novoEstado(organizationId, ENTREGAS_SPRINT)
   );
   const [loaded, setLoaded] = useState(false);
+  const [remoteReady, setRemoteReady] = useState(false);
   const [view, setView] = useState<View>("overview");
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [note, setNote] = useState("");
@@ -1313,6 +1318,8 @@ export function ExecutarOperacional({
     },
   ]);
   const latestState = useRef(state);
+  const remoteRevision = useRef(-1);
+  const serverApprovals = useRef(new Map<string, string>());
   const displayName = user?.fullName ?? user?.username ?? userId;
   const actor = useMemo<AtorOperacional>(
     () => ({ organizationId, userId, displayName }),
@@ -1324,12 +1331,79 @@ export function ExecutarOperacional({
   }, [state]);
 
   useEffect(() => {
+    let active = true;
     const stored = window.localStorage.getItem(
       chaveOrganizacao(organizationId)
     );
-    setState(restaurarEstado(stored, organizationId, ENTREGAS_SPRINT));
+    const local = restaurarEstado(stored, organizationId, ENTREGAS_SPRINT);
+
+    remoteRevision.current = -1;
+    serverApprovals.current.clear();
+    setRemoteReady(false);
+    setState(local);
     setLoaded(true);
-  }, [organizationId]);
+
+    if (!PERSISTENCIA_REMOTA_HABILITADA) {
+      return () => {
+        active = false;
+      };
+    }
+
+    fetch("/api/executar/state", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(
+            "Persistência remota indisponível; o progresso continua salvo neste aparelho."
+          );
+        }
+
+        const body = (await response.json()) as {
+          state: EstadoOperacional | null;
+        };
+
+        if (!(active && body.state)) {
+          if (active) {
+            setRemoteReady(true);
+          }
+
+          return;
+        }
+
+        const incoming = restaurarEstado(
+          JSON.stringify(body.state),
+          organizationId,
+          ENTREGAS_SPRINT
+        );
+        const result = receberAtualizacaoCompartilhada(local, incoming, {
+          organizationId,
+          userId,
+          displayName: userId,
+        });
+
+        remoteRevision.current = incoming.revision;
+
+        if (result.status === "aplicada") {
+          setState(result.state);
+        } else if (result.status === "conflito") {
+          setSyncNotice(
+            "Este aparelho possui alterações diferentes; revise antes de sincronizar."
+          );
+        }
+
+        setRemoteReady(true);
+      })
+      .catch(() => {
+        if (active) {
+          setSyncNotice(
+            "Persistência remota indisponível; o progresso continua salvo neste aparelho."
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [organizationId, userId]);
 
   useEffect(() => {
     if (loaded && state.organizationId === organizationId) {
@@ -1339,6 +1413,113 @@ export function ExecutarOperacional({
       );
     }
   }, [loaded, organizationId, state]);
+
+  useEffect(() => {
+    if (
+      !(
+        PERSISTENCIA_REMOTA_HABILITADA &&
+        loaded &&
+        remoteReady &&
+        state.organizationId === organizationId
+      ) ||
+      remoteRevision.current === state.revision
+    ) {
+      return;
+    }
+
+    let active = true;
+    const timer = window.setTimeout(() => {
+      fetch("/api/executar/state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          state,
+          expectedRevision: remoteRevision.current,
+        }),
+      })
+        .then(async (response) => {
+          const body = (await response.json()) as {
+            error?: string;
+            revision?: number;
+          };
+
+          if (!response.ok) {
+            throw new Error(
+              body.error ??
+                "Não foi possível sincronizar o progresso com o servidor."
+            );
+          }
+
+          if (active && body.revision === state.revision) {
+            remoteRevision.current = body.revision;
+            setSyncNotice("");
+          }
+        })
+        .catch((problem: unknown) => {
+          if (active) {
+            setSyncNotice(
+              problem instanceof Error
+                ? problem.message
+                : "Não foi possível sincronizar o progresso com o servidor."
+            );
+          }
+        });
+    }, 250);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [loaded, organizationId, remoteReady, state]);
+
+  useEffect(() => {
+    if (!(PERSISTENCIA_REMOTA_HABILITADA && remoteReady)) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      fetch("/api/executar/state", { cache: "no-store" })
+        .then(async (response) => {
+          if (!response.ok) {
+            return;
+          }
+
+          const body = (await response.json()) as {
+            state: EstadoOperacional | null;
+          };
+
+          if (!body.state || body.state.revision <= remoteRevision.current) {
+            return;
+          }
+
+          const incoming = restaurarEstado(
+            JSON.stringify(body.state),
+            organizationId,
+            ENTREGAS_SPRINT
+          );
+          const result = receberAtualizacaoCompartilhada(
+            latestState.current,
+            incoming,
+            actor
+          );
+
+          if (result.status === "aplicada") {
+            remoteRevision.current = incoming.revision;
+            setState(result.state);
+            setSyncNotice("");
+          } else if (result.status === "conflito") {
+            setSyncNotice(
+              "Atualização simultânea detectada; o estado local foi preservado."
+            );
+          }
+        })
+        .catch(() => {
+          // O estado local permanece disponível durante falhas de rede.
+        });
+    }, 15_000);
+
+    return () => window.clearInterval(interval);
+  }, [actor, organizationId, remoteReady]);
 
   useEffect(() => {
     const key = chaveOrganizacao(organizationId);
@@ -1450,6 +1631,38 @@ export function ExecutarOperacional({
       }
 
       setPendingApproval(answer.approval);
+
+      if (answer.approval && PERSISTENCIA_REMOTA_HABILITADA && remoteReady) {
+        const requested = answer.approval;
+
+        fetch("/api/executar/approvals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "solicitar", approval: requested }),
+        })
+          .then(async (response) => {
+            const body = (await response.json()) as {
+              approvalId?: string;
+              error?: string;
+            };
+
+            if (!(response.ok && body.approvalId)) {
+              throw new Error(
+                body.error ?? "Não foi possível registrar a aprovação humana."
+              );
+            }
+
+            serverApprovals.current.set(requested.id, body.approvalId);
+          })
+          .catch((problem: unknown) => {
+            setSyncNotice(
+              problem instanceof Error
+                ? problem.message
+                : "Não foi possível registrar a aprovação humana."
+            );
+          });
+      }
+
       setMessages((previous) => [
         ...previous,
         criarMensagemCopiloto("pessoa", question),
@@ -1471,12 +1684,40 @@ export function ExecutarOperacional({
     setMessage("");
   }
 
-  function decideApproval(approved: boolean) {
+  async function decideApproval(approved: boolean): Promise<void> {
     if (!pendingApproval) {
       return;
     }
 
     try {
+      if (PERSISTENCIA_REMOTA_HABILITADA && remoteReady) {
+        const approvalId = serverApprovals.current.get(pendingApproval.id);
+
+        if (!approvalId) {
+          throw new Error("A aprovação ainda não foi registrada no servidor.");
+        }
+
+        const response = await fetch("/api/executar/approvals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "resolver",
+            approvalId,
+            approved,
+          }),
+        });
+
+        if (!response.ok) {
+          const failure = (await response.json()) as { error?: string };
+
+          throw new Error(
+            failure.error ?? "A aprovação humana não foi validada no servidor."
+          );
+        }
+
+        serverApprovals.current.delete(pendingApproval.id);
+      }
+
       const result = resolverAprovacaoCopiloto(
         state,
         pendingApproval,
@@ -1487,6 +1728,7 @@ export function ExecutarOperacional({
         ...previous,
         criarMensagemCopiloto("copiloto", result.reply),
       ]);
+      setPendingApproval(null);
     } catch (problem) {
       setMessages((previous) => [
         ...previous,
@@ -1498,8 +1740,6 @@ export function ExecutarOperacional({
         ),
       ]);
     }
-
-    setPendingApproval(null);
   }
 
   function toggleCollaboration() {

@@ -38,6 +38,11 @@ evidências, eventos, aprovações, comentários e leituras de notificação.
   novas bloqueiam explicitamente `is_anonymous` e exigem um sujeito Clerk
   `user_*`; o advisor voltou aos mesmos 35 alertas legados, sem qualquer
   alerta novo nas tabelas EXECUTAR.
+- A migration `20260822165019_executar_operational_transactional_persistence.sql`
+  adiciona uma RPC `SECURITY INVOKER`: grava projetos, entregas, dependências,
+  eventos e snapshot canônico em uma única transação, mantendo RLS, identidade
+  Clerk, lock por organização e conflito otimista de revisão. Ferramentas
+  sensíveis do Copiloto exigem aprovação humana já persistida no servidor.
 
 ## Contratos de integração sem dependências novas
 
@@ -56,6 +61,23 @@ evidências, eventos, aprovações, comentários e leituras de notificação.
 
 Esses contratos não instalam o SDK, não configuram ambientes e não fazem
 requisições a projetos externos.
+
+## Persistência remota autenticada
+
+- `remote-persistence.ts` acessa PostgREST com chave publicável e token nativo
+  da sessão Clerk; nunca utiliza `service_role` nem cria identidade paralela.
+- `server-persistence.ts` obtém usuário e organização diretamente de `auth()`;
+  as rotas `/api/executar/state` e `/api/executar/approvals` rejeitam contexto
+  externo ou alterado pelo navegador.
+- A interface preserva `localStorage` e uso offline, carrega o snapshot remoto,
+  sincroniza revisões, verifica atualizações entre dispositivos e mantém
+  conflitos explícitos sem perda silenciosa.
+- Aprovações relevantes são criadas e concluídas na tabela real antes de a RPC
+  aceitar eventos sensíveis; aprovações expiradas, de outro tenant ou de outro
+  usuário são rejeitadas.
+- Sem URL/chave publicável configuradas, o comportamento local permanece
+  disponível; a homologação HTTP depende do registro administrativo do Clerk
+  como provedor terceiro no Supabase e de um deployment Vercel acessível.
 
 ## Matriz executável de fechamento
 
@@ -102,21 +124,27 @@ diagnóstico do runner, segurança de variáveis, sessão Clerk, projeto Supabas
 novo ou legado nominalmente autorizado, caminho de evidência, exportação
 canônica, migrations oficiais e os contratos SQL/RLS/Storage.
 
-Resultado local verificado: **274 testes aprovados, 0 falhas**, incluindo
-**72 testes específicos da Onda 5**.
+Resultado local verificado: **292 testes aprovados, 0 falhas**, incluindo
+**72 testes específicos da Onda 5** e **18 testes de integração operacional**.
 
 Homologação remota verificada no PostgreSQL real: duas organizações, nove
 tabelas, SELECT/INSERT/UPDATE/DELETE, policies de Storage, bloqueio de sessões
 anônimas, rejeição de sujeitos externos ao Clerk, eventos imutáveis e
 integridade de aprovações. A transação de teste foi encerrada com rollback.
 
+Uma segunda transação real validou a RPC com escrita inicial, restauração de
+snapshot, incremento de revisão, conflito otimista, recusa de tenant externo e
+bloqueio de sessão anônima, também sem deixar dados de teste.
+
 ## Gates reais
 
-- Gate de código da Onda 5: **PASSOU**, com 274 testes locais verdes.
+- Gate de código da Onda 5: **PASSOU**, com 292 testes locais verdes.
 - Fundação Supabase/RLS/Storage: **PASSOU** no projeto explicitamente
   autorizado, preservando o scanner anterior.
-- Gate de integração: **NÃO PASSOU** até Clerk de terceiros, persistência
-  remota e sincronização real terem evidência verificada.
+- Gate de persistência PostgreSQL e autorização servidor: **PASSOU** para a
+  RPC, RLS, conflitos, contratos e rotas implementadas.
+- Gate de integração: **NÃO PASSOU** até Clerk de terceiros, sessão real,
+  sincronização HTTP entre aparelhos e deployment terem evidência verificada.
 - Gate de produção: **NÃO PASSOU** até CI verde, Vercel, smoke tests e
   observabilidade serem comprovados.
 - Gate mobile: **NÃO PASSOU**; `apps/mobile` continua proibido antes dos gates

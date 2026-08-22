@@ -1,6 +1,7 @@
 import {
   type AtorOperacional,
   type EstadoOperacional,
+  estadoEntrega,
   prepararSincronizacao,
 } from "./domain.ts";
 import {
@@ -61,6 +62,8 @@ export interface LotePersistenciaOperacional {
     estimate_minutes: number;
     stage: number;
     definition_of_done: string | null;
+    status: ReturnType<typeof estadoEntrega>;
+    started_steps: number;
   }[];
   readonly dependencies: readonly {
     organization_id: string;
@@ -242,8 +245,20 @@ export function prepararLotePersistencia(
       name: project.name,
       daily_capacity_minutes: project.dailyCapacityMinutes,
     })),
-    deliveries: state.projects.flatMap((project) =>
-      project.tasks.map((task) => ({
+    deliveries: state.projects.flatMap((project) => {
+      const projectState =
+        project.id === state.activeProjectId
+          ? state
+          : {
+              ...state,
+              activeProjectId: project.id,
+              done: project.snapshot?.done ?? [],
+              evidence: project.snapshot?.evidence ?? [],
+              focus: project.snapshot?.focus ?? null,
+              started: project.snapshot?.started ?? {},
+            };
+
+      return project.tasks.map((task) => ({
         organization_id: state.organizationId,
         project_id: project.id,
         delivery_id: task.id,
@@ -253,8 +268,10 @@ export function prepararLotePersistencia(
         estimate_minutes: task.mins,
         stage: task.stage,
         definition_of_done: task.dod ?? null,
-      }))
-    ),
+        status: estadoEntrega(task, projectState),
+        started_steps: projectState.started[task.id] ?? 0,
+      }));
+    }),
     dependencies: state.projects.flatMap((project) =>
       project.tasks.flatMap((task) =>
         task.deps.map((predecessor) => ({
