@@ -126,6 +126,8 @@ test("pacote IA abandona interfaces removidas e usa Gateway compatível com SDK 
   assert.match(reactEntry, /DefaultChatTransport/);
   assert.ok(!reactEntry.includes('"ai/react"'));
   assert.match(models, /gateway\("openai\/gpt-5\.6-luna"\)/);
+  assert.match(models, /embeddingModel\("text-embedding-3-small"\)/);
+  assert.match(models, /readonly chat: LanguageModel/);
   assert.ok(!models.includes("compatibility:"));
 });
 
