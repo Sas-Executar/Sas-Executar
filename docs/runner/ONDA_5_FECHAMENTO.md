@@ -43,6 +43,12 @@ evidências, eventos, aprovações, comentários e leituras de notificação.
   eventos e snapshot canônico em uma única transação, mantendo RLS, identidade
   Clerk, lock por organização e conflito otimista de revisão. Ferramentas
   sensíveis do Copiloto exigem aprovação humana já persistida no servidor.
+- A migration
+  `20260822201910_executar_evidence_and_collaboration_projection.sql`
+  adiciona um trigger `SECURITY INVOKER` à mesma transação: projeta evidências,
+  comentários e leituras de notificação para as três tabelas definitivas,
+  preserva a autoria Clerk, rejeita caminhos de Storage de outro tenant e
+  mantém leituras privadas por usuário.
 
 ## Contratos de integração sem dependências novas
 
@@ -67,8 +73,11 @@ requisições a projetos externos.
 - `remote-persistence.ts` acessa PostgREST com chave publicável e token nativo
   da sessão Clerk; nunca utiliza `service_role` nem cria identidade paralela.
 - `server-persistence.ts` obtém usuário e organização diretamente de `auth()`;
-  as rotas `/api/executar/state` e `/api/executar/approvals` rejeitam contexto
-  externo ou alterado pelo navegador.
+  as rotas `/api/executar/state`, `/api/executar/approvals` e
+  `/api/executar/evidence` rejeitam contexto externo ou alterado pelo navegador.
+- O upload de evidências usa a API autenticada do Storage, bucket privado,
+  limite de 2,5 MB e prefixo por organização/projeto/entrega; o download passa
+  pelo servidor e exige novamente a sessão Clerk autorizada.
 - A interface preserva `localStorage` e uso offline, carrega o snapshot remoto,
   sincroniza revisões, verifica atualizações entre dispositivos e mantém
   conflitos explícitos sem perda silenciosa.
@@ -124,8 +133,8 @@ diagnóstico do runner, segurança de variáveis, sessão Clerk, projeto Supabas
 novo ou legado nominalmente autorizado, caminho de evidência, exportação
 canônica, migrations oficiais e os contratos SQL/RLS/Storage.
 
-Resultado local verificado: **293 testes aprovados, 0 falhas**, incluindo
-**72 testes específicos da Onda 5** e **19 testes de integração operacional**.
+Resultado local verificado: **302 testes aprovados, 0 falhas**, incluindo
+**73 testes específicos da Onda 5** e **27 testes de integração operacional**.
 
 Homologação remota verificada no PostgreSQL real: duas organizações, nove
 tabelas, SELECT/INSERT/UPDATE/DELETE, policies de Storage, bloqueio de sessões
@@ -136,9 +145,15 @@ Uma segunda transação real validou a RPC com escrita inicial, restauração de
 snapshot, incremento de revisão, conflito otimista, recusa de tenant externo e
 bloqueio de sessão anônima, também sem deixar dados de teste.
 
+Uma terceira transação real validou projeção de evidência com caminho privado,
+autoria de comentários, leitura individual de notificações, acesso legítimo
+entre membros da mesma organização, rejeição de três snapshots maliciosos e
+bloqueio integral de uma organização externa. Todos os registros foram
+removidos pelo rollback.
+
 ## Gates reais
 
-- Gate de código da Onda 5: **PASSOU**, com 293 testes locais verdes.
+- Gate de código da Onda 5: **PASSOU**, com 302 testes locais verdes.
 - Fundação Supabase/RLS/Storage: **PASSOU** no projeto explicitamente
   autorizado, preservando o scanner anterior.
 - Gate de persistência PostgreSQL e autorização servidor: **PASSOU** para a
@@ -151,5 +166,9 @@ bloqueio de sessão anônima, também sem deixar dados de teste.
   web, sincronização, isolamento e sessão móvel.
 
 Nenhum projeto Supabase novo foi criado e nenhuma cobrança de provisionamento
-foi iniciada. O deployment Vercel permanece pendente porque a equipe conectada
-não apresenta um projeto acessível para vínculo, configuração ou publicação.
+foi iniciada. A aplicação não depende de `DATABASE_URL` ou `DIRECT_URL` para
+persistência operacional: usa a API HTTP do Supabase, Clerk e RLS. As duas
+credenciais efetivamente necessárias para autenticação real são
+`CLERK_SECRET_KEY` e `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`. O deployment Vercel
+permanece pendente enquanto o projeto não estiver acessível ao conector ou o
+responsável não concluir a configuração externa necessária.

@@ -17,18 +17,26 @@ const SUPABASE_REFERENCE_PATTERN = /^[a-z0-9]{8,32}$/i;
 const SUPABASE_SECRET_PATTERN = /service_role|sb_secret_/i;
 const SAFE_IDENTIFIER_PATTERN = /^[A-Za-z0-9_-]+$/;
 
-export const VARIAVEIS_INTEGRACAO_FINAL = [
-  "DATABASE_URL",
-  "DIRECT_URL",
+export const VARIAVEIS_INTEGRACAO_ESSENCIAIS = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   "CLERK_SECRET_KEY",
   "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+] as const;
+
+export const VARIAVEIS_INTEGRACAO_OPCIONAIS = [
+  "DATABASE_URL",
+  "DIRECT_URL",
   "STRIPE_SECRET_KEY",
   "LIVEBLOCKS_SECRET",
   "KNOCK_SECRET_API_KEY",
   "NEXT_PUBLIC_KNOCK_API_KEY",
   "NEXT_PUBLIC_KNOCK_FEED_CHANNEL_ID",
+] as const;
+
+export const VARIAVEIS_INTEGRACAO_FINAL = [
+  ...VARIAVEIS_INTEGRACAO_ESSENCIAIS,
+  ...VARIAVEIS_INTEGRACAO_OPCIONAIS,
 ] as const;
 
 export interface SessaoClerkIntegracao {
@@ -104,6 +112,8 @@ export function diagnosticarAmbienteFinal(
 ): {
   readonly configured: readonly string[];
   readonly missing: readonly string[];
+  readonly optionalMissing: readonly string[];
+  readonly requiredMissing: readonly string[];
   readonly safe: true;
 } {
   for (const [key, value] of Object.entries(environment)) {
@@ -119,6 +129,12 @@ export function diagnosticarAmbienteFinal(
       Boolean(environment[key]?.trim())
     ),
     missing: VARIAVEIS_INTEGRACAO_FINAL.filter(
+      (key) => !environment[key]?.trim()
+    ),
+    optionalMissing: VARIAVEIS_INTEGRACAO_OPCIONAIS.filter(
+      (key) => !environment[key]?.trim()
+    ),
+    requiredMissing: VARIAVEIS_INTEGRACAO_ESSENCIAIS.filter(
       (key) => !environment[key]?.trim()
     ),
     safe: true,

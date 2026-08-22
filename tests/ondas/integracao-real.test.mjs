@@ -109,6 +109,147 @@ test("organização sem snapshot remoto mantém inicialização local", async ()
   assert.equal(await persistence.carregar(), null);
 });
 
+test("evidência é enviada ao bucket privado com JWT Clerk e prefixo da organização", async () => {
+  const file = new File(["comprovante"], "nota final.pdf", {
+    type: "application/pdf",
+  });
+  const expected = "org_integracao/sprint-principal/A/nota-final.pdf";
+  const persistence = criarPersistenciaRemota(
+    configuration,
+    session,
+    (url, options) => {
+      assert.equal(
+        url,
+        `${configuration.url}/storage/v1/object/executar-evidencias/${expected}`
+      );
+      assert.equal(options.method, "POST");
+      assert.equal(options.body, file);
+      assert.equal(options.headers["Content-Type"], "application/pdf");
+      assert.equal(options.headers["x-upsert"], "false");
+      assert.equal(
+        options.headers.Authorization,
+        "Bearer token-clerk-real-nao-exposto"
+      );
+
+      return json({ Key: `executar-evidencias/${expected}` }, 200);
+    }
+  );
+
+  assert.deepEqual(
+    await persistence.enviarEvidencia(state(), actor, "A", file),
+    {
+      path: expected,
+    }
+  );
+});
+
+test("upload não aceita arquivo vazio, maior que o bucket ou organização externa", async () => {
+  let called = false;
+  const persistence = criarPersistenciaRemota(configuration, session, () => {
+    called = true;
+    return Promise.resolve(json({}));
+  });
+
+  await assert.rejects(
+    () =>
+      persistence.enviarEvidencia(
+        state(),
+        actor,
+        "A",
+        new File([], "vazio.txt")
+      ),
+    /entre 1 byte e 2,5 MB/
+  );
+  await assert.rejects(
+    () =>
+      persistence.enviarEvidencia(
+        state(),
+        actor,
+        "A",
+        new File([new Uint8Array(2_500_001)], "grande.txt")
+      ),
+    /entre 1 byte e 2,5 MB/
+  );
+  await assert.rejects(
+    () =>
+      persistence.enviarEvidencia(
+        state(),
+        { ...actor, organizationId: "org_externa" },
+        "A",
+        new File(["ok"], "prova.txt")
+      ),
+    /outra organização/
+  );
+  assert.equal(called, false);
+});
+
+test("confirmação Storage não pode apontar para outra organização", async () => {
+  const persistence = criarPersistenciaRemota(
+    configuration,
+    session,
+    async () =>
+      json({ Key: "executar-evidencias/org_externa/projeto/A/prova.txt" })
+  );
+
+  await assert.rejects(
+    () =>
+      persistence.enviarEvidencia(
+        state(),
+        actor,
+        "A",
+        new File(["ok"], "prova.txt")
+      ),
+    /fora da organização autenticada/
+  );
+});
+
+test("download de bucket privado exige JWT Clerk e caminho autenticado", async () => {
+  const path = "org_integracao/sprint-principal/A/prova.pdf";
+  const persistence = criarPersistenciaRemota(
+    configuration,
+    session,
+    (url, options) => {
+      assert.equal(
+        url,
+        `${configuration.url}/storage/v1/object/authenticated/executar-evidencias/${path}`
+      );
+      assert.equal(
+        options.headers.Authorization,
+        "Bearer token-clerk-real-nao-exposto"
+      );
+
+      return new Response("comprovante privado", {
+        headers: { "Content-Type": "application/pdf" },
+      });
+    }
+  );
+  const response = await persistence.baixarEvidencia(path);
+
+  assert.equal(await response.text(), "comprovante privado");
+});
+
+test("download recusa outro tenant, path traversal e caminhos incompletos", async () => {
+  let called = false;
+  const persistence = criarPersistenciaRemota(configuration, session, () => {
+    called = true;
+    return Promise.resolve(json({}));
+  });
+
+  for (const path of [
+    "org_externa/sprint-principal/A/prova.pdf",
+    "org_integracao/sprint-principal/../prova.pdf",
+    "org_integracao/sprint-principal/A",
+    "org_integracao/sprint-principal/A/prova%2Fexterna.pdf",
+  ]) {
+    await assert.rejects(
+      () => persistence.baixarEvidencia(path),
+      /organização autenticada/
+    );
+  }
+
+  assert.equal(called, false);
+});
+
 test("snapshot remoto de outra organização é rejeitado", async () => {
   const external = novoEstado("org_externa", tasks);
   const persistence = criarPersistenciaRemota(
@@ -328,29 +469,37 @@ test("aprovação expirada, repetida ou externa não pode ser concluída", async
 });
 
 test("rotas servidor derivam usuário e organização exclusivamente do Clerk", async () => {
-  const [context, stateRoute, approvalsRoute] = await Promise.all([
-    readFile(
-      new URL(
-        "../../apps/app/lib/executar/server-persistence.ts",
-        import.meta.url
+  const [context, stateRoute, approvalsRoute, evidenceRoute] =
+    await Promise.all([
+      readFile(
+        new URL(
+          "../../apps/app/lib/executar/server-persistence.ts",
+          import.meta.url
+        ),
+        "utf8"
       ),
-      "utf8"
-    ),
-    readFile(
-      new URL(
-        "../../apps/app/app/api/executar/state/route.ts",
-        import.meta.url
+      readFile(
+        new URL(
+          "../../apps/app/app/api/executar/state/route.ts",
+          import.meta.url
+        ),
+        "utf8"
       ),
-      "utf8"
-    ),
-    readFile(
-      new URL(
-        "../../apps/app/app/api/executar/approvals/route.ts",
-        import.meta.url
+      readFile(
+        new URL(
+          "../../apps/app/app/api/executar/approvals/route.ts",
+          import.meta.url
+        ),
+        "utf8"
       ),
-      "utf8"
-    ),
-  ]);
+      readFile(
+        new URL(
+          "../../apps/app/app/api/executar/evidence/route.ts",
+          import.meta.url
+        ),
+        "utf8"
+      ),
+    ]);
 
   assert.match(context, /await auth\(\)/);
   assert.match(context, /projectOrigin: "existente_autorizado"/);
@@ -361,6 +510,13 @@ test("rotas servidor derivam usuário e organização exclusivamente do Clerk", 
   );
   assert.match(approvalsRoute, /persistence\.solicitarAprovacao/);
   assert.match(approvalsRoute, /persistence\.aprovar/);
+  assert.match(evidenceRoute, /persistence\.enviarEvidencia/);
+  assert.match(evidenceRoute, /persistence\.baixarEvidencia/);
+  assert.match(
+    evidenceRoute,
+    /state\.organizationId !== actor\.organizationId/
+  );
+  assert.match(evidenceRoute, /private, no-store/);
 });
 
 test("interface mantém offline e sincroniza pelo servidor autenticado", async () => {
@@ -375,6 +531,8 @@ test("interface mantém offline e sincroniza pelo servidor autenticado", async (
   assert.match(component, /window\.localStorage\.setItem/);
   assert.match(component, /fetch\("\/api\/executar\/state"/);
   assert.match(component, /fetch\("\/api\/executar\/approvals"/);
+  assert.match(component, /fetch\("\/api\/executar\/evidence"/);
+  assert.match(component, /proof\.file\.storagePath/);
   assert.match(component, /expectedRevision: remoteRevision\.current/);
   assert.match(component, /receberAtualizacaoCompartilhada/);
   assert.match(component, /serverApprovals\.current\.get/);
@@ -396,6 +554,31 @@ test("migration real mantém RLS, transação, revisão e aprovação no banco",
   assert.match(migration, /approved_by_user_id = v_actor_user_id/);
   assert.match(migration, /revoke all on function .* from public/);
   assert.match(migration, /grant execute on function .* to authenticated/);
+  assert.doesNotMatch(migration, /security definer/i);
+});
+
+test("migration adicional projeta evidências, comentários e leituras sem contornar RLS", async () => {
+  const migration = await readFile(
+    new URL(
+      "../../supabase/migrations/20260822201910_executar_evidence_and_collaboration_projection.sql",
+      import.meta.url
+    ),
+    "utf8"
+  );
+
+  assert.match(
+    migration,
+    /create function public\.executar_projetar_registros_operacionais/
+  );
+  assert.match(migration, /security invoker/);
+  assert.match(migration, /after insert on public\.executar_events/);
+  assert.match(migration, /insert into public\.executar_evidence/);
+  assert.match(migration, /insert into public\.executar_comments/);
+  assert.match(migration, /insert into public\.executar_notification_reads/);
+  assert.match(migration, /split_part\(v_storage_path, '\/', 1\)/);
+  assert.match(migration, /v_comment ->> 'authorId'/);
+  assert.match(migration, /v_read ->> 'userId'/);
+  assert.match(migration, /revoke all on function .* from public/);
   assert.doesNotMatch(migration, /security definer/i);
 });
 
@@ -449,5 +632,19 @@ test("env de produção versionado contém somente configuração pública", asy
     productionEnv,
     /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="sb_publishable_[A-Za-z0-9_-]+"/
   );
+  assert.match(productionEnv, /NEXT_PUBLIC_APP_URL="https:\/\/\$VERCEL_URL"/);
+  assert.match(productionEnv, /NEXT_PUBLIC_WEB_URL="https:\/\/\$VERCEL_URL"/);
   assert.doesNotMatch(productionEnv, /eyJhbGciOi/);
+});
+
+test("build do aplicativo não exige cliente Prisma/Neon sem uso operacional", async () => {
+  const appEnv = await readFile(
+    new URL("../../apps/app/env.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(appEnv, /@repo\/auth\/keys/);
+  assert.match(appEnv, /@repo\/next-config\/keys/);
+  assert.doesNotMatch(appEnv, /@repo\/database\/keys/);
+  assert.doesNotMatch(appEnv, /database\(\)/);
 });

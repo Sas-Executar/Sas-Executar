@@ -620,7 +620,24 @@ test("diagnóstico de ambiente lista nomes, nunca divulga valores", () => {
     "CLERK_SECRET_KEY",
   ]);
   assert.ok(result.missing.includes("DATABASE_URL"));
+  assert.ok(result.optionalMissing.includes("DATABASE_URL"));
+  assert.ok(!result.requiredMissing.includes("DATABASE_URL"));
   assert.ok(!JSON.stringify(result).includes("segredo-real"));
+});
+
+test("homologação operacional exige Clerk e Supabase, não Prisma/Neon", () => {
+  const result = diagnosticarAmbienteFinal({
+    NEXT_PUBLIC_SUPABASE_URL: configuration.url,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: configuration.publishableKey,
+    CLERK_SECRET_KEY: "sk_teste_nao_exposto",
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_teste_publico",
+  });
+
+  assert.deepEqual(result.requiredMissing, []);
+  assert.ok(result.optionalMissing.includes("DATABASE_URL"));
+  assert.ok(result.optionalMissing.includes("DIRECT_URL"));
+  assert.ok(result.optionalMissing.includes("STRIPE_SECRET_KEY"));
+  assert.ok(!JSON.stringify(result).includes("sk_teste_nao_exposto"));
 });
 
 test("ambiente vazio não bloqueia implementação nem fabrica configuração", () => {

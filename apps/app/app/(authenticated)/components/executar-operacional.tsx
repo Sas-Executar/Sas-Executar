@@ -1062,7 +1062,14 @@ function ProjectManager({
                   </a>
                 )}
                 {proof.file && (
-                  <a download={proof.file.name} href={proof.file.data}>
+                  <a
+                    download={proof.file.name}
+                    href={
+                      proof.file.storagePath
+                        ? `/api/executar/evidence?path=${encodeURIComponent(proof.file.storagePath)}`
+                        : proof.file.data
+                    }
+                  >
                     Baixar {proof.file.name}
                   </a>
                 )}
@@ -1585,9 +1592,40 @@ export function ExecutarOperacional({
     }
 
     try {
-      const file = evidenceFile
+      let file = evidenceFile
         ? await lerArquivoEvidencia(evidenceFile)
         : undefined;
+
+      if (
+        file &&
+        evidenceFile &&
+        PERSISTENCIA_REMOTA_HABILITADA &&
+        remoteReady
+      ) {
+        const form = new FormData();
+
+        form.set("state", JSON.stringify(state));
+        form.set("taskId", focus.id);
+        form.set("file", evidenceFile, evidenceFile.name);
+
+        const response = await fetch("/api/executar/evidence", {
+          method: "POST",
+          body: form,
+        });
+        const result = (await response.json()) as {
+          error?: string;
+          path?: string;
+        };
+
+        if (!(response.ok && result.path)) {
+          throw new Error(
+            result.error ?? "Não foi possível enviar o arquivo da evidência."
+          );
+        }
+
+        file = { ...file, storagePath: result.path };
+      }
+
       const withEvidence = registrarEvidencia(
         tasks,
         state,
@@ -1595,7 +1633,8 @@ export function ExecutarOperacional({
         note,
         url,
         verified,
-        file
+        file,
+        actor.userId
       );
 
       setState(concluirEntrega(tasks, withEvidence, focus.id));

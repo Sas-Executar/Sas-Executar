@@ -6,6 +6,7 @@ import {
 } from "./domain.ts";
 import {
   type ConfiguracaoSupabaseAutorizado,
+  caminhoEvidenciaOrganizacao,
   criarClienteSupabaseClerk,
   prepararLotePersistencia,
   type SessaoClerkIntegracao,
@@ -13,6 +14,9 @@ import {
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const STORAGE_SEGMENT_PATTERN = /^[A-Za-z0-9._-]+$/;
+const EVIDENCE_BUCKET = "executar-evidencias";
+const EVIDENCE_MAX_BYTES = 2_500_000;
 
 export class ErroPersistenciaRemota extends Error {
   readonly code: string;
@@ -28,7 +32,14 @@ export class ErroPersistenciaRemota extends Error {
 
 export interface PersistenciaOperacionalRemota {
   aprovar(approvalId: string, approved: boolean): Promise<void>;
+  baixarEvidencia(path: string): Promise<Response>;
   carregar(): Promise<EstadoOperacional | null>;
+  enviarEvidencia(
+    state: EstadoOperacional,
+    actor: AtorOperacional,
+    taskId: string,
+    file: File
+  ): Promise<{ readonly path: string }>;
   salvar(
     state: EstadoOperacional,
     actor: AtorOperacional,
@@ -71,12 +82,12 @@ function validarAprovacao(
   }
 }
 
-async function executarRequisicao(
+async function requisicaoAutenticada(
   client: ClientePostgrest,
   request: typeof fetch,
   path: string,
   init: RequestInit = {}
-): Promise<unknown> {
+): Promise<Response> {
   const token = await client.accessToken();
 
   if (!token) {
@@ -87,7 +98,7 @@ async function executarRequisicao(
     );
   }
 
-  const response = await request(`${client.url}${path}`, {
+  return request(`${client.url}${path}`, {
     ...init,
     cache: "no-store",
     headers: {
@@ -97,6 +108,9 @@ async function executarRequisicao(
       ...init.headers,
     },
   });
+}
+
+async function interpretarResposta(response: Response): Promise<unknown> {
   const raw = await response.text();
   let body: unknown;
 
@@ -122,6 +136,38 @@ async function executarRequisicao(
   return body;
 }
 
+async function executarRequisicao(
+  client: ClientePostgrest,
+  request: typeof fetch,
+  path: string,
+  init: RequestInit = {}
+): Promise<unknown> {
+  const response = await requisicaoAutenticada(client, request, path, init);
+
+  return interpretarResposta(response);
+}
+
+function validarCaminhoStorage(path: string, organizationId: string): string {
+  const segments = path.split("/");
+
+  if (
+    segments.length !== 4 ||
+    segments[0] !== organizationId ||
+    segments.some(
+      (segment) =>
+        !STORAGE_SEGMENT_PATTERN.test(segment) || segment.includes("..")
+    )
+  ) {
+    throw new ErroPersistenciaRemota(
+      "O arquivo não pertence à organização autenticada.",
+      403,
+      "EVIDENCIA_NAO_AUTORIZADA"
+    );
+  }
+
+  return segments.map((segment) => encodeURIComponent(segment)).join("/");
+}
+
 export function criarPersistenciaRemota(
   configuration: ConfiguracaoSupabaseAutorizado,
   session: SessaoClerkIntegracao,
@@ -135,6 +181,21 @@ export function criarPersistenciaRemota(
   const organization = encodeURIComponent(session.organizationId);
 
   return {
+    async baixarEvidencia(path) {
+      const safePath = validarCaminhoStorage(path, session.organizationId);
+      const response = await requisicaoAutenticada(
+        client,
+        request,
+        `/storage/v1/object/authenticated/${EVIDENCE_BUCKET}/${safePath}`
+      );
+
+      if (!response.ok) {
+        await interpretarResposta(response);
+      }
+
+      return response;
+    },
+
     async carregar() {
       const response = await executarRequisicao(
         client,
@@ -166,6 +227,51 @@ export function criarPersistenciaRemota(
       }
 
       return state;
+    },
+
+    async enviarEvidencia(state, actor, taskId, file) {
+      if (
+        !Number.isSafeInteger(file.size) ||
+        file.size <= 0 ||
+        file.size > EVIDENCE_MAX_BYTES
+      ) {
+        throw new ErroPersistenciaRemota(
+          "O arquivo da evidência deve ter entre 1 byte e 2,5 MB.",
+          400,
+          "EVIDENCIA_INVALIDA"
+        );
+      }
+
+      const path = caminhoEvidenciaOrganizacao(state, actor, taskId, file.name);
+      const safePath = validarCaminhoStorage(path, session.organizationId);
+      const response = (await executarRequisicao(
+        client,
+        request,
+        `/storage/v1/object/${EVIDENCE_BUCKET}/${safePath}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": file.type || "application/octet-stream",
+            "x-upsert": "false",
+          },
+          body: file,
+        }
+      )) as { Key?: string; path?: string } | null;
+      const confirmed = response?.Key ?? response?.path;
+
+      if (
+        confirmed &&
+        confirmed !== path &&
+        confirmed !== `${EVIDENCE_BUCKET}/${path}`
+      ) {
+        throw new ErroPersistenciaRemota(
+          "O Storage confirmou um arquivo fora da organização autenticada.",
+          409,
+          "EVIDENCIA_EXTERNA"
+        );
+      }
+
+      return { path };
     },
 
     async salvar(state, actor, expectedRevision) {

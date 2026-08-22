@@ -53,6 +53,7 @@ export interface Entrega {
 }
 
 export interface Evidencia {
+  readonly authorUserId?: string;
   readonly createdAt: string;
   readonly file?: ArquivoEvidencia;
   readonly note: string;
@@ -65,6 +66,7 @@ export interface ArquivoEvidencia {
   readonly data: string;
   readonly name: string;
   readonly size: number;
+  readonly storagePath?: string;
   readonly type: string;
 }
 
@@ -1336,7 +1338,8 @@ export function registrarEvidencia(
   note: string,
   url = "",
   verified = false,
-  file?: ArquivoEvidencia
+  file?: ArquivoEvidencia,
+  authorUserId?: string
 ): EstadoOperacional {
   const task = focoAtual(tasks, state);
 
@@ -1372,6 +1375,7 @@ export function registrarEvidencia(
     url: url.trim(),
     verified,
     createdAt: new Date().toISOString(),
+    ...(authorUserId ? { authorUserId } : {}),
     ...(file ? { file } : {}),
   };
 

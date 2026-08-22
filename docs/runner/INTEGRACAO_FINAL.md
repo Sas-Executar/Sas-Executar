@@ -41,23 +41,33 @@ ações, mas não configura recursos externos por presunção.
    a implementação PostgREST/RPC está em
    `apps/app/lib/executar/remote-persistence.ts`, com sessão Clerk derivada no
    servidor em `apps/app/lib/executar/server-persistence.ts` e rotas
-   `/api/executar/state` e `/api/executar/approvals`.
+   `/api/executar/state`, `/api/executar/approvals` e
+   `/api/executar/evidence`.
 11. Configurar a integração oficial Clerk → Supabase antes de considerar a RPC
    utilizável por usuários reais; testes SQL com claims simuladas comprovam RLS
    e transação, mas não substituem JWT Clerk aceito pelo projeto.
+12. Evidências usam upload autenticado ao bucket privado, download por uma rota
+   protegida no servidor e o prefixo `organização/projeto/entrega/arquivo`.
+   A migration `20260822201910_executar_evidence_and_collaboration_projection`
+   projeta evidências, comentários e leituras nas tabelas definitivas dentro
+   da mesma transação operacional, sem contornar RLS ou autoria Clerk.
 
 ## Demais itens da integração final
 
 - A configuração pública conhecida de produção está versionada em
   `apps/app/.env.production`: URL, referência e chave publishable do projeto
-  Supabase autorizado, além das rotas públicas do Clerk. O arquivo aceita
-  exclusivamente chaves `NEXT_PUBLIC_` sem segredo.
+  Supabase autorizado, URLs públicas derivadas de `VERCEL_URL` e rotas públicas
+  do Clerk. O arquivo aceita exclusivamente chaves `NEXT_PUBLIC_` sem segredo.
 - Depois de importar o repositório na Vercel com Root Directory `apps/app`,
-  cadastrar no painel da Vercel as variáveis que não podem entrar no Git:
-  `CLERK_SECRET_KEY`, `DATABASE_URL` e `DIRECT_URL`. Cadastrar também
+  cadastrar no painel da Vercel `CLERK_SECRET_KEY` e
   `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, cujo valor público ainda não está
-  disponível neste repositório, e `CLERK_WEBHOOK_SECRET` quando o webhook de
-  organizações for habilitado.
+  disponível neste repositório. A integração Clerk pelo Vercel Marketplace pode
+  provisionar automaticamente ambas. `CLERK_WEBHOOK_SECRET` só é necessário
+  quando o webhook de organizações for habilitado.
+- O runtime operacional usa PostgREST/RPC com chave publishable, sessão Clerk e
+  RLS. Ele não usa o cliente Prisma/Neon do starter: `DATABASE_URL` e
+  `DIRECT_URL` são opcionais e só devem ser configurados se algum módulo futuro
+  realmente passar a acessar PostgreSQL diretamente.
 - Aplicar o escopo de Production e Preview deliberadamente. Preview não deve
   receber, por padrão, acesso ao banco de produção.
 - Nunca adicionar `sb_secret_*`, `service_role`, senha do banco,
@@ -128,7 +138,9 @@ A aprovação de um gate de código nunca implica aprovação automática de int
 1. Importar `Executar-26/next-forge` e selecionar `apps/app` como Root Directory.
 2. Manter o framework Next.js e o fluxo de build do monorepo detectados pela
    Vercel.
-3. Cadastrar as variáveis privadas listadas acima antes do primeiro build real.
+3. Cadastrar as duas variáveis Clerk listadas acima ou instalar Clerk pelo
+   Vercel Marketplace. Não cadastrar URL Prisma apenas para atender um scaffold
+   que a aplicação operacional não utiliza.
 4. Disparar o deployment pela sincronização Git.
 5. Validar login Clerk, organização ativa, gravação no Supabase, reload e
    isolamento entre organizações antes de aprovar o Gate de integração.
