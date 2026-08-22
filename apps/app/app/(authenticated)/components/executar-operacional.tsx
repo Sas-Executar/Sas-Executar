@@ -65,7 +65,17 @@ interface ExecutarOperacionalProperties {
 
 interface MensagemCopiloto {
   readonly author: "pessoa" | "copiloto";
+  readonly id: string;
   readonly text: string;
+}
+
+const DEPENDENCY_SEPARATOR_PATTERN = /[,;]+/;
+
+function criarMensagemCopiloto(
+  author: MensagemCopiloto["author"],
+  text: string
+): MensagemCopiloto {
+  return { author, id: crypto.randomUUID(), text };
 }
 
 const VIEWS: ReadonlyArray<{ id: View; label: string; icon: string }> = [
@@ -204,7 +214,7 @@ function Overview({
               ["Publicar e comprovar", 80, 18],
             ].map(([label, left, width], index) => (
               <div className="ganttRow" key={label}>
-                <label>{label}</label>
+                <span>{label}</span>
                 <div className="track">
                   <span
                     className={`bar ${index < 3 ? "current" : "later"}`}
@@ -221,7 +231,11 @@ function Overview({
             <span>uma única visão</span>
           </div>
           <div className="cardBody ringWrap">
-            <div aria-label="Oito rotas de entrega" className="routeRing" />
+            <div
+              aria-label="Oito rotas de entrega"
+              className="routeRing"
+              role="img"
+            />
             <div className="routeLegend">
               {ROTAS.map((route) => (
                 <span key={route}>{route}</span>
@@ -388,11 +402,14 @@ function Focus({
           </div>
           <div className="cardBody">
             <div className="steps">
-              {Array.from({ length: Math.min(24, steps) }, (_, index) => (
+              {Array.from(
+                { length: Math.min(24, steps) },
+                (_, index) => index + 1
+              ).map((step) => (
                 <span
-                  aria-label={`Passo ${index + 1}`}
-                  className={`step ${index < completedSteps ? "on" : ""}`}
-                  key={`step-${focus.id}-${index}`}
+                  className={`step ${step <= completedSteps ? "on" : ""}`}
+                  key={`step-${focus.id}-${step}`}
+                  title={`Passo ${step}`}
                 />
               ))}
             </div>
@@ -533,9 +550,7 @@ function Calendar({ state }: { readonly state: EstadoOperacional }) {
               <b>Ciclo {cycle.number}</b>
               <small>
                 {cycle.dates[0]}
-                {cycle.dates.length > 1
-                  ? `–${cycle.dates[cycle.dates.length - 1]}`
-                  : ""}
+                {cycle.dates.length > 1 ? `–${cycle.dates.at(-1)}` : ""}
               </small>
             </div>
           ))}
@@ -626,6 +641,7 @@ function ProjectManager({
   const [importMode, setImportMode] = useState<"append" | "replace">("append");
   const [notice, setNotice] = useState("");
   const [problem, setProblem] = useState("");
+  const [pendingRemovalId, setPendingRemovalId] = useState<string | null>(null);
 
   function execute(action: () => EstadoOperacional, success: string) {
     try {
@@ -645,7 +661,11 @@ function ProjectManager({
   function createProject() {
     try {
       const created = criarProjeto(state, newProjectName);
-      const next = created.projects[created.projects.length - 1];
+      const next = created.projects.at(-1);
+
+      if (!next) {
+        throw new Error("O projeto criado não foi encontrado.");
+      }
       setState(selecionarProjeto(created, next.id));
       setProjectName(next.name);
       setDailyCapacity(String(next.dailyCapacityMinutes));
@@ -669,7 +689,7 @@ function ProjectManager({
       date: taskDate.trim(),
       mins: Number(taskMinutes),
       deps: taskDependencies
-        .split(/[,;]+/)
+        .split(DEPENDENCY_SEPARATOR_PATTERN)
         .map((dependency) => dependency.trim())
         .filter(Boolean),
       stage: Number(taskStage),
@@ -940,12 +960,20 @@ function ProjectManager({
                   aria-label={`Remover ${task.id}`}
                   className="iconBtn"
                   onClick={() => {
-                    if (window.confirm(`Remover a entrega ${task.id}?`)) {
-                      execute(
-                        () => removerEntrega(state, task.id),
-                        "Entrega removida."
+                    if (pendingRemovalId !== task.id) {
+                      setPendingRemovalId(task.id);
+                      setProblem("");
+                      setNotice(
+                        `Confirme a remoção de ${task.id} clicando novamente.`
                       );
+                      return;
                     }
+
+                    setPendingRemovalId(null);
+                    execute(
+                      () => removerEntrega(state, task.id),
+                      "Entrega removida."
+                    );
                   }}
                   type="button"
                 >
@@ -968,7 +996,7 @@ function ProjectManager({
               const file = event.target.files?.[0];
 
               if (file) {
-                void file
+                file
                   .text()
                   .then(setImportContent)
                   .catch(() => {
@@ -1058,11 +1086,7 @@ function ProjectManager({
           </div>
         </section>
 
-        {notice && (
-          <p className="executarNotice" role="status">
-            {notice}
-          </p>
-        )}
+        {notice && <output className="executarNotice">{notice}</output>}
         {problem && (
           <p className="executarErro" role="alert">
             {problem}
@@ -1229,10 +1253,10 @@ function CollaborationPanel({
         </section>
 
         {nextOnboarding && (
-          <div className="executarOnboarding" role="status">
+          <output className="executarOnboarding">
             <b>Próxima etapa</b>
             <span>{nextOnboarding.title}</span>
-          </div>
+          </output>
         )}
         {problem && (
           <p className="executarErro" role="alert">
@@ -1284,6 +1308,7 @@ export function ExecutarOperacional({
   const [messages, setMessages] = useState<MensagemCopiloto[]>([
     {
       author: "copiloto",
+      id: "copiloto-inicial",
       text: "Posso orientar a execução real. Pergunte “o que faço agora?” ou use /estado.",
     },
   ]);
@@ -1427,20 +1452,19 @@ export function ExecutarOperacional({
       setPendingApproval(answer.approval);
       setMessages((previous) => [
         ...previous,
-        { author: "pessoa", text: question },
-        { author: "copiloto", text: answer.reply },
+        criarMensagemCopiloto("pessoa", question),
+        criarMensagemCopiloto("copiloto", answer.reply),
       ]);
     } catch (problem) {
       setMessages((previous) => [
         ...previous,
-        { author: "pessoa", text: question },
-        {
-          author: "copiloto",
-          text:
-            problem instanceof Error
-              ? problem.message
-              : "Não foi possível executar a ação solicitada.",
-        },
+        criarMensagemCopiloto("pessoa", question),
+        criarMensagemCopiloto(
+          "copiloto",
+          problem instanceof Error
+            ? problem.message
+            : "Não foi possível executar a ação solicitada."
+        ),
       ]);
     }
 
@@ -1461,18 +1485,17 @@ export function ExecutarOperacional({
       setState(result.state);
       setMessages((previous) => [
         ...previous,
-        { author: "copiloto", text: result.reply },
+        criarMensagemCopiloto("copiloto", result.reply),
       ]);
     } catch (problem) {
       setMessages((previous) => [
         ...previous,
-        {
-          author: "copiloto",
-          text:
-            problem instanceof Error
-              ? problem.message
-              : "Não foi possível aplicar a aprovação.",
-        },
+        criarMensagemCopiloto(
+          "copiloto",
+          problem instanceof Error
+            ? problem.message
+            : "Não foi possível aplicar a aprovação."
+        ),
       ]);
     }
 
@@ -1583,9 +1606,7 @@ export function ExecutarOperacional({
             </div>
           </header>
           {syncNotice && (
-            <p className="executarSyncNotice" role="status">
-              {syncNotice}
-            </p>
+            <output className="executarSyncNotice">{syncNotice}</output>
           )}
           {view === "overview" && (
             <Overview
@@ -1668,10 +1689,10 @@ export function ExecutarOperacional({
             </button>
           </div>
           <div aria-live="polite" className="executarMensagens">
-            {messages.map((entry, index) => (
+            {messages.map((entry) => (
               <div
                 className={`executarMensagem ${entry.author}`}
-                key={`${entry.author}-${index}`}
+                key={entry.id}
               >
                 {entry.text}
               </div>

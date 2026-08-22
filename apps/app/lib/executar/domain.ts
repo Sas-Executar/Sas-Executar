@@ -1,3 +1,38 @@
+const DELIVERY_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
+const OPERATIONAL_DATE_PATTERN = /^\d{2}\/\d{2}$/;
+const DEPENDENCY_SEPARATOR_PATTERN = /[|,]/;
+const LINE_SEPARATOR_PATTERN = /\r?\n/;
+const MARKDOWN_ITEM_PATTERN = /^[-*]\s+/;
+const MARKDOWN_DELIVERY_PATTERN =
+  /^[-*]\s+(?:\[([^\]]+)\]|([A-Za-z0-9_-]+))\s*[·:|-]?\s*(.+)$/;
+const CREATE_PROJECT_MESSAGE_PATTERN = /^(criar|novo)\s+(projeto|plano)\s+/i;
+const CREATE_PROJECT_PREFIX_PATTERN = /^(?:criar|novo)\s+(?:projeto|plano)\s+/i;
+const ASSUME_FOCUS_PREFIX_PATTERN = /^assumir\s+(?:o\s+)?foco\s+/i;
+const REGISTER_PROGRESS_MESSAGE_PATTERN =
+  /^(?:registrar|marcar)\s+(?:um\s+)?(?:progresso|passo)/i;
+const FINISH_MESSAGE_PREFIX_PATTERN = /^concluir\s+/i;
+const REPLAN_MESSAGE_PREFIX_PATTERN = /^replanejar\s+/i;
+const CREATE_PROJECT_COMMAND_PATTERN = /^\/(?:projeto|plano)\s+criar\s+(.+)$/is;
+const RENAME_PROJECT_COMMAND_PATTERN =
+  /^\/(?:projeto|plano)\s+renomear\s+(.+)$/is;
+const SELECT_PROJECT_COMMAND_PATTERN = /^\/projeto\s+selecionar\s+(\S+)$/i;
+const IMPORT_PLAN_COMMAND_PATTERN =
+  /^\/plano\s+(importar|substituir)\s+([\s\S]+)$/i;
+const CREATE_DELIVERY_COMMAND_PATTERN = /^\/entrega\s+criar\s+([\s\S]+)$/i;
+const UPDATE_DELIVERY_COMMAND_PATTERN =
+  /^\/entrega\s+atualizar\s+([A-Za-z0-9_-]+)\s+([\s\S]+)$/i;
+const REMOVE_DELIVERY_COMMAND_PATTERN =
+  /^\/entrega\s+remover\s+([A-Za-z0-9_-]+)$/i;
+const FOCUS_COMMAND_PATTERN = /^\/foco\s+([A-Za-z0-9_-]+)$/i;
+const PROGRESS_COMMAND_PATTERN = /^\/progresso(?:\s+([A-Za-z0-9_-]+))?$/i;
+const EVIDENCE_COMMAND_PATTERN =
+  /^\/evidencia\s+(registrar|verificar)\s+([\s\S]+)$/i;
+const FINISH_COMMAND_PATTERN = /^\/concluir(?:\s+([A-Za-z0-9_-]+))?$/i;
+const REPLAN_COMMAND_PATTERN =
+  /^\/replanejamento\s+([A-Za-z0-9_-]+)(?:\s+([\s\S]+))?$/i;
+const CAPACITY_COMMAND_PATTERN = /^\/capacidade\s+(\d+)$/i;
+const WHITESPACE_PATTERN = /\s+/;
+
 export type EstadoEntrega =
   | "BACKLOG_VALIDATED"
   | "READY"
@@ -498,6 +533,7 @@ function registrar(
 
   for (let index = 0; index < serialized.length; index += 1) {
     fingerprint = Math.imul(
+      // biome-ignore lint/suspicious/noBitwiseOperators: FNV-1a exige XOR de 32 bits para manter fingerprints estáveis.
       fingerprint ^ serialized.charCodeAt(index),
       16_777_619
     );
@@ -518,6 +554,7 @@ function registrar(
         taskId,
         at: new Date().toISOString(),
         actor: "humano",
+        // biome-ignore lint/suspicious/noBitwiseOperators: o deslocamento converte o hash FNV-1a para uint32 sem alterar seu contrato.
         fingerprint: (fingerprint >>> 0).toString(16).padStart(8, "0"),
       },
     ],
@@ -576,7 +613,7 @@ function slugProjeto(name: string): string {
 }
 
 function validarEntrega(task: Entrega): void {
-  if (!/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(task.id)) {
+  if (!DELIVERY_ID_PATTERN.test(task.id)) {
     throw new Error("A entrega precisa de um identificador válido.");
   }
 
@@ -584,7 +621,7 @@ function validarEntrega(task: Entrega): void {
     throw new Error("A entrega precisa de título e frente operacional.");
   }
 
-  if (!/^\d{2}\/\d{2}$/.test(task.date)) {
+  if (!OPERATIONAL_DATE_PATTERN.test(task.date)) {
     throw new Error("A data da entrega precisa estar no formato DD/MM.");
   }
 
@@ -897,7 +934,7 @@ function normalizarImportacao(value: unknown): Entrega {
   const deps = Array.isArray(rawDependencies)
     ? rawDependencies.map(String)
     : String(rawDependencies)
-        .split(/[|,]/)
+        .split(DEPENDENCY_SEPARATOR_PATTERN)
         .map((dependency) => dependency.trim())
         .filter(Boolean);
 
@@ -963,13 +1000,14 @@ function parseImportacao(
       throw new Error("Não é permitido importar plano de outra organização.");
     }
 
-    const records = Array.isArray(parsed)
-      ? parsed
-      : parsed && typeof parsed === "object"
-        ? ((parsed as Record<string, unknown>).tasks ??
-          (parsed as Record<string, unknown>).entregas ??
-          (parsed as Record<string, unknown>).deliveries)
-        : undefined;
+    let records: unknown;
+
+    if (Array.isArray(parsed)) {
+      records = parsed;
+    } else if (parsed && typeof parsed === "object") {
+      const plan = parsed as Record<string, unknown>;
+      records = plan.tasks ?? plan.entregas ?? plan.deliveries;
+    }
 
     if (!Array.isArray(records)) {
       throw new Error("JSON de importação precisa conter tasks ou entregas.");
@@ -979,7 +1017,7 @@ function parseImportacao(
   }
 
   const lines = text
-    .split(/\r?\n/)
+    .split(LINE_SEPARATOR_PATTERN)
     .map((line) => line.trim())
     .filter(Boolean);
   const first = lines[0].toLocaleLowerCase("pt-BR");
@@ -1004,11 +1042,9 @@ function parseImportacao(
   }
 
   const tasks = lines
-    .filter((line) => /^[-*]\s+/.test(line))
+    .filter((line) => MARKDOWN_ITEM_PATTERN.test(line))
     .map((line) => {
-      const match = line.match(
-        /^[-*]\s+(?:\[([^\]]+)\]|([A-Za-z0-9_-]+))\s*[·:|-]?\s*(.+)$/
-      );
+      const match = line.match(MARKDOWN_DELIVERY_PATTERN);
 
       if (!match) {
         throw new Error("Linha Markdown inválida para importação de entrega.");
@@ -1530,6 +1566,7 @@ export function reconciliarEstado(
   return { status: "conflito", state: local };
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: o dispatcher central mantém autorização, aprovação e auditoria de todas as ferramentas juntas.
 export function executarFerramenta(
   tasks: readonly Entrega[],
   state: EstadoOperacional,
@@ -1765,6 +1802,7 @@ export function resolverAprovacaoCopiloto(
   };
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: preserva os contratos equivalentes de atualização JSON e textual no mesmo validador.
 function alteracoesComando(fields: string): Partial<Omit<Entrega, "id">> {
   type AlteracoesMutaveis = {
     -readonly [Field in keyof Omit<Entrega, "id">]?: Omit<Entrega, "id">[Field];
@@ -1880,32 +1918,30 @@ function alteracoesComando(fields: string): Partial<Omit<Entrega, "id">> {
 function normalizarMensagemCopiloto(message: string): string {
   const text = message.trim();
 
-  if (/^(criar|novo)\s+(projeto|plano)\s+/i.test(text)) {
-    return text.replace(
-      /^(?:criar|novo)\s+(?:projeto|plano)\s+/i,
-      "/projeto criar "
-    );
+  if (CREATE_PROJECT_MESSAGE_PATTERN.test(text)) {
+    return text.replace(CREATE_PROJECT_PREFIX_PATTERN, "/projeto criar ");
   }
 
-  if (/^assumir\s+(?:o\s+)?foco\s+/i.test(text)) {
-    return text.replace(/^assumir\s+(?:o\s+)?foco\s+/i, "/foco ");
+  if (ASSUME_FOCUS_PREFIX_PATTERN.test(text)) {
+    return text.replace(ASSUME_FOCUS_PREFIX_PATTERN, "/foco ");
   }
 
-  if (/^(?:registrar|marcar)\s+(?:um\s+)?(?:progresso|passo)/i.test(text)) {
+  if (REGISTER_PROGRESS_MESSAGE_PATTERN.test(text)) {
     return "/progresso";
   }
 
-  if (/^concluir\s+/i.test(text)) {
-    return text.replace(/^concluir\s+/i, "/concluir ");
+  if (FINISH_MESSAGE_PREFIX_PATTERN.test(text)) {
+    return text.replace(FINISH_MESSAGE_PREFIX_PATTERN, "/concluir ");
   }
 
-  if (/^replanejar\s+/i.test(text)) {
-    return text.replace(/^replanejar\s+/i, "/replanejamento ");
+  if (REPLAN_MESSAGE_PREFIX_PATTERN.test(text)) {
+    return text.replace(REPLAN_MESSAGE_PREFIX_PATTERN, "/replanejamento ");
   }
 
   return text;
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: o roteamento canônico exige decisões explícitas de tenant, evidência e aprovação humana.
 export function executarAcaoCopiloto(
   state: EstadoOperacional,
   input: string
@@ -1938,7 +1974,7 @@ export function executarAcaoCopiloto(
     approval: null,
   });
 
-  const createProject = message.match(/^\/(?:projeto|plano)\s+criar\s+(.+)$/is);
+  const createProject = message.match(CREATE_PROJECT_COMMAND_PATTERN);
 
   if (createProject) {
     const created = executarFerramenta(tasks, state, {
@@ -1946,7 +1982,11 @@ export function executarAcaoCopiloto(
       name: "criar_projeto",
       projectName: createProject[1].trim(),
     });
-    const project = created.projects[created.projects.length - 1];
+    const project = created.projects.at(-1);
+
+    if (!project) {
+      throw new Error("O projeto criado não foi encontrado.");
+    }
     const selected = executarFerramenta(entregasAtivas(created), created, {
       organizationId: created.organizationId,
       projectId: created.activeProjectId,
@@ -1964,9 +2004,7 @@ export function executarAcaoCopiloto(
     };
   }
 
-  const renameProject = message.match(
-    /^\/(?:projeto|plano)\s+renomear\s+(.+)$/is
-  );
+  const renameProject = message.match(RENAME_PROJECT_COMMAND_PATTERN);
 
   if (renameProject) {
     return apply(
@@ -1979,7 +2017,7 @@ export function executarAcaoCopiloto(
     );
   }
 
-  const selectProject = message.match(/^\/projeto\s+selecionar\s+(\S+)$/i);
+  const selectProject = message.match(SELECT_PROJECT_COMMAND_PATTERN);
 
   if (selectProject) {
     return apply(
@@ -1992,9 +2030,7 @@ export function executarAcaoCopiloto(
     );
   }
 
-  const importPlan = message.match(
-    /^\/plano\s+(importar|substituir)\s+([\s\S]+)$/i
-  );
+  const importPlan = message.match(IMPORT_PLAN_COMMAND_PATTERN);
 
   if (importPlan) {
     const replace = importPlan[1].toLocaleLowerCase("pt-BR") === "substituir";
@@ -2027,7 +2063,7 @@ export function executarAcaoCopiloto(
     );
   }
 
-  const createTask = message.match(/^\/entrega\s+criar\s+([\s\S]+)$/i);
+  const createTask = message.match(CREATE_DELIVERY_COMMAND_PATTERN);
 
   if (createTask) {
     const content = createTask[1].trim();
@@ -2058,9 +2094,7 @@ export function executarAcaoCopiloto(
     );
   }
 
-  const updateTask = message.match(
-    /^\/entrega\s+atualizar\s+([A-Za-z0-9_-]+)\s+([\s\S]+)$/i
-  );
+  const updateTask = message.match(UPDATE_DELIVERY_COMMAND_PATTERN);
 
   if (updateTask) {
     const changes = alteracoesComando(updateTask[2]);
@@ -2077,7 +2111,7 @@ export function executarAcaoCopiloto(
     );
   }
 
-  const removeTask = message.match(/^\/entrega\s+remover\s+([A-Za-z0-9_-]+)$/i);
+  const removeTask = message.match(REMOVE_DELIVERY_COMMAND_PATTERN);
 
   if (removeTask) {
     removerEntrega(state, removeTask[1]);
@@ -2100,7 +2134,7 @@ export function executarAcaoCopiloto(
     };
   }
 
-  const focus = message.match(/^\/foco\s+([A-Za-z0-9_-]+)$/i);
+  const focus = message.match(FOCUS_COMMAND_PATTERN);
 
   if (focus) {
     return apply(
@@ -2110,9 +2144,7 @@ export function executarAcaoCopiloto(
     );
   }
 
-  const progressCommand = message.match(
-    /^\/progresso(?:\s+([A-Za-z0-9_-]+))?$/i
-  );
+  const progressCommand = message.match(PROGRESS_COMMAND_PATTERN);
 
   if (progressCommand) {
     const current = focoAtual(tasks, state);
@@ -2129,9 +2161,7 @@ export function executarAcaoCopiloto(
     );
   }
 
-  const evidence = message.match(
-    /^\/evidencia\s+(registrar|verificar)\s+([\s\S]+)$/i
-  );
+  const evidence = message.match(EVIDENCE_COMMAND_PATTERN);
 
   if (evidence) {
     const current = focoAtual(tasks, state);
@@ -2157,7 +2187,7 @@ export function executarAcaoCopiloto(
     );
   }
 
-  const finish = message.match(/^\/concluir(?:\s+([A-Za-z0-9_-]+))?$/i);
+  const finish = message.match(FINISH_COMMAND_PATTERN);
 
   if (finish) {
     const current = focoAtual(tasks, state);
@@ -2198,9 +2228,7 @@ export function executarAcaoCopiloto(
     };
   }
 
-  const replan = message.match(
-    /^\/replanejamento\s+([A-Za-z0-9_-]+)(?:\s+([\s\S]+))?$/i
-  );
+  const replan = message.match(REPLAN_COMMAND_PATTERN);
 
   if (replan?.[2]) {
     const changes = alteracoesComando(replan[2]);
@@ -2218,7 +2246,7 @@ export function executarAcaoCopiloto(
     );
   }
 
-  const capacity = message.match(/^\/capacidade\s+(\d+)$/i);
+  const capacity = message.match(CAPACITY_COMMAND_PATTERN);
 
   if (capacity) {
     const minutes = Number(capacity[1]);
@@ -2257,6 +2285,26 @@ export function executarAcaoCopiloto(
   };
 }
 
+function identificarComandoCopiloto(normalized: string): string {
+  if (normalized.startsWith("/")) {
+    return normalized.split(WHITESPACE_PATTERN)[0];
+  }
+
+  if (normalized.includes("agora") || normalized.includes("próximo")) {
+    return "/agora";
+  }
+
+  if (normalized.includes("bom dia")) {
+    return "/bomdia";
+  }
+
+  if (normalized.includes("fechar")) {
+    return "/fechardia";
+  }
+
+  return normalized.includes("replanej") ? "/replanejamento" : "/estado";
+}
+
 export function executarCopiloto(
   tasks: readonly Entrega[],
   state: EstadoOperacional,
@@ -2264,17 +2312,7 @@ export function executarCopiloto(
 ): RespostaCopiloto {
   const message = input.trim();
   const normalized = message.toLocaleLowerCase("pt-BR");
-  const command = normalized.startsWith("/")
-    ? normalized.split(/\s+/)[0]
-    : normalized.includes("agora") || normalized.includes("próximo")
-      ? "/agora"
-      : normalized.includes("bom dia")
-        ? "/bomdia"
-        : normalized.includes("fechar")
-          ? "/fechardia"
-          : normalized.includes("replanej")
-            ? "/replanejamento"
-            : "/estado";
+  const command = identificarComandoCopiloto(normalized);
   const focus = focoAtual(tasks, state);
   const ready = filaPronta(tasks, state);
   const blocked = filaBloqueada(tasks, state);
@@ -2315,7 +2353,7 @@ export function executarCopiloto(
       break;
     }
     case "/replanejamento": {
-      const requested = message.split(/\s+/)[1] ?? focus?.id;
+      const requested = message.split(WHITESPACE_PATTERN)[1] ?? focus?.id;
       const affected = requested ? subgrafoAfetado(tasks, requested) : [];
       reply = requested
         ? `Replanejamento localizado em ${requested}: ${affected.length} entrega(s) no subgrafo afetado. O restante do plano permanece intacto.`

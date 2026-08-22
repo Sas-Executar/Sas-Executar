@@ -11,6 +11,9 @@ import {
   registrarEventoDistribuicao,
 } from "./domain.ts";
 
+const CLERK_USER_PATTERN = /^user_[A-Za-z0-9_-]+$/;
+const SAFE_IDENTIFIER_PATTERN = /^[A-Za-z0-9_-]+$/;
+
 export const LIMITES_DISTRIBUICAO = {
   commentCharacters: 2000,
   mentionsPerComment: 10,
@@ -72,7 +75,7 @@ function validarAtor(state: EstadoOperacional, actor: AtorOperacional): void {
     throw new Error("A colaboração não pode acessar outra organização.");
   }
 
-  if (!/^user_[A-Za-z0-9_-]+$/.test(actor.userId)) {
+  if (!CLERK_USER_PATTERN.test(actor.userId)) {
     throw new Error(
       "A colaboração exige uma identidade de usuário Clerk válida."
     );
@@ -97,8 +100,8 @@ export function salaColaboracao(
 
   if (
     !(
-      /^[A-Za-z0-9_-]+$/.test(state.organizationId) &&
-      /^[A-Za-z0-9_-]+$/.test(state.activeProjectId)
+      SAFE_IDENTIFIER_PATTERN.test(state.organizationId) &&
+      SAFE_IDENTIFIER_PATTERN.test(state.activeProjectId)
     )
   ) {
     throw new Error(
@@ -267,6 +270,7 @@ export function comentariosEntrega(
   );
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: consolida comentários, menções e eventos autorizados sem fragmentar a validação de tenant.
 export function notificacoesOperacionais(
   state: EstadoOperacional,
   actor: AtorOperacional

@@ -661,7 +661,7 @@ test("adaptador bloqueia autoridade divergente e limita chamadas", () => {
   const compromised = {
     organizationId: "org_b",
     read: () => initial(),
-    commit: () => {},
+    commit: () => undefined,
   };
 
   assert.throws(

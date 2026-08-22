@@ -94,6 +94,9 @@ export interface ObservacaoJobActions {
 const LOCAL: readonly OrigemEvidencia[] = ["teste_local"];
 const SERVICO: readonly OrigemEvidencia[] = ["servico_real"];
 const HOSPEDADO: readonly OrigemEvidencia[] = ["execucao_hospedada"];
+const CREDENTIAL_PATTERN = /(?:sb_secret_|service_role|bearer\s)/i;
+const URL_CREDENTIAL_PATTERN = /:\/\/[^/\s]+:[^/\s]+@/i;
+const CLERK_ORGANIZATION_PATTERN = /^org_[A-Za-z0-9_-]+$/;
 
 function etapa(
   id: IdentificadorEtapa,
@@ -260,6 +263,7 @@ const COBERTURA_ISOLAMENTO = [
 ] as const;
 const INDICE_ETAPAS = new Map(ETAPAS_FECHAMENTO.map((item) => [item.id, item]));
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: cada gate mantém sua validação de origem, tenant e integração real no mesmo ponto de segurança.
 function validarEvidencia(
   evidence: EvidenciaProntidao,
   organizationId: string,
@@ -279,8 +283,8 @@ function validarEvidencia(
 
   if (
     !evidence.reference.trim() ||
-    /(?:sb_secret_|service_role|bearer\s)/i.test(evidence.reference) ||
-    /:\/\/[^/\s]+:[^/\s]+@/i.test(evidence.reference)
+    CREDENTIAL_PATTERN.test(evidence.reference) ||
+    URL_CREDENTIAL_PATTERN.test(evidence.reference)
   ) {
     throw new Error("A referência da evidência é inválida ou expõe segredo.");
   }
@@ -344,7 +348,7 @@ export function avaliarFechamento(
   evidence: readonly EvidenciaProntidao[],
   now = Date.now()
 ): readonly EstadoEtapaFechamento[] {
-  if (!/^org_[A-Za-z0-9_-]+$/.test(organizationId)) {
+  if (!CLERK_ORGANIZATION_PATTERN.test(organizationId)) {
     throw new Error("A avaliação exige uma organização Clerk autenticada.");
   }
 
@@ -367,13 +371,13 @@ export function avaliarFechamento(
     const blockedBy = definition.prerequisites.filter(
       (dependency) => evaluated.get(dependency)?.status !== "passou"
     );
-    const status = blockedBy.length
-      ? "bloqueado"
-      : observation
-        ? observation.passed
-          ? "passou"
-          : "falhou"
-        : "pronto";
+    let status: EstadoEtapaFechamento["status"] = "pronto";
+
+    if (blockedBy.length) {
+      status = "bloqueado";
+    } else if (observation) {
+      status = observation.passed ? "passou" : "falhou";
+    }
 
     evaluated.set(definition.id, {
       ...definition,

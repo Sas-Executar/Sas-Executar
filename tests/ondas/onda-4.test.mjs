@@ -119,9 +119,7 @@ test("estado canônico nasce com colaboração sem cadastro paralelo de membros"
 });
 
 test("snapshot antigo recebe colaboração vazia sem perder progresso", () => {
-  const legacy = initial();
-  delete legacy.collaboration;
-  legacy.done = ["A"];
+  const legacy = { ...initial(), collaboration: undefined, done: ["A"] };
 
   const restored = restaurarEstado(JSON.stringify(legacy), "org_a", tasks);
 

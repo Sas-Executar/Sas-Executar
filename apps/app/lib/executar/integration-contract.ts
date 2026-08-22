@@ -4,6 +4,14 @@ import {
   prepararSincronizacao,
 } from "./domain.ts";
 
+const CLERK_ORGANIZATION_PATTERN = /^org_[A-Za-z0-9_-]+$/;
+const CLERK_USER_PATTERN = /^user_[A-Za-z0-9_-]+$/;
+const EXPOSED_SECRET_PATTERN =
+  /^NEXT_PUBLIC_.*(?:SECRET|SERVICE_ROLE|PRIVATE)/i;
+const SUPABASE_REFERENCE_PATTERN = /^[a-z0-9]{8,32}$/i;
+const SUPABASE_SECRET_PATTERN = /service_role|sb_secret_/i;
+const SAFE_IDENTIFIER_PATTERN = /^[A-Za-z0-9_-]+$/;
+
 export const VARIAVEIS_INTEGRACAO_FINAL = [
   "DATABASE_URL",
   "DIRECT_URL",
@@ -71,7 +79,7 @@ function validarSessao(
   organizationId: string,
   session: Pick<SessaoClerkIntegracao, "organizationId" | "userId">
 ): void {
-  if (!/^org_[A-Za-z0-9_-]+$/.test(organizationId)) {
+  if (!CLERK_ORGANIZATION_PATTERN.test(organizationId)) {
     throw new Error("A integração exige uma organização Clerk válida.");
   }
 
@@ -79,7 +87,7 @@ function validarSessao(
     throw new Error("A sessão Clerk não pode acessar outra organização.");
   }
 
-  if (!/^user_[A-Za-z0-9_-]+$/.test(session.userId)) {
+  if (!CLERK_USER_PATTERN.test(session.userId)) {
     throw new Error("A integração exige um usuário Clerk autenticado.");
   }
 }
@@ -92,7 +100,7 @@ export function diagnosticarAmbienteFinal(
   readonly safe: true;
 } {
   for (const [key, value] of Object.entries(environment)) {
-    if (value && /^NEXT_PUBLIC_.*(?:SECRET|SERVICE_ROLE|PRIVATE)/i.test(key)) {
+    if (value && EXPOSED_SECRET_PATTERN.test(key)) {
       throw new Error(
         `A variável ${key} expõe uma credencial privada ao navegador.`
       );
@@ -123,7 +131,7 @@ export function criarClienteSupabaseClerk<T>(
 
   if (
     configuration.projectOrigin !== "novo" ||
-    !/^[a-z0-9]{8,32}$/i.test(configuration.projectReference)
+    !SUPABASE_REFERENCE_PATTERN.test(configuration.projectReference)
   ) {
     throw new Error(
       "Supabase deve ser um projeto novo e dedicado ao EXECUTAR."
@@ -154,7 +162,7 @@ export function criarClienteSupabaseClerk<T>(
 
   if (
     !configuration.publishableKey.startsWith("sb_publishable_") ||
-    /service_role|sb_secret_/i.test(configuration.publishableKey)
+    SUPABASE_SECRET_PATTERN.test(configuration.publishableKey)
   ) {
     throw new Error(
       "A integração cliente exige somente uma chave publicável Supabase."
@@ -176,8 +184,8 @@ export function caminhoEvidenciaOrganizacao(
 
   if (
     !(
-      /^[A-Za-z0-9_-]+$/.test(state.activeProjectId) &&
-      /^[A-Za-z0-9_-]+$/.test(taskId)
+      SAFE_IDENTIFIER_PATTERN.test(state.activeProjectId) &&
+      SAFE_IDENTIFIER_PATTERN.test(taskId)
     )
   ) {
     throw new Error("Projeto ou entrega inválida para o caminho de evidência.");

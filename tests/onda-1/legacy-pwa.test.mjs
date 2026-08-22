@@ -28,10 +28,11 @@ async function evaluateReadyTasks(completedIds) {
     "blockedTasks",
   ];
   const implementations = requiredFunctions.map((name) => {
-    const match = source.match(
-      new RegExp("^function " + name + "\\([^\\n]+", "m")
-    );
-    assert.ok(match, "A função legada " + name + " deve existir");
+    const match = source.match(new RegExp(`^function ${name}\\([^\\n]+`, "m"));
+
+    if (!match) {
+      throw new Error(`A função legada ${name} deve existir`);
+    }
     return match[0];
   });
 
@@ -41,8 +42,7 @@ async function evaluateReadyTasks(completedIds) {
     result: null,
   };
   vm.runInNewContext(
-    implementations.join("\n") +
-      "\nresult = { ready: readyTasks().map(t => t.id), blocked: blockedTasks().map(t => t.id) };",
+    `${implementations.join("\n")}\nresult = { ready: readyTasks().map(t => t.id), blocked: blockedTasks().map(t => t.id) };`,
     context
   );
 
@@ -89,7 +89,7 @@ test("preserva as 33 entregas com predecessores válidos", async () => {
 
   for (const task of tasks) {
     for (const dependency of task.deps) {
-      assert.ok(ids.has(dependency), task.id + " depende de " + dependency);
+      assert.ok(ids.has(dependency), `${task.id} depende de ${dependency}`);
     }
   }
 });
@@ -123,16 +123,16 @@ test("dependências múltiplas precisam estar integralmente concluídas", async 
 
 test("manifesto e service worker ficam limitados ao escopo legado", async () => {
   const manifest = JSON.parse(await load("manifest.webmanifest"));
-  assert.equal(manifest.start_url, base + "/");
-  assert.equal(manifest.scope, base + "/");
-  assert.ok(manifest.icons.every((icon) => icon.src.startsWith(base + "/")));
+  assert.equal(manifest.start_url, `${base}/`);
+  assert.equal(manifest.scope, `${base}/`);
+  assert.ok(manifest.icons.every((icon) => icon.src.startsWith(`${base}/`)));
 
   const application = await load("app.js");
-  assert.ok(application.includes("register('" + base + "/sw.js'"));
-  assert.ok(application.includes("scope:'" + base + "/'"));
+  assert.ok(application.includes(`register('${base}/sw.js'`));
+  assert.ok(application.includes(`scope:'${base}/'`));
 
   const worker = await load("sw.js");
-  assert.ok(worker.includes("const BASE='" + base + "'"));
+  assert.ok(worker.includes(`const BASE='${base}'`));
   assert.ok(worker.includes("BASE+'/index.html'"));
   assert.ok(!worker.includes("caches.match('/index.html')"));
 });
@@ -146,6 +146,6 @@ test("interface referencia apenas os próprios ativos da PWA", async () => {
     "data.js",
     "app.js",
   ]) {
-    assert.ok(html.includes(base + "/" + asset), asset);
+    assert.ok(html.includes(`${base}/${asset}`), asset);
   }
 });
