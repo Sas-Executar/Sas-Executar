@@ -21,6 +21,7 @@ import {
   gatesFechamento,
   proximasEtapasProntas,
 } from "../../apps/app/lib/executar/readiness.ts";
+import { REFERENCIA_SUPABASE_LEGADO_AUTORIZADO } from "../../apps/app/lib/executar/supabase-project.ts";
 
 const now = new Date("2026-08-21T21:00:00.000Z").getTime();
 const checkedAt = "2026-08-21T20:00:00.000Z";
@@ -302,9 +303,13 @@ test("prova de sucessor não ignora predecessor pendente", () => {
   );
 });
 
-test("projeto Supabase existente ou não identificado nunca é aprovado", () => {
+test("projeto Supabase existente sem autorização nominal nunca é aprovado", () => {
   for (const metadata of [
     { projectOrigin: "existente", projectReference: "anterior1234" },
+    {
+      projectOrigin: "existente_autorizado",
+      projectReference: "projetoexterno1234",
+    },
     { projectOrigin: "novo", projectReference: "" },
     {},
   ]) {
@@ -318,6 +323,28 @@ test("projeto Supabase existente ou não identificado nunca é aprovado", () => 
       /projeto novo/
     );
   }
+});
+
+test("projeto Supabase legado nominalmente autorizado pode aprovar o gate", () => {
+  const steps = avaliarFechamento(
+    actor.organizationId,
+    [
+      evidence("preservacao_pwa"),
+      evidence("identidade_clerk"),
+      evidence("supabase_novo", {
+        metadata: {
+          projectOrigin: "existente_autorizado",
+          projectReference: REFERENCIA_SUPABASE_LEGADO_AUTORIZADO,
+        },
+      }),
+    ],
+    now
+  );
+
+  assert.equal(
+    steps.find((step) => step.id === "supabase_novo").status,
+    "passou"
+  );
 });
 
 test("integração recusa autoridade de identidade paralela", () => {
@@ -639,16 +666,35 @@ test("cliente suporta sessão Clerk encerrada sem inventar token", async () => {
   assert.equal(await client.accessToken(), null);
 });
 
-test("cliente recusa projeto Supabase existente", () => {
-  assert.throws(
-    () =>
-      criarClienteSupabaseClerk(
-        { ...configuration, projectOrigin: "existente" },
-        session,
-        () => ({})
-      ),
-    /projeto novo/
+test("cliente recusa projeto Supabase existente sem autorização nominal", () => {
+  for (const projectOrigin of ["existente", "existente_autorizado"]) {
+    assert.throws(
+      () =>
+        criarClienteSupabaseClerk(
+          { ...configuration, projectOrigin },
+          session,
+          () => ({})
+        ),
+      /projeto novo/
+    );
+  }
+});
+
+test("cliente aceita somente o projeto legado nominalmente autorizado", async () => {
+  const url = `https://${REFERENCIA_SUPABASE_LEGADO_AUTORIZADO}.supabase.co`;
+  const client = criarClienteSupabaseClerk(
+    {
+      ...configuration,
+      projectOrigin: "existente_autorizado",
+      projectReference: REFERENCIA_SUPABASE_LEGADO_AUTORIZADO,
+      url,
+    },
+    session,
+    (projectUrl, key, options) => ({ projectUrl, key, options })
   );
+
+  assert.equal(client.projectUrl, url);
+  assert.equal(await client.options.accessToken(), "clerk-session-token");
 });
 
 test("cliente recusa referência de projeto inválida", () => {
@@ -838,6 +884,31 @@ test("template declara explicitamente que não é migration aplicada", async () 
   assert.match(sql, /projeto Supabase NOVO/);
 });
 
+test("migrations oficiais correspondem às execuções reais no Supabase", async () => {
+  const [foundation, hardening] = await Promise.all([
+    readFile(
+      new URL(
+        "../../supabase/migrations/20260822153100_executar_multi_tenant.sql",
+        import.meta.url
+      ),
+      "utf8"
+    ),
+    readFile(
+      new URL(
+        "../../supabase/migrations/20260822153334_executar_clerk_identity_hardening.sql",
+        import.meta.url
+      ),
+      "utf8"
+    ),
+  ]);
+
+  assert.match(foundation, /create table public\.executar_organizations/);
+  assert.doesNotMatch(foundation, /NÃO uma migration aplicada/);
+  assert.match(hardening, /alter policy %I on public\.%I/);
+  assert.match(hardening, /is_anonymous/);
+  assert.match(hardening, /alter policy executar_storage_select_organization/);
+});
+
 test("template cria nove recursos multi-tenant sem membership paralelo", async () => {
   const sql = await template();
   const names = [
@@ -881,6 +952,21 @@ test("RLS usa organização Clerk moderna e legada, nunca user metadata", async 
   assert.match(sql, /auth\.jwt\(\) ->> ''org_id''/);
   assert.doesNotMatch(sql, /user_metadata|raw_user_meta_data|auth\.role\(\)/i);
   assert.doesNotMatch(sql, /security definer/i);
+});
+
+test("RLS e Storage rejeitam acesso anônimo e sujeitos externos ao Clerk", async () => {
+  const sql = await template();
+
+  assert.match(sql, /auth\.jwt\(\) ->> ''is_anonymous''/);
+  assert.match(sql, /auth\.jwt\(\) ->> ''sub''\) ~ ''\^user_/);
+  assert.equal(
+    (sql.match(/auth\.jwt\(\) ->> 'is_anonymous'/g) ?? []).length,
+    5
+  );
+  assert.equal(
+    (sql.match(/auth\.jwt\(\) ->> 'sub'\) ~ '\^user_/g) ?? []).length,
+    5
+  );
 });
 
 test("cada recurso recebe RLS obrigatória e permissões mínimas", async () => {

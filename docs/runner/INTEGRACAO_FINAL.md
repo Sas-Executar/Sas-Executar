@@ -7,28 +7,35 @@ O desenvolvimento do produto, do domínio e do Copiloto pode avançar com adapta
 Essas pendências continuam bloqueando produção, sincronização em nuvem e qualquer declaração de gate de integração aprovado.
 
 Antes de executar ações externas, obter autorização explícita para iniciar a
-integração final. Essa autorização precisa cobrir o projeto Supabase novo, a
+integração final. Essa autorização precisa cobrir o projeto Supabase nominal, a
 instalação de dependências, a configuração de credenciais e ambientes, os
 serviços conectados, os runners e o deployment Vercel. A Onda 5 organiza essas
 ações, mas não configura recursos externos por presunção.
 
-## Supabase: projeto obrigatoriamente novo
+## Supabase: projeto identificado e explicitamente autorizado
 
-1. Criar um **novo projeto Supabase dedicado ao SaaS EXECUTAR** quando começar a integração final.
-2. Não reutilizar, alterar ou inferir projetos Supabase existentes.
-3. Configurar Clerk como autoridade de identidade, organizações, memberships e sessões.
-4. Integrar Clerk pela opção oficial de autenticação de terceiros; usar o
+1. Sem uma autorização nominal posterior, criar um **novo projeto Supabase dedicado ao SaaS EXECUTAR** quando começar a integração final.
+2. Em 22/08/2026, o responsável autorizou expressamente a exceção restrita ao
+   projeto existente `executar-scanner-v1`, referência
+   `aaaftocmuiztyxdgclqt`, organização `gfpmsqshqaftvjzrrarl`, região
+   `sa-east-1`. Nenhum outro projeto existente está autorizado.
+3. Preservar todas as tabelas, os registros, as policies e o bucket anteriores
+   do scanner; criar somente recursos aditivos `executar_*` e o bucket privado
+   `executar-evidencias`. Reutilizar esse projeto não cria um novo projeto nem
+   gera cobrança de provisionamento.
+4. Configurar Clerk como autoridade de identidade, organizações, memberships e sessões.
+5. Integrar Clerk pela opção oficial de autenticação de terceiros; usar o
    `accessToken` da sessão Clerk, não o fluxo antigo de JWT compartilhado.
-5. Adaptar os pacotes existentes `packages/database` e `packages/storage`; não criar um segundo starter.
-6. Com o CLI Supabase disponível, executar
+6. Adaptar os pacotes existentes `packages/database` e `packages/storage`; não criar um segundo starter.
+7. Com o CLI Supabase disponível, executar
    `supabase migration new executar_multi_tenant` e usar o conteúdo de
    `docs/runner/sql/EXECUTAR_SUPABASE_TEMPLATE.sql` na migration gerada pelo
    comando oficial; o template versionado ainda não representa migration aplicada.
-7. Aplicar Postgres, RLS, Storage privado e Realtime com vínculo ao
+8. Aplicar Postgres, RLS, Storage privado e Realtime com vínculo ao
    `clerk_org_id`; validar a migration real, grants e advisors.
-8. Executar testes reais de SELECT, INSERT, UPDATE, DELETE e Storage entre
+9. Executar testes reais de SELECT, INSERT, UPDATE, DELETE e Storage entre
    organizações distintas; registrar as duas organizações e a evidência.
-9. Só então conectar o estado local-first do produto ao repositório remoto usando
+10. Só então conectar o estado local-first do produto ao repositório remoto usando
    eventos versionados, identificadores idempotentes e reconciliação explícita de
    conflitos; o adaptador inicial está em
    `apps/app/lib/executar/integration-contract.ts`.
@@ -75,7 +82,8 @@ A sequência e os gates executáveis estão em
 `apps/app/lib/executar/readiness.ts`. A ordem material é:
 
 1. Validar a sessão/organização Clerk e a execução efetiva do runner Actions.
-2. Criar o projeto Supabase **novo** e configurar Clerk como terceiro confiável.
+2. Confirmar exclusivamente o projeto Supabase autorizado
+   `aaaftocmuiztyxdgclqt` e configurar Clerk como terceiro confiável.
 3. Gerar a migration oficial, aplicar o template e provar isolamento entre duas
    organizações para banco e Storage.
 4. Conectar persistência, sincronização, aprovações autenticadas, cobrança e
@@ -90,7 +98,7 @@ autorizada como prova de runner funcional quando o job possui zero steps.
 ## Gates
 
 - **Gate de código:** domínio, interface, dependências, evidências, isolamento local e Copiloto aprovados por testes locais.
-- **Gate de integração:** Supabase novo, RLS/Storage, Clerk real, CI e deployment verificados com serviços reais.
+- **Gate de integração:** Supabase explicitamente autorizado, RLS/Storage, Clerk real, CI e deployment verificados com serviços reais.
 - **Gate de produção:** integração aprovada, segurança, disponibilidade, custo e experiência final demonstrados.
 
 A aprovação de um gate de código nunca implica aprovação automática de integração ou produção.

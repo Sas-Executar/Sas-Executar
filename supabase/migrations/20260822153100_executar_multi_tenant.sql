@@ -1,5 +1,4 @@
--- Template auditável da integração final, NÃO uma migration aplicada.
--- Gerar a migration oficial somente com: supabase migration new executar_multi_tenant
+-- Migration oficial aditiva do EXECUTAR, aplicada ao projeto expressamente autorizado.
 -- Regra padrão: projeto Supabase NOVO dedicado ao EXECUTAR.
 -- Exceção autorizada nominalmente: executar-scanner-v1 (aaaftocmuiztyxdgclqt).
 -- Preservar todas as tabelas, dados e policies anteriores do scanner.
@@ -156,9 +155,7 @@ do $$
 declare
   relation_name text;
   organization_claim constant text :=
-    '((select coalesce((auth.jwt() ->> ''is_anonymous'')::boolean, false)) is false' ||
-    ' and (select auth.jwt() ->> ''sub'') ~ ''^user_[A-Za-z0-9_-]+$''' ||
-    ' and organization_id = (select coalesce(auth.jwt() -> ''o'' ->> ''id'', auth.jwt() ->> ''org_id'')))';
+    '(organization_id = (select coalesce(auth.jwt() -> ''o'' ->> ''id'', auth.jwt() ->> ''org_id'')))';
   select_claim text;
   insert_claim text;
   update_using_claim text;
@@ -248,8 +245,6 @@ create policy executar_storage_select_organization
 on storage.objects for select to authenticated
 using (
   bucket_id = 'executar-evidencias'
-  and (select coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)) is false
-  and (select auth.jwt() ->> 'sub') ~ '^user_[A-Za-z0-9_-]+$'
   and (storage.foldername(name))[1] =
     (select coalesce(auth.jwt() -> 'o' ->> 'id', auth.jwt() ->> 'org_id'))
 );
@@ -258,8 +253,6 @@ create policy executar_storage_insert_organization
 on storage.objects for insert to authenticated
 with check (
   bucket_id = 'executar-evidencias'
-  and (select coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)) is false
-  and (select auth.jwt() ->> 'sub') ~ '^user_[A-Za-z0-9_-]+$'
   and (storage.foldername(name))[1] =
     (select coalesce(auth.jwt() -> 'o' ->> 'id', auth.jwt() ->> 'org_id'))
 );
@@ -268,15 +261,11 @@ create policy executar_storage_update_organization
 on storage.objects for update to authenticated
 using (
   bucket_id = 'executar-evidencias'
-  and (select coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)) is false
-  and (select auth.jwt() ->> 'sub') ~ '^user_[A-Za-z0-9_-]+$'
   and (storage.foldername(name))[1] =
     (select coalesce(auth.jwt() -> 'o' ->> 'id', auth.jwt() ->> 'org_id'))
 )
 with check (
   bucket_id = 'executar-evidencias'
-  and (select coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)) is false
-  and (select auth.jwt() ->> 'sub') ~ '^user_[A-Za-z0-9_-]+$'
   and (storage.foldername(name))[1] =
     (select coalesce(auth.jwt() -> 'o' ->> 'id', auth.jwt() ->> 'org_id'))
 );
@@ -285,8 +274,6 @@ create policy executar_storage_delete_organization
 on storage.objects for delete to authenticated
 using (
   bucket_id = 'executar-evidencias'
-  and (select coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)) is false
-  and (select auth.jwt() ->> 'sub') ~ '^user_[A-Za-z0-9_-]+$'
   and (storage.foldername(name))[1] =
     (select coalesce(auth.jwt() -> 'o' ->> 'id', auth.jwt() ->> 'org_id'))
 );

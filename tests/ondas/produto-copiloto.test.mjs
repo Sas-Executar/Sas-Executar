@@ -496,13 +496,16 @@ test("produto preserva as quatro faces e o Copiloto usa o mesmo estado", async (
   assert.match(component, /chaveOrganizacao\(organizationId\)/);
 });
 
-test("provisionamento final exige projeto Supabase novo e gates separados", async () => {
+test("provisionamento exige projeto Supabase autorizado e gates separados", async () => {
   const checklist = await readFile(
     new URL("../../docs/runner/INTEGRACAO_FINAL.md", import.meta.url),
     "utf8"
   );
 
   assert.match(checklist, /novo projeto Supabase dedicado/);
+  assert.match(checklist, /executar-scanner-v1/);
+  assert.match(checklist, /aaaftocmuiztyxdgclqt/);
+  assert.match(checklist, /Nenhum outro projeto existente está autorizado/);
   assert.match(checklist, /Gate de código/);
   assert.match(checklist, /Gate de integração/);
   assert.match(checklist, /Gate de produção/);

@@ -3,6 +3,10 @@ import {
   type EstadoOperacional,
   prepararSincronizacao,
 } from "./domain.ts";
+import {
+  type OrigemProjetoSupabase,
+  projetoSupabaseAutorizado,
+} from "./supabase-project.ts";
 
 const CLERK_ORGANIZATION_PATTERN = /^org_[A-Za-z0-9_-]+$/;
 const CLERK_USER_PATTERN = /^user_[A-Za-z0-9_-]+$/;
@@ -32,8 +36,8 @@ export interface SessaoClerkIntegracao {
   readonly userId: string;
 }
 
-export interface ConfiguracaoSupabaseNovo {
-  readonly projectOrigin: "novo" | "existente";
+export interface ConfiguracaoSupabaseAutorizado {
+  readonly projectOrigin: OrigemProjetoSupabase;
   readonly projectReference: string;
   readonly publishableKey: string;
   readonly url: string;
@@ -119,7 +123,7 @@ export function diagnosticarAmbienteFinal(
 }
 
 export function criarClienteSupabaseClerk<T>(
-  configuration: ConfiguracaoSupabaseNovo,
+  configuration: ConfiguracaoSupabaseAutorizado,
   session: SessaoClerkIntegracao,
   factory: (
     url: string,
@@ -130,11 +134,15 @@ export function criarClienteSupabaseClerk<T>(
   validarSessao(session.organizationId, session);
 
   if (
-    configuration.projectOrigin !== "novo" ||
-    !SUPABASE_REFERENCE_PATTERN.test(configuration.projectReference)
+    !(
+      projetoSupabaseAutorizado(
+        configuration.projectOrigin,
+        configuration.projectReference
+      ) && SUPABASE_REFERENCE_PATTERN.test(configuration.projectReference)
+    )
   ) {
     throw new Error(
-      "Supabase deve ser um projeto novo e dedicado ao EXECUTAR."
+      "Supabase deve ser um projeto novo ou o legado nominalmente autorizado para o EXECUTAR."
     );
   }
 
@@ -156,7 +164,7 @@ export function criarClienteSupabaseClerk<T>(
     parsed.hash
   ) {
     throw new Error(
-      "A URL não pertence ao novo projeto Supabase identificado."
+      "A URL não pertence ao projeto Supabase autorizado e identificado."
     );
   }
 

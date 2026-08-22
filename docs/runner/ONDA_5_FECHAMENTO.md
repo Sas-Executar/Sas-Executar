@@ -27,9 +27,17 @@ evidências, eventos, aprovações, comentários e leituras de notificação.
   organização em SELECT, INSERT, UPDATE e DELETE.
 - Eventos possuem revisão idempotente, ator, trilha humana e publicação
   Realtime; aprovações concluídas exigem o identificador do aprovador.
-- O arquivo é um **template**, não uma migration executada. A migration final
-  deve nascer de `supabase migration new executar_multi_tenant` e só pode ser
-  aplicada em um projeto Supabase **novo**.
+- O arquivo original permanece como **template**. Em 22/08/2026, após
+  autorização nominal do responsável, as migrations oficiais
+  `20260822153100_executar_multi_tenant.sql` e
+  `20260822153334_executar_clerk_identity_hardening.sql` foram aplicadas
+  exclusivamente no projeto legado autorizado `executar-scanner-v1`
+  (`aaaftocmuiztyxdgclqt`). As 34 tabelas e o bucket anteriores foram
+  preservados integralmente.
+- O projeto legado já permitia sessões anônimas autenticadas. As policies
+  novas bloqueiam explicitamente `is_anonymous` e exigem um sujeito Clerk
+  `user_*`; o advisor voltou aos mesmos 35 alertas legados, sem qualquer
+  alerta novo nas tabelas EXECUTAR.
 
 ## Contratos de integração sem dependências novas
 
@@ -38,7 +46,8 @@ evidências, eventos, aprovações, comentários e leituras de notificação.
 - diagnóstico das variáveis necessárias exibindo somente nomes/presença, nunca
   valores ou tokens;
 - rejeição explícita de secret, service-role ou chave privada em `NEXT_PUBLIC_`;
-- criação injetável do cliente Supabase com URL do projeto novo, chave
+- criação injetável do cliente Supabase com URL do projeto novo ou somente do
+  legado nominalmente autorizado, chave
   publicável e `accessToken` derivado diretamente da sessão Clerk;
 - caminho de evidência `organização/projeto/entrega/arquivo`, com bloqueio de
   outro tenant, entrega externa e path traversal;
@@ -56,8 +65,9 @@ dependências para as Ondas 1–4 e o fechamento final.
 - Gates separados: **código**, **integração**, **produção** e **mobile**.
 - Evidência local somente aprova código; serviços, runners e aprovação humana
   exigem evidências compatíveis, datadas e associadas à organização correta.
-- Supabase existente, projeto sem identificação, identidade paralela e
-  isolamento sem SELECT/INSERT/UPDATE/DELETE/Storage são recusados.
+- Supabase existente sem autorização nominal, projeto sem identificação,
+  identidade paralela e isolamento sem SELECT/INSERT/UPDATE/DELETE/Storage são
+  recusados. A exceção não autoriza outros projetos existentes.
 - Runner/CI só podem passar com steps efetivamente executados; jobs falhados
   com zero steps são classificados sem inventar a causa administrativa.
 - Quando o runner passou a executar, seu primeiro erro real revelou que o
@@ -89,20 +99,29 @@ node --check apps/app/lib/executar/integration-contract.ts
 
 Os testes abrangem grafo, gates, isolamento de tenant, qualidade de evidência,
 diagnóstico do runner, segurança de variáveis, sessão Clerk, projeto Supabase
-novo, caminho de evidência, exportação canônica e os contratos SQL/RLS/Storage.
+novo ou legado nominalmente autorizado, caminho de evidência, exportação
+canônica, migrations oficiais e os contratos SQL/RLS/Storage.
 
-Resultado local verificado: **269 testes aprovados, 0 falhas**, incluindo
-**67 testes específicos da Onda 5**.
+Resultado local verificado: **274 testes aprovados, 0 falhas**, incluindo
+**72 testes específicos da Onda 5**.
+
+Homologação remota verificada no PostgreSQL real: duas organizações, nove
+tabelas, SELECT/INSERT/UPDATE/DELETE, policies de Storage, bloqueio de sessões
+anônimas, rejeição de sujeitos externos ao Clerk, eventos imutáveis e
+integridade de aprovações. A transação de teste foi encerrada com rollback.
 
 ## Gates reais
 
-- Gate de código da Onda 5: **PASSOU**, com 269 testes locais verdes.
-- Gate de integração: **NÃO PASSOU** até projeto Supabase novo, migration
-  aplicada, RLS real, sincronização e serviços externos terem evidência real.
+- Gate de código da Onda 5: **PASSOU**, com 274 testes locais verdes.
+- Fundação Supabase/RLS/Storage: **PASSOU** no projeto explicitamente
+  autorizado, preservando o scanner anterior.
+- Gate de integração: **NÃO PASSOU** até Clerk de terceiros, persistência
+  remota e sincronização real terem evidência verificada.
 - Gate de produção: **NÃO PASSOU** até CI verde, Vercel, smoke tests e
   observabilidade serem comprovados.
 - Gate mobile: **NÃO PASSOU**; `apps/mobile` continua proibido antes dos gates
   web, sincronização, isolamento e sessão móvel.
 
-Nenhum projeto externo foi provisionado, nenhuma credencial foi configurada,
-nenhuma dependência foi instalada e nenhum deployment foi executado nesta onda.
+Nenhum projeto Supabase novo foi criado e nenhuma cobrança de provisionamento
+foi iniciada. O deployment Vercel permanece pendente porque a equipe conectada
+não apresenta um projeto acessível para vínculo, configuração ou publicação.

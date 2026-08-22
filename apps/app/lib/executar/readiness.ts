@@ -1,3 +1,8 @@
+import {
+  type OrigemProjetoSupabase,
+  projetoSupabaseAutorizado,
+} from "./supabase-project.ts";
+
 export type OrigemEvidencia =
   | "codigo"
   | "teste_local"
@@ -35,7 +40,7 @@ export type IdentificadorEtapa =
 
 export interface EvidenciaProntidao {
   readonly metadata?: Readonly<{
-    projectOrigin?: "novo" | "existente";
+    projectOrigin?: OrigemProjetoSupabase;
     projectReference?: string;
     identityAuthority?: string;
     tenantCount?: number;
@@ -148,7 +153,7 @@ export const ETAPAS_FECHAMENTO: readonly EtapaFechamento[] = [
   etapa("identidade_clerk", 1, "Sessão e organização Clerk reais", [
     "preservacao_pwa",
   ]),
-  etapa("supabase_novo", 1, "Projeto Supabase novo e dedicado", [
+  etapa("supabase_novo", 1, "Projeto Supabase identificado e autorizado", [
     "identidade_clerk",
   ]),
   etapa("clerk_supabase", 1, "Clerk integrado como identidade de terceiros", [
@@ -305,11 +310,15 @@ function validarEvidencia(
 
   if (
     evidence.stepId === "supabase_novo" &&
-    (evidence.metadata?.projectOrigin !== "novo" ||
-      !evidence.metadata.projectReference?.trim())
+    !(
+      projetoSupabaseAutorizado(
+        evidence.metadata?.projectOrigin,
+        evidence.metadata?.projectReference
+      ) && evidence.metadata?.projectReference?.trim()
+    )
   ) {
     throw new Error(
-      "O Supabase precisa ser um projeto novo, dedicado e identificável."
+      "O Supabase precisa ser um projeto novo ou o legado nominalmente autorizado e identificável."
     );
   }
 
