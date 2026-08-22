@@ -111,7 +111,7 @@ function state() {
   return novoEstado(actor.organizationId, tasks);
 }
 
-async function template() {
+function template() {
   return readFile(
     new URL("../../docs/runner/sql/EXECUTAR_SUPABASE_TEMPLATE.sql", import.meta.url),
     "utf8"
