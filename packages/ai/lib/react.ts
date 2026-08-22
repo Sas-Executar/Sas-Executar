@@ -1,1 +1,1 @@
-export * from "ai/react";
+export { DefaultChatTransport, type UIMessage } from "ai";

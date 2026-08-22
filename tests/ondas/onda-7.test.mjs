@@ -113,6 +113,22 @@ test("IA usa modelo existente do AI Gateway sem exigir ou criar chave OpenAI", (
   }
 });
 
+test("pacote IA abandona interfaces removidas e usa Gateway compatível com SDK 6", async () => {
+  const files = await Promise.all(
+    ["components/message.tsx", "lib/react.ts", "lib/models.ts"].map((path) =>
+      readFile(new URL(`../../packages/ai/${path}`, import.meta.url), "utf8")
+    )
+  );
+  const [messageComponent, reactEntry, models] = files;
+
+  assert.match(messageComponent, /UIMessage/);
+  assert.match(messageComponent, /data\.parts/);
+  assert.match(reactEntry, /DefaultChatTransport/);
+  assert.ok(!reactEntry.includes('"ai/react"'));
+  assert.match(models, /gateway\("openai\/gpt-5\.6-luna"\)/);
+  assert.ok(!models.includes("compatibility:"));
+});
+
 test("mensagens de IA aceitam somente texto e recusam autoridade forjada", () => {
   assert.deepEqual(validarMensagensCopiloto([message()]), [message()]);
 

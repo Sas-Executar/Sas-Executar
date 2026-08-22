@@ -1,10 +1,10 @@
-import type { Message as MessageType } from "ai";
+import type { UIMessage } from "ai";
 import type { ComponentProps } from "react";
 import { Streamdown } from "streamdown";
 import { twMerge } from "tailwind-merge";
 
 interface MessageProps {
-  data: MessageType;
+  data: UIMessage;
   markdown?: ComponentProps<typeof Streamdown>;
 }
 
@@ -17,6 +17,11 @@ export const Message = ({ data, markdown }: MessageProps) => (
         : "self-start bg-muted"
     )}
   >
-    <Streamdown {...markdown}>{data.content}</Streamdown>
+    <Streamdown {...markdown}>
+      {data.parts
+        .filter((part) => part.type === "text")
+        .map((part) => part.text)
+        .join("\n")}
+    </Streamdown>
   </div>
 );
