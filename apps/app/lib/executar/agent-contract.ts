@@ -7,47 +7,49 @@ import type {
 } from "./domain";
 
 export interface EsquemaEntradaAgente {
-  readonly type: "object";
-  readonly properties: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
-  readonly required: readonly string[];
   readonly additionalProperties: false;
+  readonly properties: Readonly<
+    Record<string, Readonly<Record<string, unknown>>>
+  >;
+  readonly required: readonly string[];
+  readonly type: "object";
 }
 
 export interface DescritorFerramentaAgente {
-  readonly name: string;
-  readonly description: string;
-  readonly inputSchema: EsquemaEntradaAgente;
   readonly annotations: {
     readonly readOnlyHint: boolean;
     readonly destructiveHint: boolean;
     readonly idempotentHint: boolean;
     readonly openWorldHint: false;
   };
+  readonly description: string;
+  readonly inputSchema: EsquemaEntradaAgente;
+  readonly name: string;
 }
 
 export interface PortaEstadoAgente {
+  commit(next: EstadoOperacional): void;
   readonly organizationId: string;
   read(): EstadoOperacional;
-  commit(next: EstadoOperacional): void;
 }
 
 export interface ResultadoInvocacaoAgente {
-  readonly status: "executado" | "aprovação necessária";
-  readonly state: EstadoOperacional;
   readonly approval: AprovacaoCopiloto | null;
+  readonly state: EstadoOperacional;
+  readonly status: "executado" | "aprovação necessária";
   readonly text: string;
 }
 
 export interface ConfiguracaoAgentePreparada {
-  readonly pattern: "ToolLoopAgent";
-  readonly messageType: "InferAgentUIMessage";
-  readonly schemaKey: "inputSchema";
-  readonly transport: "DefaultChatTransport";
-  readonly response: "toUIMessageStreamResponse";
   readonly maxSteps: number;
   readonly maxToolCalls: number;
-  readonly provider: null;
+  readonly messageType: "InferAgentUIMessage";
   readonly model: null;
+  readonly pattern: "ToolLoopAgent";
+  readonly provider: null;
+  readonly response: "toUIMessageStreamResponse";
+  readonly schemaKey: "inputSchema";
+  readonly transport: "DefaultChatTransport";
 }
 
 type ExecutorFerramenta = (
@@ -222,10 +224,7 @@ export function criarAdaptadorAgente(
   maxToolCalls = 8
 ): {
   readonly tools: readonly DescritorFerramentaAgente[];
-  invoke(
-    name: string,
-    args: Record<string, unknown>
-  ): ResultadoInvocacaoAgente;
+  invoke(name: string, args: Record<string, unknown>): ResultadoInvocacaoAgente;
   approve(
     approval: AprovacaoCopiloto,
     approved: boolean
@@ -249,7 +248,9 @@ export function criarAdaptadorAgente(
     return state;
   }
 
-  function tasks(state: EstadoOperacional): EstadoOperacional["projects"][number]["tasks"] {
+  function tasks(
+    state: EstadoOperacional
+  ): EstadoOperacional["projects"][number]["tasks"] {
     const project = state.projects.find(
       (candidate) => candidate.id === state.activeProjectId
     );
@@ -271,7 +272,7 @@ export function criarAdaptadorAgente(
       const descriptor = tools.find((tool) => tool.name === name);
       const contract = contracts.find((tool) => tool.name === name);
 
-      if (!descriptor || !contract) {
+      if (!(descriptor && contract)) {
         throw new Error("Ferramenta não reconhecida pelo agente.");
       }
 

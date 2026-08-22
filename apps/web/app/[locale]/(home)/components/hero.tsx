@@ -10,7 +10,7 @@ const highlights = [
 ] as const;
 
 export const Hero = () => (
-  <section className="w-full" aria-labelledby="executar-hero-title">
+  <section aria-labelledby="executar-hero-title" className="w-full">
     <div className="container mx-auto">
       <div className="flex flex-col items-center justify-center gap-8 py-20 lg:py-36">
         <span className="rounded-full border px-4 py-2 text-muted-foreground text-sm">

@@ -43,4 +43,3 @@ const RootLayout = async ({ children, params }: RootLayoutProperties) => {
 };
 
 export default RootLayout;
-

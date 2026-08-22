@@ -7,196 +7,196 @@ export type EstadoEntrega =
   | "BLOCKED";
 
 export interface Entrega {
-  readonly id: string;
-  readonly title: string;
-  readonly front: string;
   readonly date: string;
-  readonly mins: number;
   readonly deps: readonly string[];
-  readonly stage: number;
   readonly dod?: string;
+  readonly front: string;
+  readonly id: string;
+  readonly mins: number;
+  readonly stage: number;
+  readonly title: string;
 }
 
 export interface Evidencia {
-  readonly taskId: string;
-  readonly note: string;
-  readonly url: string;
-  readonly verified: boolean;
   readonly createdAt: string;
   readonly file?: ArquivoEvidencia;
+  readonly note: string;
+  readonly taskId: string;
+  readonly url: string;
+  readonly verified: boolean;
 }
 
 export interface ArquivoEvidencia {
-  readonly name: string;
-  readonly type: string;
-  readonly size: number;
   readonly data: string;
+  readonly name: string;
+  readonly size: number;
+  readonly type: string;
 }
 
 export interface EventoOperacional {
+  readonly action: string;
+  readonly actor?: "humano" | "copiloto";
+  readonly at: string;
+  readonly fingerprint?: string;
+  readonly humanApproved?: boolean;
   readonly organizationId: string;
   readonly projectId: string;
   readonly revision: number;
-  readonly action: string;
   readonly taskId: string | null;
-  readonly at: string;
-  readonly actor?: "humano" | "copiloto";
-  readonly fingerprint?: string;
-  readonly userId?: string;
   readonly tool?: string;
-  readonly humanApproved?: boolean;
+  readonly userId?: string;
 }
 
 export interface AtorOperacional {
+  readonly displayName: string;
   readonly organizationId: string;
   readonly userId: string;
-  readonly displayName: string;
 }
 
 export interface PresencaOperacional {
+  readonly displayName: string;
   readonly organizationId: string;
   readonly projectId: string;
-  readonly userId: string;
-  readonly displayName: string;
-  readonly taskId: string | null;
   readonly seenAt: string;
+  readonly taskId: string | null;
+  readonly userId: string;
 }
 
 export interface ComentarioOperacional {
-  readonly id: string;
-  readonly organizationId: string;
-  readonly projectId: string;
-  readonly taskId: string;
   readonly authorId: string;
   readonly authorName: string;
   readonly body: string;
-  readonly mentions: readonly string[];
   readonly createdAt: string;
+  readonly id: string;
+  readonly mentions: readonly string[];
+  readonly organizationId: string;
+  readonly projectId: string;
   readonly revision: number;
+  readonly taskId: string;
 }
 
 export interface LeituraNotificacao {
   readonly id: string;
   readonly organizationId: string;
   readonly projectId: string;
-  readonly userId: string;
   readonly readAt: string;
+  readonly userId: string;
 }
 
 export interface ColaboracaoOperacional {
-  readonly presence: readonly PresencaOperacional[];
   readonly comments: readonly ComentarioOperacional[];
   readonly notificationReads: readonly LeituraNotificacao[];
+  readonly presence: readonly PresencaOperacional[];
 }
 
 export interface ProgressoProjeto {
   readonly done: readonly string[];
-  readonly focus: string | null;
   readonly evidence: readonly Evidencia[];
+  readonly focus: string | null;
   readonly started: Readonly<Record<string, number>>;
 }
 
 export interface ProjetoOperacional {
+  readonly dailyCapacityMinutes: number;
   readonly id: string;
   readonly name: string;
-  readonly tasks: readonly Entrega[];
-  readonly dailyCapacityMinutes: number;
   readonly snapshot?: ProgressoProjeto;
+  readonly tasks: readonly Entrega[];
 }
 
 export interface DiaOperacional {
-  readonly date: string;
-  readonly tasks: readonly Entrega[];
-  readonly plannedMinutes: number;
-  readonly completedCount: number;
   readonly capacityMinutes: number;
+  readonly completedCount: number;
+  readonly date: string;
   readonly overloaded: boolean;
+  readonly plannedMinutes: number;
+  readonly tasks: readonly Entrega[];
 }
 
 export interface CicloOperacional {
-  readonly number: number;
-  readonly dates: readonly string[];
-  readonly taskCount: number;
   readonly completedCount: number;
+  readonly dates: readonly string[];
+  readonly number: number;
+  readonly taskCount: number;
 }
 
 export interface EnvelopeSincronizacao {
+  readonly baseRevision: number;
+  readonly events: readonly EventoOperacional[];
+  readonly operationIds: readonly string[];
   readonly organizationId: string;
   readonly projectId: string;
-  readonly baseRevision: number;
   readonly revision: number;
-  readonly operationIds: readonly string[];
-  readonly events: readonly EventoOperacional[];
 }
 
 export interface EstadoOperacional {
+  readonly activeProjectId: string;
+  readonly collaboration: ColaboracaoOperacional;
+  readonly done: readonly string[];
+  readonly events: readonly EventoOperacional[];
+  readonly evidence: readonly Evidencia[];
+  readonly focus: string | null;
   readonly organizationId: string;
   readonly projects: readonly ProjetoOperacional[];
-  readonly activeProjectId: string;
-  readonly done: readonly string[];
-  readonly focus: string | null;
-  readonly evidence: readonly Evidencia[];
-  readonly started: Readonly<Record<string, number>>;
-  readonly collaboration: ColaboracaoOperacional;
-  readonly events: readonly EventoOperacional[];
   readonly revision: number;
+  readonly started: Readonly<Record<string, number>>;
 }
 
 export interface RespostaCopiloto {
   readonly command: string;
   readonly reply: string;
-  readonly state: EstadoOperacional;
   readonly requiresApproval: boolean;
+  readonly state: EstadoOperacional;
 }
 
 export interface ContratoFerramenta {
-  readonly name: string;
   readonly effect: "read" | "reversible-write" | "relevant-write";
-  readonly requiresApproval: boolean;
+  readonly name: string;
   readonly purpose: string;
+  readonly requiresApproval: boolean;
 }
 
 export interface EntradaFerramenta {
-  readonly organizationId: string;
-  readonly name: string;
-  readonly projectId?: string;
-  readonly expectedRevision?: number;
-  readonly taskId?: string;
-  readonly task?: Entrega;
+  readonly approved?: boolean;
   readonly changes?: Partial<Omit<Entrega, "id">>;
+  readonly dailyCapacityMinutes?: number;
+  readonly expectedRevision?: number;
+  readonly importMode?: "append" | "replace";
+  readonly name: string;
+  readonly note?: string;
+  readonly organizationId: string;
+  readonly planContent?: string;
+  readonly projectId?: string;
   readonly projectName?: string;
   readonly targetProjectId?: string;
-  readonly planContent?: string;
-  readonly importMode?: "append" | "replace";
-  readonly dailyCapacityMinutes?: number;
-  readonly note?: string;
+  readonly task?: Entrega;
+  readonly taskId?: string;
   readonly url?: string;
   readonly verified?: boolean;
-  readonly approved?: boolean;
 }
 
 export interface AprovacaoCopiloto {
+  readonly expectedRevision: number;
   readonly id: string;
+  readonly input: EntradaFerramenta;
   readonly organizationId: string;
   readonly projectId: string;
-  readonly expectedRevision: number;
-  readonly tool: string;
-  readonly taskId: string | null;
   readonly summary: string;
-  readonly input: EntradaFerramenta;
+  readonly taskId: string | null;
+  readonly tool: string;
 }
 
 export interface ResultadoAcaoCopiloto {
-  readonly state: EstadoOperacional;
-  readonly reply: string;
   readonly action: string;
   readonly affectedTaskIds: readonly string[];
   readonly approval: AprovacaoCopiloto | null;
+  readonly reply: string;
+  readonly state: EstadoOperacional;
 }
 
 export interface ResultadoReplanejamento {
-  readonly state: EstadoOperacional;
   readonly affectedTaskIds: readonly string[];
+  readonly state: EstadoOperacional;
 }
 
 export const LIMITES_COPILOTO = {
@@ -253,7 +253,8 @@ export const FERRAMENTAS_OPERACIONAIS: readonly ContratoFerramenta[] = [
     name: "replanejar_subgrafo",
     effect: "reversible-write",
     requiresApproval: false,
-    purpose: "Alterar somente a raiz solicitada e identificar sucessores afetados.",
+    purpose:
+      "Alterar somente a raiz solicitada e identificar sucessores afetados.",
   },
   {
     name: "ajustar_capacidade",
@@ -525,7 +526,10 @@ function registrar(
 
 export function registrarEventoDistribuicao(
   state: EstadoOperacional,
-  action: "colaboracao.presenca" | "colaboracao.comentario" | "notificacao.lida",
+  action:
+    | "colaboracao.presenca"
+    | "colaboracao.comentario"
+    | "notificacao.lida",
   taskId: string | null,
   collaboration: ColaboracaoOperacional,
   userId: string
@@ -544,9 +548,7 @@ export function registrarEventoDistribuicao(
   };
 }
 
-export function projetoAtivo(
-  state: EstadoOperacional
-): ProjetoOperacional {
+export function projetoAtivo(state: EstadoOperacional): ProjetoOperacional {
   const project = state.projects.find(
     (candidate) => candidate.id === state.activeProjectId
   );
@@ -558,9 +560,7 @@ export function projetoAtivo(
   return project;
 }
 
-export function entregasAtivas(
-  state: EstadoOperacional
-): readonly Entrega[] {
+export function entregasAtivas(state: EstadoOperacional): readonly Entrega[] {
   return projetoAtivo(state).tasks;
 }
 
@@ -611,9 +611,7 @@ function validarEntrega(task: Entrega): void {
   }
 }
 
-export function validarGrafo(
-  tasks: readonly Entrega[]
-): void {
+export function validarGrafo(tasks: readonly Entrega[]): void {
   const byId = new Map<string, Entrega>();
 
   for (const task of tasks) {
@@ -968,9 +966,9 @@ function parseImportacao(
     const records = Array.isArray(parsed)
       ? parsed
       : parsed && typeof parsed === "object"
-        ? (parsed as Record<string, unknown>).tasks ??
+        ? ((parsed as Record<string, unknown>).tasks ??
           (parsed as Record<string, unknown>).entregas ??
-          (parsed as Record<string, unknown>).deliveries
+          (parsed as Record<string, unknown>).deliveries)
         : undefined;
 
     if (!Array.isArray(records)) {
@@ -998,7 +996,9 @@ function parseImportacao(
     return lines.slice(1).map((line) => {
       const values = parseCsvRow(line, separator);
       return normalizarImportacao(
-        Object.fromEntries(headers.map((header, index) => [header, values[index]]))
+        Object.fromEntries(
+          headers.map((header, index) => [header, values[index]])
+        )
       );
     });
   }
@@ -1030,7 +1030,9 @@ function parseImportacao(
     });
 
   if (!tasks.length) {
-    throw new Error("Formato não reconhecido. Use JSON, CSV ou lista Markdown.");
+    throw new Error(
+      "Formato não reconhecido. Use JSON, CSV ou lista Markdown."
+    );
   }
 
   return tasks;
@@ -1059,9 +1061,7 @@ export function importarPlano(
   return substituirEntregasProjeto(state, tasks, "plano.importado", null);
 }
 
-export function exportarPlano(
-  state: EstadoOperacional
-): string {
+export function exportarPlano(state: EstadoOperacional): string {
   const project = projetoAtivo(state);
 
   return JSON.stringify(
@@ -1084,9 +1084,7 @@ export function exportarPlano(
   );
 }
 
-export function calendarioProjeto(
-  state: EstadoOperacional
-): DiaOperacional[] {
+export function calendarioProjeto(state: EstadoOperacional): DiaOperacional[] {
   const project = projetoAtivo(state);
   const days = new Map<string, Entrega[]>();
 
@@ -1120,9 +1118,7 @@ export function calendarioProjeto(
     });
 }
 
-export function ciclosProjeto(
-  state: EstadoOperacional
-): CicloOperacional[] {
+export function ciclosProjeto(state: EstadoOperacional): CicloOperacional[] {
   const days = calendarioProjeto(state);
   const cycles: CicloOperacional[] = [];
 
@@ -1142,9 +1138,7 @@ export function ciclosProjeto(
   return cycles;
 }
 
-export function caminhoCritico(
-  tasks: readonly Entrega[]
-): {
+export function caminhoCritico(tasks: readonly Entrega[]): {
   readonly taskIds: readonly string[];
   readonly minutes: number;
 } {
@@ -1327,7 +1321,7 @@ export function registrarEvidencia(
   }
 
   if (file) {
-    if (!file.name.trim() || !file.data.startsWith("data:")) {
+    if (!(file.name.trim() && file.data.startsWith("data:"))) {
       throw new Error("O arquivo da evidência precisa ser válido.");
     }
 
@@ -1439,9 +1433,7 @@ export function replanejarSubgrafo(
     throw new Error("Informe ao menos uma alteração para replanejar.");
   }
 
-  const before = new Set(
-    subgrafoAfetado(tasks, taskId).map((task) => task.id)
-  );
+  const before = new Set(subgrafoAfetado(tasks, taskId).map((task) => task.id));
   const updated = tasks.map((task) =>
     task.id === taskId ? { ...task, ...changes, id: task.id } : task
   );
@@ -1490,11 +1482,7 @@ export function prepararSincronizacao(
   organizationId: string,
   revisionSincronizada = 0
 ): EnvelopeSincronizacao {
-  const events = eventosPendentes(
-    state,
-    organizationId,
-    revisionSincronizada
-  );
+  const events = eventosPendentes(state, organizationId, revisionSincronizada);
 
   return {
     organizationId,
@@ -1502,8 +1490,7 @@ export function prepararSincronizacao(
     baseRevision: revisionSincronizada,
     revision: state.revision,
     operationIds: events.map(
-      (event) =>
-        `${event.organizationId}:${event.projectId}:${event.revision}`
+      (event) => `${event.organizationId}:${event.projectId}:${event.revision}`
     ),
     events,
   };
@@ -1623,7 +1610,7 @@ export function executarFerramenta(
 
       return audit(adicionarEntrega(state, input.task));
     case "atualizar_entrega":
-      if (!input.changes || !Object.keys(input.changes).length) {
+      if (!(input.changes && Object.keys(input.changes).length)) {
         throw new Error("Informe as alterações da entrega.");
       }
 
@@ -1741,7 +1728,9 @@ export function resolverAprovacaoCopiloto(
     (approval.input.taskId ?? null) !== approval.taskId ||
     approval.input.approved !== undefined
   ) {
-    throw new Error("Os dados da aprovação foram alterados ou não são válidos.");
+    throw new Error(
+      "Os dados da aprovação foram alterados ou não são válidos."
+    );
   }
 
   if (!approved) {
@@ -1776,9 +1765,7 @@ export function resolverAprovacaoCopiloto(
   };
 }
 
-function alteracoesComando(
-  fields: string
-): Partial<Omit<Entrega, "id">> {
+function alteracoesComando(fields: string): Partial<Omit<Entrega, "id">> {
   type AlteracoesMutaveis = {
     -readonly [Field in keyof Omit<Entrega, "id">]?: Omit<Entrega, "id">[Field];
   };
@@ -1977,7 +1964,9 @@ export function executarAcaoCopiloto(
     };
   }
 
-  const renameProject = message.match(/^\/(?:projeto|plano)\s+renomear\s+(.+)$/is);
+  const renameProject = message.match(
+    /^\/(?:projeto|plano)\s+renomear\s+(.+)$/is
+  );
 
   if (renameProject) {
     return apply(
@@ -2003,7 +1992,9 @@ export function executarAcaoCopiloto(
     );
   }
 
-  const importPlan = message.match(/^\/plano\s+(importar|substituir)\s+([\s\S]+)$/i);
+  const importPlan = message.match(
+    /^\/plano\s+(importar|substituir)\s+([\s\S]+)$/i
+  );
 
   if (importPlan) {
     const replace = importPlan[1].toLocaleLowerCase("pt-BR") === "substituir";
@@ -2030,7 +2021,10 @@ export function executarAcaoCopiloto(
       };
     }
 
-    return apply(action, "Plano importado; filas e dependências foram atualizadas.");
+    return apply(
+      action,
+      "Plano importado; filas e dependências foram atualizadas."
+    );
   }
 
   const createTask = message.match(/^\/entrega\s+criar\s+([\s\S]+)$/i);
@@ -2045,7 +2039,16 @@ export function executarAcaoCopiloto(
       const [id, title, front, date, mins, deps, stage, dod] = content
         .split("|")
         .map((field) => field.trim());
-      task = normalizarImportacao({ id, title, front, date, mins, deps, stage, dod });
+      task = normalizarImportacao({
+        id,
+        title,
+        front,
+        date,
+        mins,
+        deps,
+        stage,
+        dod,
+      });
     }
 
     return apply(
@@ -2154,9 +2157,7 @@ export function executarAcaoCopiloto(
     );
   }
 
-  const finish = message.match(
-    /^\/concluir(?:\s+([A-Za-z0-9_-]+))?$/i
-  );
+  const finish = message.match(/^\/concluir(?:\s+([A-Za-z0-9_-]+))?$/i);
 
   if (finish) {
     const current = focoAtual(tasks, state);
@@ -2171,9 +2172,7 @@ export function executarAcaoCopiloto(
     }
 
     if (
-      !state.evidence.some(
-        (proof) => proof.taskId === taskId && proof.verified
-      )
+      !state.evidence.some((proof) => proof.taskId === taskId && proof.verified)
     ) {
       throw new Error(
         "Conclusão bloqueada: informe evidência e verificação antes da aprovação."
@@ -2258,7 +2257,6 @@ export function executarAcaoCopiloto(
   };
 }
 
-
 export function executarCopiloto(
   tasks: readonly Entrega[],
   state: EstadoOperacional,
@@ -2307,11 +2305,11 @@ export function executarCopiloto(
 
       if (!focus) {
         reply = "Dia fechado: não há entrega ativa.";
-      } else if (!proof) {
-        reply = `Dia fechado parcialmente. ${focus.title} permanece em execução; progresso preservado em ${state.started[focus.id] ?? 0} passo(s). Sem evidência verificada, não pode ser concluída.`;
-      } else {
+      } else if (proof) {
         reply = `${focus.title} possui evidência verificada. Confirme em Feito para concluir; o Copiloto não encerra entregas sem aprovação humana.`;
         requiresApproval = true;
+      } else {
+        reply = `Dia fechado parcialmente. ${focus.title} permanece em execução; progresso preservado em ${state.started[focus.id] ?? 0} passo(s). Sem evidência verificada, não pode ser concluída.`;
       }
 
       break;
@@ -2338,7 +2336,8 @@ export function executarCopiloto(
         : "Não há entregas bloqueadas.";
       break;
     default:
-      reply = "Comandos disponíveis: /bomdia, /agora, /estado, /fechardia, /replanejamento, /mapa, /evidencia e /bloqueio.";
+      reply =
+        "Comandos disponíveis: /bomdia, /agora, /estado, /fechardia, /replanejamento, /mapa, /evidencia e /bloqueio.";
   }
 
   return { command, reply, state, requiresApproval };

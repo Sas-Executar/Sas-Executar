@@ -18,7 +18,10 @@ const finalIntegration = [
 ] as const;
 
 const Pricing = () => (
-  <main aria-labelledby="executar-pricing-title" className="w-full py-20 lg:py-32">
+  <main
+    aria-labelledby="executar-pricing-title"
+    className="w-full py-20 lg:py-32"
+  >
     <div className="container mx-auto flex max-w-5xl flex-col gap-12">
       <header className="flex max-w-3xl flex-col gap-4">
         <h1
@@ -28,14 +31,16 @@ const Pricing = () => (
           Disponibilidade transparente. Preços ainda em definição.
         </h1>
         <p className="text-lg text-muted-foreground leading-relaxed">
-          O EXECUTAR não apresenta valores, assinaturas ou recursos externos como
-          ativos antes da configuração comercial e técnica correspondente.
+          O EXECUTAR não apresenta valores, assinaturas ou recursos externos
+          como ativos antes da configuração comercial e técnica correspondente.
         </p>
       </header>
 
       <div className="grid gap-6 md:grid-cols-2">
         <section className="flex flex-col gap-5 rounded-xl border p-7">
-          <span className="text-muted-foreground text-sm">BASE OPERACIONAL</span>
+          <span className="text-muted-foreground text-sm">
+            BASE OPERACIONAL
+          </span>
           <h2 className="text-2xl">O que já existe em código</h2>
           <ul className="grid gap-3 text-sm">
             {available.map((item) => (
@@ -51,12 +56,17 @@ const Pricing = () => (
         </section>
 
         <section className="flex flex-col gap-5 rounded-xl border p-7">
-          <span className="text-muted-foreground text-sm">INTEGRAÇÃO FINAL</span>
+          <span className="text-muted-foreground text-sm">
+            INTEGRAÇÃO FINAL
+          </span>
           <h2 className="text-2xl">O que depende de ativação</h2>
           <ul className="grid gap-3 text-sm">
             {finalIntegration.map((item) => (
               <li className="flex items-start gap-3" key={item}>
-                <Clock3 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+                <Clock3
+                  aria-hidden="true"
+                  className="mt-0.5 h-4 w-4 shrink-0"
+                />
                 {item}
               </li>
             ))}

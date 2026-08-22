@@ -21,8 +21,7 @@ const App = async () => {
     <ExecutarOperacional
       collaborationAvailable={Boolean(env.LIVEBLOCKS_SECRET)}
       externalNotificationsAvailable={Boolean(
-        env.NEXT_PUBLIC_KNOCK_API_KEY &&
-          env.NEXT_PUBLIC_KNOCK_FEED_CHANNEL_ID
+        env.NEXT_PUBLIC_KNOCK_API_KEY && env.NEXT_PUBLIC_KNOCK_FEED_CHANNEL_ID
       )}
       organizationId={orgId}
       userId={userId}

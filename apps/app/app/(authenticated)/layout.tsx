@@ -23,9 +23,7 @@ const AppLayout = async ({ children }: AppLayoutProperties) => {
   }
 
   return (
-    <NotificationsProvider userId={user.id}>
-      {children}
-    </NotificationsProvider>
+    <NotificationsProvider userId={user.id}>{children}</NotificationsProvider>
   );
 };
 

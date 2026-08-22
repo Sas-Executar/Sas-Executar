@@ -197,4 +197,3 @@ export const Header = ({ dictionary }: HeaderProps) => {
     </header>
   );
 };
-

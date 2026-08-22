@@ -2,6 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
+  configuracaoAiSdkPreparada,
+  criarAdaptadorAgente,
+  descreverFerramentasAgente,
+  manifestoMcpPreparado,
+} from "../../apps/app/lib/executar/agent-contract.ts";
+import {
   assumirFoco,
   criarProjeto,
   editarEntrega,
@@ -17,12 +23,6 @@ import {
   resolverAprovacaoCopiloto,
   selecionarProjeto,
 } from "../../apps/app/lib/executar/domain.ts";
-import {
-  configuracaoAiSdkPreparada,
-  criarAdaptadorAgente,
-  descreverFerramentasAgente,
-  manifestoMcpPreparado,
-} from "../../apps/app/lib/executar/agent-contract.ts";
 
 const tasks = [
   {
@@ -107,7 +107,10 @@ function adapter(port, limit = 8) {
 }
 
 test("Copiloto cria e seleciona projeto por comando explícito", () => {
-  const result = executarAcaoCopiloto(initial(), "/projeto criar Campanha Digital");
+  const result = executarAcaoCopiloto(
+    initial(),
+    "/projeto criar Campanha Digital"
+  );
 
   assert.equal(result.state.activeProjectId, "campanha-digital");
   assert.equal(result.state.projects.length, 2);
@@ -117,13 +120,19 @@ test("Copiloto cria e seleciona projeto por comando explícito", () => {
 });
 
 test("Copiloto compreende linguagem natural para criar plano", () => {
-  const result = executarAcaoCopiloto(initial(), "criar plano Lançamento Nordeste");
+  const result = executarAcaoCopiloto(
+    initial(),
+    "criar plano Lançamento Nordeste"
+  );
 
   assert.equal(result.state.activeProjectId, "lancamento-nordeste");
 });
 
 test("Copiloto renomeia o projeto canônico sem criar estado paralelo", () => {
-  const result = executarAcaoCopiloto(initial(), "/plano renomear Sprint Revisto");
+  const result = executarAcaoCopiloto(
+    initial(),
+    "/plano renomear Sprint Revisto"
+  );
 
   assert.equal(result.state.projects[0].name, "Sprint Revisto");
   assert.equal(result.state.events.at(-1)?.tool, "renomear_projeto");
@@ -250,7 +259,10 @@ test("aprovação humana efetiva a substituição do plano", () => {
     true
   );
 
-  assert.deepEqual(entregasAtivas(result.state).map((item) => item.id), ["NOVO"]);
+  assert.deepEqual(
+    entregasAtivas(result.state).map((item) => item.id),
+    ["NOVO"]
+  );
   assert.equal(result.state.events.at(-1)?.humanApproved, true);
 });
 
@@ -356,12 +368,17 @@ test("recusa humana preserva entrega e registra decisão", () => {
   );
 
   assert.deepEqual(result.state.done, []);
-  assert.equal(result.state.events.at(-1)?.action, "copiloto.aprovacao_recusada");
+  assert.equal(
+    result.state.events.at(-1)?.action,
+    "copiloto.aprovacao_recusada"
+  );
 });
 
 test("aprovação expira se a revisão canônica mudar", () => {
   const pending = executarAcaoCopiloto(proof(), "/concluir A");
-  const changed = editarEntrega(pending.state, "C", { title: "Contexto atualizado" });
+  const changed = editarEntrega(pending.state, "C", {
+    title: "Contexto atualizado",
+  });
 
   assert.throws(
     () => resolverAprovacaoCopiloto(changed, pending.approval, true),
@@ -476,7 +493,13 @@ test("Copiloto ajusta capacidade sem ultrapassar limites", () => {
 test("comando agora inclui DoD, evidência, tempo e próxima ação", () => {
   const result = executarCopiloto(tasks, initial(), "/agora");
 
-  for (const field of ["AGORA:", "TEMPO:", "CONCLUI QUANDO:", "EVIDÊNCIA:", "PRÓXIMA:"]) {
+  for (const field of [
+    "AGORA:",
+    "TEMPO:",
+    "CONCLUI QUANDO:",
+    "EVIDÊNCIA:",
+    "PRÓXIMA:",
+  ]) {
     assert.match(result.reply, new RegExp(field));
   }
 
@@ -485,7 +508,11 @@ test("comando agora inclui DoD, evidência, tempo e próxima ação", () => {
 
 test("limite de entrada bloqueia payload excessivo", () => {
   assert.throws(
-    () => executarAcaoCopiloto(initial(), "x".repeat(LIMITES_COPILOTO.maxInputCharacters + 1)),
+    () =>
+      executarAcaoCopiloto(
+        initial(),
+        "x".repeat(LIMITES_COPILOTO.maxInputCharacters + 1)
+      ),
     /limite de segurança/
   );
 });
@@ -525,8 +552,14 @@ test("descritores de ferramentas usam inputSchema compatível com AI SDK/MCP", (
   const descriptors = descreverFerramentasAgente(FERRAMENTAS_OPERACIONAIS);
 
   assert.equal(descriptors.length, FERRAMENTAS_OPERACIONAIS.length);
-  assert.ok(descriptors.every((descriptor) => descriptor.inputSchema.type === "object"));
-  assert.ok(descriptors.every((descriptor) => descriptor.inputSchema.additionalProperties === false));
+  assert.ok(
+    descriptors.every((descriptor) => descriptor.inputSchema.type === "object")
+  );
+  assert.ok(
+    descriptors.every(
+      (descriptor) => descriptor.inputSchema.additionalProperties === false
+    )
+  );
 });
 
 test("esquemas não deixam modelo escolher tenant, projeto ou aprovação", () => {
@@ -541,8 +574,12 @@ test("esquemas não deixam modelo escolher tenant, projeto ou aprovação", () =
 
 test("descritores distinguem leitura e operação relevante", () => {
   const descriptors = descreverFerramentasAgente(FERRAMENTAS_OPERACIONAIS);
-  const read = descriptors.find((descriptor) => descriptor.name === "consultar_estado");
-  const finish = descriptors.find((descriptor) => descriptor.name === "concluir_entrega");
+  const read = descriptors.find(
+    (descriptor) => descriptor.name === "consultar_estado"
+  );
+  const finish = descriptors.find(
+    (descriptor) => descriptor.name === "concluir_entrega"
+  );
 
   assert.equal(read.annotations.readOnlyHint, true);
   assert.equal(finish.annotations.destructiveHint, true);
@@ -561,12 +598,10 @@ test("adaptador executa ferramenta reversível sobre o estado canônico", () => 
 test("adaptador rejeita argumentos ausentes, extras ou de tipo incorreto", () => {
   const bridge = adapter(memoryPort());
 
+  assert.throws(() => bridge.invoke("assumir_foco", {}), /obrigatório/);
   assert.throws(
-    () => bridge.invoke("assumir_foco", {}),
-    /obrigatório/
-  );
-  assert.throws(
-    () => bridge.invoke("assumir_foco", { taskId: "C", organizationId: "org_b" }),
+    () =>
+      bridge.invoke("assumir_foco", { taskId: "C", organizationId: "org_b" }),
     /não autorizado/
   );
   assert.throws(
@@ -666,7 +701,10 @@ test("Copiloto executa fluxo completo de criação, foco, evidência e aprovaç�
   ).state;
   state = executarAcaoCopiloto(state, "/foco L-01").state;
   state = executarAcaoCopiloto(state, "/progresso").state;
-  state = executarAcaoCopiloto(state, "/evidencia verificar Publicação validada").state;
+  state = executarAcaoCopiloto(
+    state,
+    "/evidencia verificar Publicação validada"
+  ).state;
   const pending = executarAcaoCopiloto(state, "/concluir L-01");
 
   assert.deepEqual(pending.state.done, []);

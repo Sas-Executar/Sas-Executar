@@ -32,9 +32,33 @@ import {
 import { ENTREGAS_SPRINT } from "../../apps/app/lib/executar/seed.ts";
 
 const tarefas = [
-  { id: "A", title: "Base", front: "Operações", date: "24/08", mins: 180, deps: [], stage: 1 },
-  { id: "B", title: "Produto", front: "Desenvolvimento", date: "25/08", mins: 60, deps: ["A"], stage: 2 },
-  { id: "C", title: "Contexto", front: "Criativo", date: "24/08", mins: 210, deps: [], stage: 1 },
+  {
+    id: "A",
+    title: "Base",
+    front: "Operações",
+    date: "24/08",
+    mins: 180,
+    deps: [],
+    stage: 1,
+  },
+  {
+    id: "B",
+    title: "Produto",
+    front: "Desenvolvimento",
+    date: "25/08",
+    mins: 60,
+    deps: ["A"],
+    stage: 2,
+  },
+  {
+    id: "C",
+    title: "Contexto",
+    front: "Criativo",
+    date: "24/08",
+    mins: 210,
+    deps: [],
+    stage: 1,
+  },
 ];
 
 const item = (id, deps = []) => ({
@@ -53,7 +77,14 @@ function estadoInicial() {
 
 function concluirA(state = estadoInicial()) {
   const focused = assumirFoco(tarefas, state, "A");
-  const evidenced = registrarEvidencia(tarefas, focused, "A", "Validado", "", true);
+  const evidenced = registrarEvidencia(
+    tarefas,
+    focused,
+    "A",
+    "Validado",
+    "",
+    true
+  );
 
   return concluirEntrega(tarefas, evidenced, "A");
 }
@@ -76,7 +107,11 @@ test("migra snapshot legado sem perder progresso nem seed original", () => {
     events: [],
     revision: 3,
   };
-  const migrated = restaurarEstado(JSON.stringify(legacy), "org_a", ENTREGAS_SPRINT);
+  const migrated = restaurarEstado(
+    JSON.stringify(legacy),
+    "org_a",
+    ENTREGAS_SPRINT
+  );
 
   assert.equal(migrated.projects.length, 1);
   assert.equal(migrated.activeProjectId, "sprint-principal");
@@ -102,7 +137,10 @@ test("evita colisão entre projetos de mesmo nome", () => {
 });
 
 test("rejeita projeto sem nome", () => {
-  assert.throws(() => criarProjeto(estadoInicial(), "  "), /nome para o projeto/);
+  assert.throws(
+    () => criarProjeto(estadoInicial(), "  "),
+    /nome para o projeto/
+  );
 });
 
 test("troca de projeto preserva progresso, evidências e foco separadamente", () => {
@@ -132,7 +170,10 @@ test("não mantém snapshot duplicado do projeto atualmente ativo", () => {
   const selected = selecionarProjeto(created, "segundo");
 
   assert.equal(projetoAtivo(selected).snapshot, undefined);
-  assert.ok(selected.projects.find((project) => project.id === "sprint-principal")?.snapshot);
+  assert.ok(
+    selected.projects.find((project) => project.id === "sprint-principal")
+      ?.snapshot
+  );
 });
 
 test("não seleciona projeto inexistente ou externo", () => {
@@ -154,7 +195,9 @@ test("adiciona entrega válida e recalcula fila", () => {
   const state = adicionarEntrega(estadoInicial(), item("D", ["A"]));
 
   assert.equal(entregasAtivas(state).length, 4);
-  assert.ok(filaBloqueada(entregasAtivas(state), state).some((task) => task.id === "D"));
+  assert.ok(
+    filaBloqueada(entregasAtivas(state), state).some((task) => task.id === "D")
+  );
 });
 
 test("rejeita IDs repetidos ao adicionar entrega", () => {
@@ -198,7 +241,11 @@ test("recalcula foco quando nova dependência bloqueia a entrega atual", () => {
   const edited = editarEntrega(focused, "C", { deps: ["A"] });
 
   assert.equal(edited.focus, "A");
-  assert.ok(filaBloqueada(entregasAtivas(edited), edited).some((task) => task.id === "C"));
+  assert.ok(
+    filaBloqueada(entregasAtivas(edited), edited).some(
+      (task) => task.id === "C"
+    )
+  );
 });
 
 test("não altera dependências de entrega já concluída", () => {
@@ -216,7 +263,10 @@ test("remove entrega sem sucessores nem evidências", () => {
 });
 
 test("impede remoção de entrega com sucessor dependente", () => {
-  assert.throws(() => removerEntrega(estadoInicial(), "A"), /dependências de B/);
+  assert.throws(
+    () => removerEntrega(estadoInicial(), "A"),
+    /dependências de B/
+  );
 });
 
 test("impede remoção de entrega concluída", () => {
@@ -260,7 +310,10 @@ test("importa CSV com campo entre aspas e vírgula", () => {
   ].join("\n");
   const imported = importarPlano(estadoInicial(), content);
 
-  assert.equal(entregasAtivas(imported).at(-1)?.title, "Validar, publicar e medir");
+  assert.equal(
+    entregasAtivas(imported).at(-1)?.title,
+    "Validar, publicar e medir"
+  );
 });
 
 test("importa lista Markdown com campos operacionais", () => {
@@ -295,7 +348,10 @@ test("substitui plano apenas quando ainda não há comprovações", () => {
     "replace"
   );
 
-  assert.deepEqual(entregasAtivas(replaced).map((task) => task.id), ["NOVO"]);
+  assert.deepEqual(
+    entregasAtivas(replaced).map((task) => task.id),
+    ["NOVO"]
+  );
   assert.throws(
     () => importarPlano(concluirA(), JSON.stringify([item("NOVO")]), "replace"),
     /conclusões ou evidências/
@@ -303,7 +359,10 @@ test("substitui plano apenas quando ainda não há comprovações", () => {
 });
 
 test("rejeita plano vazio ou formato não reconhecido", () => {
-  assert.throws(() => importarPlano(estadoInicial(), "  "), /não pode estar vazio/);
+  assert.throws(
+    () => importarPlano(estadoInicial(), "  "),
+    /não pode estar vazio/
+  );
   assert.throws(
     () => importarPlano(estadoInicial(), "texto sem estrutura"),
     /Formato não reconhecido/
@@ -382,9 +441,15 @@ test("caminho crítico vazio não inventa trabalho", () => {
 
 test("validação rejeita esforço, data e etapa inválidos", () => {
   assert.throws(() => validarGrafo([{ ...item("X"), mins: 0 }]), /esforço/);
-  assert.throws(() => validarGrafo([{ ...item("X"), date: "99/99" }]), /dia válido/);
+  assert.throws(
+    () => validarGrafo([{ ...item("X"), date: "99/99" }]),
+    /dia válido/
+  );
   assert.throws(() => validarGrafo([{ ...item("X"), stage: 5 }]), /etapa/);
-  assert.throws(() => validarGrafo([{ ...item("X"), deps: ["X", "X"] }]), /repetir/);
+  assert.throws(
+    () => validarGrafo([{ ...item("X"), deps: ["X", "X"] }]),
+    /repetir/
+  );
 });
 
 test("eventos incluem projeto, tenant e revisão para sincronização idempotente", () => {
@@ -429,20 +494,12 @@ test("snapshot legado normaliza eventos antigos e remove eventos de outro tenant
 
 test("evidência aceita arquivo local verificado sem exigir texto adicional", () => {
   const focused = assumirFoco(tarefas, estadoInicial(), "A");
-  const evidenced = registrarEvidencia(
-    tarefas,
-    focused,
-    "A",
-    "",
-    "",
-    true,
-    {
-      name: "prova.txt",
-      type: "text/plain",
-      size: 5,
-      data: "data:text/plain;base64,cHJvdmE=",
-    }
-  );
+  const evidenced = registrarEvidencia(tarefas, focused, "A", "", "", true, {
+    name: "prova.txt",
+    type: "text/plain",
+    size: 5,
+    data: "data:text/plain;base64,cHJvdmE=",
+  });
 
   assert.equal(evidenced.evidence[0].file?.name, "prova.txt");
   assert.deepEqual(concluirEntrega(tarefas, evidenced, "A").done, ["A"]);
@@ -509,8 +566,14 @@ test("fila recalculada após edição continua respeitando todas as dependência
   const changed = editarEntrega(estadoInicial(), "B", { deps: ["A", "C"] });
   const afterA = concluirA(changed);
 
-  assert.ok(filaBloqueada(entregasAtivas(afterA), afterA).some((task) => task.id === "B"));
-  assert.ok(filaPronta(entregasAtivas(afterA), afterA).some((task) => task.id === "C"));
+  assert.ok(
+    filaBloqueada(entregasAtivas(afterA), afterA).some(
+      (task) => task.id === "B"
+    )
+  );
+  assert.ok(
+    filaPronta(entregasAtivas(afterA), afterA).some((task) => task.id === "C")
+  );
 });
 
 test("interface conecta CRUD, importação e evidências ao projeto ativo", async () => {

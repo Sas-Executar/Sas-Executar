@@ -38,7 +38,9 @@ export const CollaborationProvider = ({
     <Room
       authEndpoint="/api/collaboration/auth"
       fallback={
-        <div className="px-3 text-muted-foreground text-xs">Carregando colaboração...</div>
+        <div className="px-3 text-muted-foreground text-xs">
+          Carregando colaboração...
+        </div>
       }
       id={`${orgId}:${projectId}`}
       resolveMentionSuggestions={resolveMentionSuggestions}
@@ -48,4 +50,3 @@ export const CollaborationProvider = ({
     </Room>
   );
 };
-

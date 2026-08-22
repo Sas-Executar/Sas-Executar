@@ -16,7 +16,10 @@ export const Footer = () => (
           Foco, dependências e evidências. Próximo 1 por vez.
         </p>
       </div>
-      <nav aria-label="Navegação do rodapé" className="flex flex-wrap gap-5 text-sm">
+      <nav
+        aria-label="Navegação do rodapé"
+        className="flex flex-wrap gap-5 text-sm"
+      >
         {links.map((link) => (
           <Link href={link.href} key={link.href}>
             {link.title}

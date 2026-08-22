@@ -14,6 +14,9 @@ import {
   registrarPresenca,
 } from "@/lib/executar/distribution";
 import {
+  type AprovacaoCopiloto,
+  type ArquivoEvidencia,
+  type AtorOperacional,
   adicionarEntrega,
   assumirFoco,
   atualizarCapacidadeProjeto,
@@ -24,6 +27,8 @@ import {
   concluirEntrega,
   criarProjeto,
   dependenciasPendentes,
+  type Entrega,
+  type EstadoOperacional,
   editarEntrega,
   entregasAtivas,
   estadoEntrega,
@@ -36,19 +41,14 @@ import {
   novoEstado,
   progresso,
   projetoAtivo,
+  ROTULOS_ESTADO,
   registrarEvidencia,
   registrarPasso,
   removerEntrega,
   renomearProjeto,
   resolverAprovacaoCopiloto,
   restaurarEstado,
-  ROTULOS_ESTADO,
   selecionarProjeto,
-  type AprovacaoCopiloto,
-  type ArquivoEvidencia,
-  type AtorOperacional,
-  type Entrega,
-  type EstadoOperacional,
 } from "@/lib/executar/domain";
 import { ENTREGAS_SPRINT } from "@/lib/executar/seed";
 import { CollaborationProvider } from "./collaboration-provider";
@@ -254,9 +254,9 @@ function Overview({
           </div>
           <div className="cardBody">
             {fronts.map((front) => {
-              const minutes = tasks.filter(
-                (task) => task.front === front
-              ).reduce((total, task) => total + task.mins, 0);
+              const minutes = tasks
+                .filter((task) => task.front === front)
+                .reduce((total, task) => total + task.mins, 0);
 
               return (
                 <div className="executarFrente" key={front}>
@@ -317,9 +317,7 @@ function Focus({
     );
   }
 
-  const ready = filaPronta(tasks, state).filter(
-    (task) => task.id !== focus.id
-  );
+  const ready = filaPronta(tasks, state).filter((task) => task.id !== focus.id);
   const blocked = filaBloqueada(tasks, state);
   const steps = Math.max(1, Math.ceil(focus.mins / 15));
   const completedSteps = state.started[focus.id] ?? 0;
@@ -335,7 +333,9 @@ function Focus({
               <div className="counter">{focus.stage}/4</div>
             </div>
             <div className="flashText">
-              <div className="eyebrow">{focus.front.toLocaleUpperCase("pt-BR")}</div>
+              <div className="eyebrow">
+                {focus.front.toLocaleUpperCase("pt-BR")}
+              </div>
               <h2>{focus.title}</h2>
               <p>
                 {focus.deps.length
@@ -353,7 +353,9 @@ function Focus({
             </button>
           </div>
         </div>
-        <div className="queueLabel">Fila · toque em um cartão para assumir o foco</div>
+        <div className="queueLabel">
+          Fila · toque em um cartão para assumir o foco
+        </div>
         <div className="queueTiles">
           {Array.from({ length: 4 }, (_, index) => {
             const task = ready[index];
@@ -380,7 +382,9 @@ function Focus({
         <div className="card">
           <div className="cardHead">
             <h2>Passos</h2>
-            <span>{completedSteps}/{steps}</span>
+            <span>
+              {completedSteps}/{steps}
+            </span>
           </div>
           <div className="cardBody">
             <div className="steps">
@@ -394,9 +398,7 @@ function Focus({
             </div>
             <button
               className="softBtn executarBotaoLargo"
-              onClick={() =>
-                setState(registrarPasso(tasks, state, focus.id))
-              }
+              onClick={() => setState(registrarPasso(tasks, state, focus.id))}
               type="button"
             >
               Marcar próximo passo
@@ -404,14 +406,29 @@ function Focus({
           </div>
         </div>
         <TaskList label="Pode fazer depois" tasks={ready.slice(0, 6)} />
-        <TaskList blocked label="Ainda não pode" state={state} tasks={blocked.slice(0, 4)} total={blocked.length} />
+        <TaskList
+          blocked
+          label="Ainda não pode"
+          state={state}
+          tasks={blocked.slice(0, 4)}
+          total={blocked.length}
+        />
         <div className="card">
           <div className="cardHead">
             <h2>Estado operacional</h2>
-            <span>{ROTULOS_ESTADO[estadoEntrega(focus, { ...state, focus: focus.id })]}</span>
+            <span>
+              {
+                ROTULOS_ESTADO[
+                  estadoEntrega(focus, { ...state, focus: focus.id })
+                ]
+              }
+            </span>
           </div>
           <div className="cardBody">
-            <small>Uma entrega em foco. Evidência e verificação exigidas para concluir.</small>
+            <small>
+              Uma entrega em foco. Evidência e verificação exigidas para
+              concluir.
+            </small>
           </div>
         </div>
       </div>
@@ -481,7 +498,10 @@ function Calendar({ state }: { readonly state: EstadoOperacional }) {
             const result = original?.[2] ?? "Fechar entregas do projeto";
 
             return (
-              <div className={`dayCard ${index === 0 ? "now" : ""}`} key={day.date}>
+              <div
+                className={`dayCard ${index === 0 ? "now" : ""}`}
+                key={day.date}
+              >
                 <div className="dow">{weekday}</div>
                 <div className="num">{day.date.slice(0, 2)}</div>
                 <h3>{result}</h3>
@@ -505,7 +525,10 @@ function Calendar({ state }: { readonly state: EstadoOperacional }) {
         </div>
         <div className="cardBody cycleLine">
           {cycles.map((cycle, index) => (
-            <div className={`cycle ${index === 0 ? "now" : ""}`} key={cycle.number}>
+            <div
+              className={`cycle ${index === 0 ? "now" : ""}`}
+              key={cycle.number}
+            >
               <i>{index === 0 ? "●" : ""}</i>
               <b>Ciclo {cycle.number}</b>
               <small>
@@ -541,24 +564,30 @@ function Path({
         {[1, 2, 3, 4].map((stage) => (
           <section className="executarPathColumn" key={stage}>
             <h3>Etapa {stage}</h3>
-            {tasks.filter((task) => task.stage === stage).map((task) => {
-              const status = estadoEntrega(task, state);
-              const waiting = dependenciasPendentes(task, state);
+            {tasks
+              .filter((task) => task.stage === stage)
+              .map((task) => {
+                const status = estadoEntrega(task, state);
+                const waiting = dependenciasPendentes(task, state);
 
-              return (
-                <article
-                  className={`executarPathNode ${critical.has(task.id) ? "hot" : ""}`}
-                  key={task.id}
-                >
-                  <b>{task.id} · {task.title}</b>
-                  <small>{ROTULOS_ESTADO[status]}</small>
-                  {!!waiting.length && <small>Aguarda {waiting.join(", ")}</small>}
-                  {!waiting.length && !!task.deps.length && (
-                    <small>Liberado por {task.deps.join(", ")}</small>
-                  )}
-                </article>
-              );
-            })}
+                return (
+                  <article
+                    className={`executarPathNode ${critical.has(task.id) ? "hot" : ""}`}
+                    key={task.id}
+                  >
+                    <b>
+                      {task.id} · {task.title}
+                    </b>
+                    <small>{ROTULOS_ESTADO[status]}</small>
+                    {!!waiting.length && (
+                      <small>Aguarda {waiting.join(", ")}</small>
+                    )}
+                    {!waiting.length && !!task.deps.length && (
+                      <small>Liberado por {task.deps.join(", ")}</small>
+                    )}
+                  </article>
+                );
+              })}
           </section>
         ))}
       </div>
@@ -606,7 +635,9 @@ function ProjectManager({
     } catch (error) {
       setNotice("");
       setProblem(
-        error instanceof Error ? error.message : "Não foi possível atualizar o projeto."
+        error instanceof Error
+          ? error.message
+          : "Não foi possível atualizar o projeto."
       );
     }
   }
@@ -622,7 +653,9 @@ function ProjectManager({
       setProblem("");
       setNotice("Projeto criado e selecionado.");
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : "Não foi possível criar.");
+      setProblem(
+        error instanceof Error ? error.message : "Não foi possível criar."
+      );
     }
   }
 
@@ -768,7 +801,11 @@ function ProjectManager({
               placeholder="Nome de um novo projeto"
               value={newProjectName}
             />
-            <button className="primaryBtn" onClick={createProject} type="button">
+            <button
+              className="primaryBtn"
+              onClick={createProject}
+              type="button"
+            >
               Criar projeto
             </button>
           </div>
@@ -884,10 +921,12 @@ function ProjectManager({
             {tasks.map((task) => (
               <div className="executarTaskRow" key={task.id}>
                 <div>
-                  <b>{task.id} · {task.title}</b>
+                  <b>
+                    {task.id} · {task.title}
+                  </b>
                   <small>
-                    {task.date} · {task.mins} min ·
-                    {" "}{ROTULOS_ESTADO[estadoEntrega(task, state)]}
+                    {task.date} · {task.mins} min ·{" "}
+                    {ROTULOS_ESTADO[estadoEntrega(task, state)]}
                   </small>
                 </div>
                 <button
@@ -914,7 +953,9 @@ function ProjectManager({
                 </button>
               </div>
             ))}
-            {!tasks.length && <small>Nenhuma entrega. Adicione ou importe um plano.</small>}
+            {!tasks.length && (
+              <small>Nenhuma entrega. Adicione ou importe um plano.</small>
+            )}
           </div>
         </section>
 
@@ -927,9 +968,12 @@ function ProjectManager({
               const file = event.target.files?.[0];
 
               if (file) {
-                void file.text().then(setImportContent).catch(() => {
-                  setProblem("Não foi possível ler o arquivo selecionado.");
-                });
+                void file
+                  .text()
+                  .then(setImportContent)
+                  .catch(() => {
+                    setProblem("Não foi possível ler o arquivo selecionado.");
+                  });
               }
             }}
             type="file"
@@ -1014,13 +1058,20 @@ function ProjectManager({
           </div>
         </section>
 
-        {notice && <p className="executarNotice" role="status">{notice}</p>}
-        {problem && <p className="executarErro" role="alert">{problem}</p>}
+        {notice && (
+          <p className="executarNotice" role="status">
+            {notice}
+          </p>
+        )}
+        {problem && (
+          <p className="executarErro" role="alert">
+            {problem}
+          </p>
+        )}
       </div>
     </div>
   );
 }
-
 
 function CollaborationPanel({
   actor,
@@ -1034,14 +1085,12 @@ function CollaborationPanel({
   readonly state: EstadoOperacional;
 }) {
   const tasks = entregasAtivas(state);
-  const [taskId, setTaskId] = useState(
-    state.focus ?? tasks[0]?.id ?? ""
-  );
+  const [taskId, setTaskId] = useState(state.focus ?? tasks[0]?.id ?? "");
   const [message, setMessage] = useState("");
   const [problem, setProblem] = useState("");
   const activeTaskId = tasks.some((task) => task.id === taskId)
     ? taskId
-    : state.focus ?? tasks[0]?.id ?? "";
+    : (state.focus ?? tasks[0]?.id ?? "");
   const comments = activeTaskId
     ? comentariosEntrega(state, actor, activeTaskId)
     : [];
@@ -1090,7 +1139,10 @@ function CollaborationPanel({
   }
 
   return (
-    <aside aria-label="Colaboração operacional" className="executarCopiloto executarColaboracao">
+    <aside
+      aria-label="Colaboração operacional"
+      className="executarCopiloto executarColaboracao"
+    >
       <div className="executarCopilotoHead">
         <div>
           <b>Equipe e avisos</b>
@@ -1117,7 +1169,9 @@ function CollaborationPanel({
             ))}
             {!participants.length && <small>Nenhuma presença recente.</small>}
           </div>
-          <small>Modo local. Colaboração remota depende da integração final.</small>
+          <small>
+            Modo local. Colaboração remota depende da integração final.
+          </small>
         </section>
 
         <section aria-labelledby="executar-avisos-titulo">
@@ -1180,7 +1234,11 @@ function CollaborationPanel({
             <span>{nextOnboarding.title}</span>
           </div>
         )}
-        {problem && <p className="executarErro" role="alert">{problem}</p>}
+        {problem && (
+          <p className="executarErro" role="alert">
+            {problem}
+          </p>
+        )}
       </div>
       <form className="executarChatForm" onSubmit={sendComment}>
         <input
@@ -1241,7 +1299,9 @@ export function ExecutarOperacional({
   }, [state]);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(chaveOrganizacao(organizationId));
+    const stored = window.localStorage.getItem(
+      chaveOrganizacao(organizationId)
+    );
     setState(restaurarEstado(stored, organizationId, ENTREGAS_SPRINT));
     setLoaded(true);
   }, [organizationId]);
@@ -1304,7 +1364,9 @@ export function ExecutarOperacional({
   const focus = useMemo(() => focoAtual(tasks, state), [state, tasks]);
   const activeProject = projetoAtivo(state);
   const unreadNotifications = useMemo(
-    () => notificacoesOperacionais(state, actor).filter((item) => !item.read).length,
+    () =>
+      notificacoesOperacionais(state, actor).filter((item) => !item.read)
+        .length,
     [actor, state]
   );
   const title = VIEWS.find((item) => item.id === view)?.label ?? "Visão geral";
@@ -1338,7 +1400,11 @@ export function ExecutarOperacional({
       setVerified(false);
       setError("");
     } catch (problem) {
-      setError(problem instanceof Error ? problem.message : "Não foi possível concluir.");
+      setError(
+        problem instanceof Error
+          ? problem.message
+          : "Não foi possível concluir."
+      );
     }
   }
 
@@ -1517,10 +1583,17 @@ export function ExecutarOperacional({
             </div>
           </header>
           {syncNotice && (
-            <p className="executarSyncNotice" role="status">{syncNotice}</p>
+            <p className="executarSyncNotice" role="status">
+              {syncNotice}
+            </p>
           )}
           {view === "overview" && (
-            <Overview changeView={setView} focus={focus} state={state} tasks={tasks} />
+            <Overview
+              changeView={setView}
+              focus={focus}
+              state={state}
+              tasks={tasks}
+            />
           )}
           {view === "focus" && (
             <Focus
@@ -1653,13 +1726,20 @@ export function ExecutarOperacional({
               placeholder="O que faço agora?"
               value={message}
             />
-            <button className="primaryBtn" type="submit">Enviar</button>
+            <button className="primaryBtn" type="submit">
+              Enviar
+            </button>
           </form>
         </aside>
       )}
       {evidenceOpen && focus && (
         <div className="executarEvidenceBackdrop">
-          <div aria-labelledby="executar-evidencia-titulo" aria-modal="true" className="executarEvidenceDialog" role="dialog">
+          <div
+            aria-labelledby="executar-evidencia-titulo"
+            aria-modal="true"
+            className="executarEvidenceDialog"
+            role="dialog"
+          >
             <form className="dialogCard" onSubmit={saveEvidence}>
               <div className="dialogHead">
                 <div>
@@ -1710,7 +1790,11 @@ export function ExecutarOperacional({
                 />
                 Verifiquei a entrega e confirmei a evidência.
               </label>
-              {error && <p className="executarErro" role="alert">{error}</p>}
+              {error && (
+                <p className="executarErro" role="alert">
+                  {error}
+                </p>
+              )}
               <div className="dialogActions">
                 <button
                   className="softBtn"
@@ -1722,10 +1806,7 @@ export function ExecutarOperacional({
                 <button
                   className="primaryBtn"
                   disabled={
-                    !(
-                      verified &&
-                      (note.trim() || url.trim() || evidenceFile)
-                    )
+                    !(verified && (note.trim() || url.trim() || evidenceFile))
                   }
                   type="submit"
                 >

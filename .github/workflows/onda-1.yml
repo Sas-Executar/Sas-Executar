@@ -51,16 +51,29 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Verificar tipos do aplicativo SaaS
         run: bunx turbo run typecheck --filter=app
-      - name: Normalizar diagnósticos corrigíveis para revisão
-        run: bun run fix || true
-      - name: Registrar arquivos normalizados para revisão
+      - name: Inventariar diagnósticos reais de lint
         shell: bash
         run: |
-          while IFS= read -r -d '' executar_file; do
-            printf 'EXECUTAR_FORMATTED_FILE %s ' "$executar_file"
-            base64 -w 0 "$executar_file"
-            printf '\n'
-          done < <(git diff --name-only -z)
+          bunx biome check --reporter=json --max-diagnostics=300 > /tmp/executar-biome.json || true
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('/tmp/executar-biome.json', 'utf8'));
+          for (const diagnostic of report.diagnostics ?? []) {
+            const file = typeof diagnostic.location?.path === 'string'
+              ? diagnostic.location.path
+              : diagnostic.location?.path?.file;
+            const offset = diagnostic.location?.span?.[0];
+            const line = file && Number.isInteger(offset)
+              ? fs.readFileSync(file, 'utf8').slice(0, offset).split('\n').length
+              : undefined;
+            console.log('EXECUTAR_LINT_DIAGNOSTIC ' + JSON.stringify({
+              category: diagnostic.category,
+              file,
+              line,
+              description: diagnostic.description,
+            }));
+          }
+          NODE
       - name: Verificar lint e formatação
         run: bun run check
       - name: Executar testes do aplicativo

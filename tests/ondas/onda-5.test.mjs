@@ -73,7 +73,12 @@ function evidence(stepId, changes = {}) {
     passed: true,
     organizationId: actor.organizationId,
     ...(stepId === "supabase_novo"
-      ? { metadata: { projectOrigin: "novo", projectReference: "executar12345678" } }
+      ? {
+          metadata: {
+            projectOrigin: "novo",
+            projectReference: "executar12345678",
+          },
+        }
       : {}),
     ...(stepId === "clerk_supabase"
       ? { metadata: { identityAuthority: "Clerk" } }
@@ -113,7 +118,10 @@ function state() {
 
 function template() {
   return readFile(
-    new URL("../../docs/runner/sql/EXECUTAR_SUPABASE_TEMPLATE.sql", import.meta.url),
+    new URL(
+      "../../docs/runner/sql/EXECUTAR_SUPABASE_TEMPLATE.sql",
+      import.meta.url
+    ),
     "utf8"
   );
 }
@@ -172,7 +180,10 @@ test("sem provas, somente preservação está pronta", () => {
     avaliarFechamento(actor.organizationId, [], now)
   );
 
-  assert.deepEqual(ready.map((step) => step.id), ["preservacao_pwa"]);
+  assert.deepEqual(
+    ready.map((step) => step.id),
+    ["preservacao_pwa"]
+  );
 });
 
 test("organização vazia ou não emitida pelo Clerk é recusada", () => {
@@ -268,8 +279,14 @@ test("falha comprovada permanece explícita e bloqueia sucessores", () => {
     now
   );
 
-  assert.equal(steps.find((step) => step.id === "preservacao_pwa").status, "falhou");
-  assert.equal(steps.find((step) => step.id === "produto_operacional").status, "bloqueado");
+  assert.equal(
+    steps.find((step) => step.id === "preservacao_pwa").status,
+    "falhou"
+  );
+  assert.equal(
+    steps.find((step) => step.id === "produto_operacional").status,
+    "bloqueado"
+  );
 });
 
 test("prova de sucessor não ignora predecessor pendente", () => {
@@ -279,7 +296,10 @@ test("prova de sucessor não ignora predecessor pendente", () => {
     now
   );
 
-  assert.equal(steps.find((step) => step.id === "produto_operacional").status, "bloqueado");
+  assert.equal(
+    steps.find((step) => step.id === "produto_operacional").status,
+    "bloqueado"
+  );
 });
 
 test("projeto Supabase existente ou não identificado nunca é aprovado", () => {
@@ -305,7 +325,11 @@ test("integração recusa autoridade de identidade paralela", () => {
     () =>
       avaliarFechamento(
         actor.organizationId,
-        [evidence("clerk_supabase", { metadata: { identityAuthority: "Supabase Auth" } })],
+        [
+          evidence("clerk_supabase", {
+            metadata: { identityAuthority: "Supabase Auth" },
+          }),
+        ],
         now
       ),
     /única autoridade/
@@ -314,7 +338,10 @@ test("integração recusa autoridade de identidade paralela", () => {
 
 test("isolamento exige dois tenants e cinco operações reais", () => {
   for (const metadata of [
-    { tenantCount: 1, coverage: ["select", "insert", "update", "delete", "storage"] },
+    {
+      tenantCount: 1,
+      coverage: ["select", "insert", "update", "delete", "storage"],
+    },
     { tenantCount: 2, coverage: ["select", "insert", "update", "delete"] },
     { tenantCount: 2, coverage: ["storage"] },
   ]) {
@@ -379,7 +406,12 @@ test("Actions em andamento não é aprovado antecipadamente", () => {
 test("reexecução autorizada com zero steps continua bloqueada", () => {
   const result = diagnosticarActions(
     [
-      { name: "Preservação", status: "completed", conclusion: "failure", steps: [] },
+      {
+        name: "Preservação",
+        status: "completed",
+        conclusion: "failure",
+        steps: [],
+      },
       { name: "Build", status: "completed", conclusion: "skipped", steps: [] },
     ],
     true
@@ -455,7 +487,9 @@ test("database gera cliente Prisma antes do typecheck exigido pelo starter", asy
   const command = databasePackage.scripts.typecheck;
 
   assert.match(command, /^prisma generate --no-hints --schema=/);
-  assert.ok(command.indexOf("prisma generate") < command.indexOf("tsc --noEmit"));
+  assert.ok(
+    command.indexOf("prisma generate") < command.indexOf("tsc --noEmit")
+  );
 });
 
 test("Knock v1 usa options tipadas e degrada sem chave configurada", async () => {
@@ -506,7 +540,10 @@ test("painéis preservam wrappers e usam primitivas acessíveis da versão 4", a
   assert.match(source, /aria-\[orientation=vertical\]/);
   assert.doesNotMatch(source, /ResizablePrimitive\.PanelGroup/);
   assert.doesNotMatch(source, /ResizablePrimitive\.PanelResizeHandle/);
-  assert.match(source, /export \{ ResizablePanelGroup, ResizablePanel, ResizableHandle \}/);
+  assert.match(
+    source,
+    /export \{ ResizablePanelGroup, ResizablePanel, ResizableHandle \}/
+  );
 });
 
 test("restauração colaborativa conserva campos dinâmicos com type guard seguro", async () => {
@@ -527,13 +564,8 @@ test("lint mantém regras de produção e flexibiliza regex somente nos testes",
     entry.includes.includes("tests/**/*.mjs")
   );
 
-  assert.equal(
-    testOverride.linter.rules.performance.useTopLevelRegex,
-    "off"
-  );
-  assert.ok(
-    !("useTopLevelRegex" in configuration.linter.rules.performance)
-  );
+  assert.equal(testOverride.linter.rules.performance.useTopLevelRegex, "off");
+  assert.ok(!("useTopLevelRegex" in configuration.linter.rules.performance));
 });
 
 test("diagnóstico de ambiente lista nomes, nunca divulga valores", () => {
@@ -542,7 +574,10 @@ test("diagnóstico de ambiente lista nomes, nunca divulga valores", () => {
     NEXT_PUBLIC_SUPABASE_URL: configuration.url,
   });
 
-  assert.deepEqual(result.configured, ["NEXT_PUBLIC_SUPABASE_URL", "CLERK_SECRET_KEY"]);
+  assert.deepEqual(result.configured, [
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "CLERK_SECRET_KEY",
+  ]);
   assert.ok(result.missing.includes("DATABASE_URL"));
   assert.ok(!JSON.stringify(result).includes("segredo-real"));
 });
@@ -625,7 +660,12 @@ test("cliente recusa URL inválida, HTTP, credenciais e projeto divergente", () 
     "https://executar12345678.supabase.co/#segredo",
   ]) {
     assert.throws(
-      () => criarClienteSupabaseClerk({ ...configuration, url }, session, () => ({})),
+      () =>
+        criarClienteSupabaseClerk(
+          { ...configuration, url },
+          session,
+          () => ({})
+        ),
       /URL/
     );
   }
@@ -753,7 +793,9 @@ test("sincronização usa eventos reais, revisão e identificadores idempotentes
   assert.equal(batch.sync.baseRevision, 1);
   assert.equal(batch.sync.revision, evidenced.revision);
   assert.ok(batch.sync.events.every((event) => event.revision > 1));
-  assert.ok(batch.sync.operationIds.every((id) => id.startsWith("org_executar:")));
+  assert.ok(
+    batch.sync.operationIds.every((id) => id.startsWith("org_executar:"))
+  );
 });
 
 test("lote remoto não aceita ator de organização diferente", () => {
@@ -801,7 +843,10 @@ test("template cria nove recursos multi-tenant sem membership paralelo", async (
   }
 
   assert.equal((sql.match(/create table public\.executar_/g) ?? []).length, 9);
-  assert.doesNotMatch(sql, /create table\s+(?:public\.)?(?:members|memberships|users)\b/i);
+  assert.doesNotMatch(
+    sql,
+    /create table\s+(?:public\.)?(?:members|memberships|users)\b/i
+  );
 });
 
 test("chaves compostas impedem referências cruzadas entre tenants", async () => {
@@ -830,7 +875,10 @@ test("cada recurso recebe RLS obrigatória e permissões mínimas", async () => 
   assert.match(sql, /enable row level security/);
   assert.match(sql, /force row level security/);
   assert.match(sql, /revoke all on public\.%I from anon/);
-  assert.match(sql, /grant select, insert, update, delete on public\.%I to authenticated/);
+  assert.match(
+    sql,
+    /grant select, insert, update, delete on public\.%I to authenticated/
+  );
   assert.doesNotMatch(sql, /grant all\b/i);
 });
 
@@ -839,7 +887,10 @@ test("RLS cobre SELECT, INSERT, UPDATE e DELETE com WITH CHECK no update", async
 
   assert.match(sql, /for select to authenticated using \(%s\)/);
   assert.match(sql, /for insert to authenticated with check \(%s\)/);
-  assert.match(sql, /for update to authenticated using \(%s\) with check \(%s\)/);
+  assert.match(
+    sql,
+    /for update to authenticated using \(%s\) with check \(%s\)/
+  );
   assert.match(sql, /for delete to authenticated using \(%s\)/);
 });
 
@@ -849,8 +900,14 @@ test("autoria, aprovação e leitura privada usam o usuário Clerk do JWT", asyn
   assert.match(sql, /user_id = \(select auth\.jwt\(\) ->> ''sub''\)/);
   assert.match(sql, /author_user_id = \(select auth\.jwt\(\) ->> ''sub''\)/);
   assert.match(sql, /actor_user_id = \(select auth\.jwt\(\) ->> ''sub''\)/);
-  assert.match(sql, /requested_by_user_id = \(select auth\.jwt\(\) ->> ''sub''\)/);
-  assert.match(sql, /approved_by_user_id = \(select auth\.jwt\(\) ->> ''sub''\)/);
+  assert.match(
+    sql,
+    /requested_by_user_id = \(select auth\.jwt\(\) ->> ''sub''\)/
+  );
+  assert.match(
+    sql,
+    /approved_by_user_id = \(select auth\.jwt\(\) ->> ''sub''\)/
+  );
 });
 
 test("eventos auditáveis não podem ser alterados ou excluídos por authenticated", async () => {
@@ -865,7 +922,10 @@ test("eventos auditáveis não podem ser alterados ou excluídos por authenticat
 test("bucket de evidência é privado e limitado a 2,5 MB", async () => {
   const sql = await template();
 
-  assert.match(sql, /'executar-evidencias', 'executar-evidencias', false, 2621440/);
+  assert.match(
+    sql,
+    /'executar-evidencias', 'executar-evidencias', false, 2621440/
+  );
   assert.match(sql, /split_part\(storage_path, '\/', 1\) = organization_id/);
 });
 
@@ -879,7 +939,10 @@ test("Storage limita todas as operações ao prefixo da organização", async ()
     );
   }
 
-  assert.equal((sql.match(/\(storage\.foldername\(name\)\)\[1\]/g) ?? []).length, 5);
+  assert.equal(
+    (sql.match(/\(storage\.foldername\(name\)\)\[1\]/g) ?? []).length,
+    5
+  );
   assert.match(
     sql,
     /executar_storage_update_organization[\s\S]*?\nusing \([\s\S]*?\nwith check \(/
@@ -909,7 +972,10 @@ test("eventos e aprovações preservam auditoria humana por organização", asyn
   assert.match(sql, /unique \(organization_id, project_id, revision\)/);
   assert.match(sql, /actor_type in \('humano', 'copiloto'\)/);
   assert.match(sql, /human_approved boolean not null default false/);
-  assert.match(sql, /check \(status <> 'approved' or approved_by_user_id is not null\)/);
+  assert.match(
+    sql,
+    /check \(status <> 'approved' or approved_by_user_id is not null\)/
+  );
 });
 
 test("Realtime inclui somente eventos e comentários operacionais", async () => {
@@ -917,14 +983,23 @@ test("Realtime inclui somente eventos e comentários operacionais", async () => 
 
   assert.match(sql, /add table public\.executar_events/);
   assert.match(sql, /add table public\.executar_comments/);
-  assert.equal((sql.match(/alter publication supabase_realtime add table/g) ?? []).length, 2);
+  assert.equal(
+    (sql.match(/alter publication supabase_realtime add table/g) ?? []).length,
+    2
+  );
 });
 
 test("runner registra onda 5 como fechamento sem substituir o plano de quatro ondas", async () => {
   const [readme, plan, status] = await Promise.all([
     readFile(new URL("../../docs/runner/README.md", import.meta.url), "utf8"),
-    readFile(new URL("../../docs/runner/PLANO_SAAS_4_ONDAS.md", import.meta.url), "utf8"),
-    readFile(new URL("../../docs/runner/ONDA_5_FECHAMENTO.md", import.meta.url), "utf8"),
+    readFile(
+      new URL("../../docs/runner/PLANO_SAAS_4_ONDAS.md", import.meta.url),
+      "utf8"
+    ),
+    readFile(
+      new URL("../../docs/runner/ONDA_5_FECHAMENTO.md", import.meta.url),
+      "utf8"
+    ),
   ]);
 
   assert.match(readme, /ONDA_5_FECHAMENTO\.md/);
@@ -939,7 +1014,10 @@ test("checklist final exige autorização antes de provisionar projeto novo", as
     "utf8"
   );
 
-  assert.match(checklist, /autorização explícita para iniciar a\s+integração final/);
+  assert.match(
+    checklist,
+    /autorização explícita para iniciar a\s+integração final/
+  );
   assert.match(checklist, /supabase migration new executar_multi_tenant/);
   assert.match(checklist, /EXECUTAR_SUPABASE_TEMPLATE\.sql/);
 });

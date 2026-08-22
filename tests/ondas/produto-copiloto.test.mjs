@@ -16,30 +16,72 @@ import {
   focoAtual,
   novoEstado,
   progresso,
+  ROTULOS_ESTADO,
   registrarEvidencia,
   registrarPasso,
   restaurarEstado,
-  ROTULOS_ESTADO,
   subgrafoAfetado,
 } from "../../apps/app/lib/executar/domain.ts";
 import { ENTREGAS_SPRINT } from "../../apps/app/lib/executar/seed.ts";
 
 const entregas = [
-  { id: "A", title: "Preparar base", front: "Operações", date: "24/08", mins: 30, deps: [], stage: 1 },
-  { id: "B", title: "Liberar produto", front: "Desenvolvimento", date: "25/08", mins: 45, deps: ["A"], stage: 2 },
-  { id: "C", title: "Registrar contexto", front: "Criativo", date: "24/08", mins: 15, deps: [], stage: 1 },
-  { id: "D", title: "Publicar resultado", front: "Operações", date: "26/08", mins: 60, deps: ["B"], stage: 3 },
+  {
+    id: "A",
+    title: "Preparar base",
+    front: "Operações",
+    date: "24/08",
+    mins: 30,
+    deps: [],
+    stage: 1,
+  },
+  {
+    id: "B",
+    title: "Liberar produto",
+    front: "Desenvolvimento",
+    date: "25/08",
+    mins: 45,
+    deps: ["A"],
+    stage: 2,
+  },
+  {
+    id: "C",
+    title: "Registrar contexto",
+    front: "Criativo",
+    date: "24/08",
+    mins: 15,
+    deps: [],
+    stage: 1,
+  },
+  {
+    id: "D",
+    title: "Publicar resultado",
+    front: "Operações",
+    date: "26/08",
+    mins: 60,
+    deps: ["B"],
+    stage: 3,
+  },
 ];
 
 function estadoComEvidencia(taskId = "A") {
   const focus = assumirFoco(entregas, novoEstado("org_a"), taskId);
 
-  return registrarEvidencia(entregas, focus, taskId, "Entrega verificada", "", true);
+  return registrarEvidencia(
+    entregas,
+    focus,
+    taskId,
+    "Entrega verificada",
+    "",
+    true
+  );
 }
 
 test("preserva exatamente as 33 entregas originais como seed tipada", async () => {
   const legacy = await readFile(
-    new URL("../../apps/app/public/legado/sprint-operacional/data.js", import.meta.url),
+    new URL(
+      "../../apps/app/public/legado/sprint-operacional/data.js",
+      import.meta.url
+    ),
     "utf8"
   );
   const original = JSON.parse(
@@ -78,7 +120,10 @@ test("restaura apenas o estado da organização correta", () => {
 test("dados locais corrompidos não quebram nem atravessam tenant", () => {
   assert.deepEqual(restaurarEstado("{invalid", "org_a"), novoEstado("org_a"));
   assert.deepEqual(
-    restaurarEstado(JSON.stringify({ organizationId: "org_a", done: [] }), "org_a"),
+    restaurarEstado(
+      JSON.stringify({ organizationId: "org_a", done: [] }),
+      "org_a"
+    ),
     novoEstado("org_a")
   );
 });
@@ -93,7 +138,10 @@ test("fila pronta contém somente entregas sem dependências pendentes", () => {
 test("fila bloqueada identifica as dependências reais", () => {
   const state = novoEstado("org_a");
 
-  assert.deepEqual(filaBloqueada(entregas, state).map((task) => task.id), ["B", "D"]);
+  assert.deepEqual(
+    filaBloqueada(entregas, state).map((task) => task.id),
+    ["B", "D"]
+  );
   assert.deepEqual(dependenciasPendentes(entregas[1], state), ["A"]);
 });
 
@@ -103,7 +151,15 @@ test("foco inicial escolhe a primeira entrega realmente pronta", () => {
 
 test("nunca escolhe entrega bloqueada como fallback", () => {
   const blockedOnly = [
-    { id: "X", title: "Bloqueada", front: "Operações", date: "24/08", mins: 15, deps: ["MISSING"], stage: 1 },
+    {
+      id: "X",
+      title: "Bloqueada",
+      front: "Operações",
+      date: "24/08",
+      mins: 15,
+      deps: ["MISSING"],
+      stage: 1,
+    },
   ];
 
   assert.equal(focoAtual(blockedOnly, novoEstado("org_a")), null);
@@ -138,7 +194,10 @@ test("registra passos somente no foco e limita ao esforço previsto", () => {
   state = registrarPasso(entregas, state, "A");
 
   assert.equal(state.started.A, 2);
-  assert.throws(() => registrarPasso(entregas, state, "C"), /somente na entrega em foco/);
+  assert.throws(
+    () => registrarPasso(entregas, state, "C"),
+    /somente na entrega em foco/
+  );
 });
 
 test("evidência exige conteúdo concreto", () => {
@@ -180,12 +239,22 @@ test("evidência move a entrega ativa para verificação", () => {
 test("proíbe conclusão sem evidência", () => {
   const state = assumirFoco(entregas, novoEstado("org_a"), "A");
 
-  assert.throws(() => concluirEntrega(entregas, state, "A"), /evidência e verificação/);
+  assert.throws(
+    () => concluirEntrega(entregas, state, "A"),
+    /evidência e verificação/
+  );
 });
 
 test("proíbe conclusão com evidência não verificada", () => {
   const focused = assumirFoco(entregas, novoEstado("org_a"), "A");
-  const unverified = registrarEvidencia(entregas, focused, "A", "Rascunho", "", false);
+  const unverified = registrarEvidencia(
+    entregas,
+    focused,
+    "A",
+    "Rascunho",
+    "",
+    false
+  );
 
   assert.throws(
     () => concluirEntrega(entregas, unverified, "A"),
@@ -198,7 +267,10 @@ test("conclusão verificada libera sucessor e mantém foco único", () => {
 
   assert.deepEqual(completed.done, ["A"]);
   assert.equal(completed.focus, "B");
-  assert.deepEqual(filaPronta(entregas, completed).map((task) => task.id), ["B", "C"]);
+  assert.deepEqual(
+    filaPronta(entregas, completed).map((task) => task.id),
+    ["B", "C"]
+  );
   assert.equal(estadoEntrega(entregas[0], completed), "DONE");
 });
 
@@ -235,11 +307,18 @@ test("replanejamento recalcula apenas o subgrafo afetado", () => {
     subgrafoAfetado(entregas, "A").map((task) => task.id),
     ["A", "B", "D"]
   );
-  assert.deepEqual(subgrafoAfetado(entregas, "C").map((task) => task.id), ["C"]);
+  assert.deepEqual(
+    subgrafoAfetado(entregas, "C").map((task) => task.id),
+    ["C"]
+  );
 });
 
 test("Copiloto responde o próximo item a partir do estado real", () => {
-  const answer = executarCopiloto(entregas, novoEstado("org_a"), "o que faço agora?");
+  const answer = executarCopiloto(
+    entregas,
+    novoEstado("org_a"),
+    "o que faço agora?"
+  );
 
   assert.equal(answer.command, "/agora");
   assert.match(answer.reply, /Preparar base/);
@@ -258,8 +337,14 @@ test("Copiloto informa estado e bloqueios canônicos", () => {
   const state = novoEstado("org_a");
 
   assert.match(executarCopiloto(entregas, state, "/estado").reply, /0\/4/);
-  assert.match(executarCopiloto(entregas, state, "/bloqueio").reply, /aguarda A/);
-  assert.match(executarCopiloto(entregas, state, "/mapa").reply, /2 entrega\(s\)/);
+  assert.match(
+    executarCopiloto(entregas, state, "/bloqueio").reply,
+    /aguarda A/
+  );
+  assert.match(
+    executarCopiloto(entregas, state, "/mapa").reply,
+    /2 entrega\(s\)/
+  );
 });
 
 test("fechamento parcial preserva progresso e não inventa conclusão", () => {
@@ -283,7 +368,11 @@ test("Copiloto exige aprovação humana mesmo com evidência verificada", () => 
 });
 
 test("Copiloto replaneja somente o subgrafo solicitado", () => {
-  const answer = executarCopiloto(entregas, novoEstado("org_a"), "/replanejamento A");
+  const answer = executarCopiloto(
+    entregas,
+    novoEstado("org_a"),
+    "/replanejamento A"
+  );
 
   assert.match(answer.reply, /3 entrega\(s\)/);
   assert.match(answer.reply, /restante do plano permanece intacto/);
@@ -354,7 +443,10 @@ test("sincronização futura deriva eventos do estado único, sem fila paralela"
 test("sincronização futura não publica eventos de outra organização", () => {
   const state = estadoComEvidencia();
 
-  assert.throws(() => eventosPendentes(state, "org_b"), /organização divergente/);
+  assert.throws(
+    () => eventosPendentes(state, "org_b"),
+    /organização divergente/
+  );
   assert.throws(() => eventosPendentes(state, "org_a", 99), /Revisão/);
 });
 
@@ -389,7 +481,13 @@ test("produto preserva as quatro faces e o Copiloto usa o mesmo estado", async (
     "utf8"
   );
 
-  for (const label of ["Visão geral", "Foco", "Calendário", "Caminho", "Ainda não pode"]) {
+  for (const label of [
+    "Visão geral",
+    "Foco",
+    "Calendário",
+    "Caminho",
+    "Ainda não pode",
+  ]) {
     assert.ok(component.includes(label), `Ausente: ${label}`);
   }
 

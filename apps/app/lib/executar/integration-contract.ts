@@ -1,7 +1,7 @@
 import {
-  prepararSincronizacao,
   type AtorOperacional,
   type EstadoOperacional,
+  prepararSincronizacao,
 } from "./domain.ts";
 
 export const VARIAVEIS_INTEGRACAO_FINAL = [
@@ -19,16 +19,16 @@ export const VARIAVEIS_INTEGRACAO_FINAL = [
 ] as const;
 
 export interface SessaoClerkIntegracao {
+  getToken(): Promise<string | null>;
   readonly organizationId: string;
   readonly userId: string;
-  getToken(): Promise<string | null>;
 }
 
 export interface ConfiguracaoSupabaseNovo {
   readonly projectOrigin: "novo" | "existente";
   readonly projectReference: string;
-  readonly url: string;
   readonly publishableKey: string;
+  readonly url: string;
 }
 
 export interface ContratoClienteSupabase {
@@ -36,17 +36,9 @@ export interface ContratoClienteSupabase {
 }
 
 export interface LotePersistenciaOperacional {
-  readonly authority: "Clerk";
-  readonly organizationId: string;
-  readonly actorId: string;
   readonly activeProjectId: string;
-  readonly revision: number;
-  readonly projects: readonly {
-    organization_id: string;
-    project_id: string;
-    name: string;
-    daily_capacity_minutes: number;
-  }[];
+  readonly actorId: string;
+  readonly authority: "Clerk";
   readonly deliveries: readonly {
     organization_id: string;
     project_id: string;
@@ -64,6 +56,14 @@ export interface LotePersistenciaOperacional {
     delivery_id: string;
     predecessor_id: string;
   }[];
+  readonly organizationId: string;
+  readonly projects: readonly {
+    organization_id: string;
+    project_id: string;
+    name: string;
+    daily_capacity_minutes: number;
+  }[];
+  readonly revision: number;
   readonly sync: ReturnType<typeof prepararSincronizacao>;
 }
 
@@ -93,7 +93,9 @@ export function diagnosticarAmbienteFinal(
 } {
   for (const [key, value] of Object.entries(environment)) {
     if (value && /^NEXT_PUBLIC_.*(?:SECRET|SERVICE_ROLE|PRIVATE)/i.test(key)) {
-      throw new Error(`A variável ${key} expõe uma credencial privada ao navegador.`);
+      throw new Error(
+        `A variável ${key} expõe uma credencial privada ao navegador.`
+      );
     }
   }
 
@@ -123,7 +125,9 @@ export function criarClienteSupabaseClerk<T>(
     configuration.projectOrigin !== "novo" ||
     !/^[a-z0-9]{8,32}$/i.test(configuration.projectReference)
   ) {
-    throw new Error("Supabase deve ser um projeto novo e dedicado ao EXECUTAR.");
+    throw new Error(
+      "Supabase deve ser um projeto novo e dedicado ao EXECUTAR."
+    );
   }
 
   let parsed: URL;
@@ -143,7 +147,9 @@ export function criarClienteSupabaseClerk<T>(
     parsed.search ||
     parsed.hash
   ) {
-    throw new Error("A URL não pertence ao novo projeto Supabase identificado.");
+    throw new Error(
+      "A URL não pertence ao novo projeto Supabase identificado."
+    );
   }
 
   if (
@@ -169,8 +175,10 @@ export function caminhoEvidenciaOrganizacao(
   validarSessao(state.organizationId, actor);
 
   if (
-    !/^[A-Za-z0-9_-]+$/.test(state.activeProjectId) ||
-    !/^[A-Za-z0-9_-]+$/.test(taskId)
+    !(
+      /^[A-Za-z0-9_-]+$/.test(state.activeProjectId) &&
+      /^[A-Za-z0-9_-]+$/.test(taskId)
+    )
   ) {
     throw new Error("Projeto ou entrega inválida para o caminho de evidência.");
   }

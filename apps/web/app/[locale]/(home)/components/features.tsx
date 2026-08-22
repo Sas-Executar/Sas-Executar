@@ -63,7 +63,10 @@ export const Features = () => (
       </div>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
         {capabilities.map(({ icon: Icon, title, description }) => (
-          <article className="flex flex-col gap-4 rounded-xl border p-6" key={title}>
+          <article
+            className="flex flex-col gap-4 rounded-xl border p-6"
+            key={title}
+          >
             <Icon aria-hidden="true" className="h-6 w-6" />
             <div className="flex flex-col gap-2">
               <h3 className="font-medium text-lg">{title}</h3>

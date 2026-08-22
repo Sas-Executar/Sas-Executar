@@ -34,12 +34,6 @@ export type IdentificadorEtapa =
   | "lancamento";
 
 export interface EvidenciaProntidao {
-  readonly stepId: IdentificadorEtapa;
-  readonly source: OrigemEvidencia;
-  readonly reference: string;
-  readonly verifiedAt: string;
-  readonly passed: boolean;
-  readonly organizationId?: string;
   readonly metadata?: Readonly<{
     projectOrigin?: "novo" | "existente";
     projectReference?: string;
@@ -48,46 +42,52 @@ export interface EvidenciaProntidao {
     coverage?: readonly string[];
     executedSteps?: number;
   }>;
+  readonly organizationId?: string;
+  readonly passed: boolean;
+  readonly reference: string;
+  readonly source: OrigemEvidencia;
+  readonly stepId: IdentificadorEtapa;
+  readonly verifiedAt: string;
 }
 
 export interface EtapaFechamento {
   readonly id: IdentificadorEtapa;
-  readonly wave: 1 | 2 | 3 | 4 | 5;
-  readonly title: string;
   readonly prerequisites: readonly IdentificadorEtapa[];
   readonly requiredSources: readonly OrigemEvidencia[];
   readonly requiresExternalAuthorization: boolean;
+  readonly title: string;
+  readonly wave: 1 | 2 | 3 | 4 | 5;
 }
 
 export interface EstadoEtapaFechamento extends EtapaFechamento {
-  readonly status: "passou" | "falhou" | "pronto" | "bloqueado";
-  readonly evidence: EvidenciaProntidao | null;
   readonly blockedBy: readonly IdentificadorEtapa[];
+  readonly evidence: EvidenciaProntidao | null;
+  readonly status: "passou" | "falhou" | "pronto" | "bloqueado";
 }
 
 export interface GateFechamento {
   readonly id: "codigo" | "integracao" | "producao" | "mobile";
-  readonly status: "PASSOU" | "NÃO PASSOU";
   readonly pending: readonly IdentificadorEtapa[];
+  readonly status: "PASSOU" | "NÃO PASSOU";
 }
 
 export interface DiagnosticoActions {
+  readonly conclusion: string;
+  readonly executedSteps: number;
+  readonly nextAction: string;
+  readonly rerunAuthorized: boolean;
   readonly status:
     | "nao_executado"
     | "em_execucao"
     | "runner_sem_execucao"
     | "falhou_em_step"
     | "verde";
-  readonly rerunAuthorized: boolean;
-  readonly executedSteps: number;
-  readonly conclusion: string;
-  readonly nextAction: string;
 }
 
 export interface ObservacaoJobActions {
+  readonly conclusion: string | null;
   readonly name: string;
   readonly status: string;
-  readonly conclusion: string | null;
   readonly steps: readonly { readonly conclusion: string | null }[];
 }
 
@@ -272,7 +272,9 @@ function validarEvidencia(
   }
 
   if (!definition.requiredSources.includes(evidence.source)) {
-    throw new Error(`A etapa ${evidence.stepId} exige evidência real compatível.`);
+    throw new Error(
+      `A etapa ${evidence.stepId} exige evidência real compatível.`
+    );
   }
 
   if (
@@ -297,15 +299,14 @@ function validarEvidencia(
     return;
   }
 
-  if (evidence.stepId === "supabase_novo") {
-    if (
-      evidence.metadata?.projectOrigin !== "novo" ||
-      !evidence.metadata.projectReference?.trim()
-    ) {
-      throw new Error(
-        "O Supabase precisa ser um projeto novo, dedicado e identificável."
-      );
-    }
+  if (
+    evidence.stepId === "supabase_novo" &&
+    (evidence.metadata?.projectOrigin !== "novo" ||
+      !evidence.metadata.projectReference?.trim())
+  ) {
+    throw new Error(
+      "O Supabase precisa ser um projeto novo, dedicado e identificável."
+    );
   }
 
   if (
@@ -437,12 +438,14 @@ export function gatesFechamento(
   ];
   const indexed = new Map(steps.map((step) => [step.id, step]));
 
-  return ([
-    ["codigo", code],
-    ["integracao", integration],
-    ["producao", production],
-    ["mobile", mobile],
-  ] as const).map(([id, required]) => {
+  return (
+    [
+      ["codigo", code],
+      ["integracao", integration],
+      ["producao", production],
+      ["mobile", mobile],
+    ] as const
+  ).map(([id, required]) => {
     const pending = required.filter(
       (step) => indexed.get(step)?.status !== "passou"
     );
@@ -468,7 +471,10 @@ export function diagnosticarActions(
     };
   }
 
-  const executedSteps = jobs.reduce((total, job) => total + job.steps.length, 0);
+  const executedSteps = jobs.reduce(
+    (total, job) => total + job.steps.length,
+    0
+  );
 
   if (jobs.some((job) => job.status !== "completed")) {
     return {
@@ -516,6 +522,7 @@ export function diagnosticarActions(
     rerunAuthorized,
     executedSteps,
     conclusion: "Todos os jobs executados terminaram com sucesso.",
-    nextAction: "Registrar a URL e os steps executados como evidência hospedada.",
+    nextAction:
+      "Registrar a URL e os steps executados como evidência hospedada.",
   };
 }

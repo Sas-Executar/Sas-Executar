@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const root = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../.."
+);
 const canonicalRepository = "Executar-26/next-forge";
 const legacyDirectory = "apps/app/public/legado/sprint-operacional/";
 const load = (filename) => readFile(path.join(root, filename), "utf8");
@@ -55,9 +58,7 @@ test("configuração Vercel preserva headers e escopo do service worker", async 
 });
 
 test("rota Next.js direciona para a aplicação legada preservada", async () => {
-  const route = await load(
-    "apps/app/app/legado/sprint-operacional/route.ts"
-  );
+  const route = await load("apps/app/app/legado/sprint-operacional/route.ts");
   assert.ok(route.includes("/legado/sprint-operacional/index.html"));
   assert.ok(route.includes("NextResponse.redirect"));
 });

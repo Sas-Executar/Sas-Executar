@@ -2,17 +2,6 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
-  assumirFoco,
-  concluirEntrega,
-  criarProjeto,
-  editarEntrega,
-  novoEstado,
-  registrarEvidencia,
-  replanejarSubgrafo,
-  restaurarEstado,
-  selecionarProjeto,
-} from "../../apps/app/lib/executar/domain.ts";
-import {
   comentariosEntrega,
   etapasOnboarding,
   extrairMencoes,
@@ -28,6 +17,17 @@ import {
   registrarPresenca,
   salaColaboracao,
 } from "../../apps/app/lib/executar/distribution.ts";
+import {
+  assumirFoco,
+  concluirEntrega,
+  criarProjeto,
+  editarEntrega,
+  novoEstado,
+  registrarEvidencia,
+  replanejarSubgrafo,
+  restaurarEstado,
+  selecionarProjeto,
+} from "../../apps/app/lib/executar/domain.ts";
 
 const tasks = [
   {
@@ -159,7 +159,11 @@ test("restauração remove comentários, leituras e presenças de outro tenant",
       ],
     },
   };
-  const restored = restaurarEstado(JSON.stringify(contaminated), "org_a", tasks);
+  const restored = restaurarEstado(
+    JSON.stringify(contaminated),
+    "org_a",
+    tasks
+  );
 
   assert.equal(restored.collaboration.comments.length, 1);
   assert.deepEqual(restored.collaboration.presence, []);
@@ -260,10 +264,7 @@ test("comentário rejeita entrega desconhecida, ator e diretório cruzados", () 
     () => comment(initial(), bruno, "Mensagem", "EXTERNA"),
     /projeto ativo/
   );
-  assert.throws(
-    () => comment(initial(), externo),
-    /outra organização/
-  );
+  assert.throws(() => comment(initial(), externo), /outra organização/);
   assert.throws(
     () =>
       registrarComentario(initial(), ana, "A", "Mensagem", {
@@ -550,10 +551,21 @@ test("onboarding reflete progresso real sem inventar cobrança", () => {
   const initialSteps = etapasOnboarding(initial(), ana);
   const finalSteps = etapasOnboarding(completed(), ana);
 
-  assert.equal(initialSteps.find((step) => step.id === "entrega").complete, true);
-  assert.equal(initialSteps.find((step) => step.id === "resultado").complete, false);
-  assert.equal(finalSteps.find((step) => step.id === "resultado").complete, true);
-  assert.ok(!initialSteps.some((step) => /pagamento|cobrança/i.test(step.title)));
+  assert.equal(
+    initialSteps.find((step) => step.id === "entrega").complete,
+    true
+  );
+  assert.equal(
+    initialSteps.find((step) => step.id === "resultado").complete,
+    false
+  );
+  assert.equal(
+    finalSteps.find((step) => step.id === "resultado").complete,
+    true
+  );
+  assert.ok(
+    !initialSteps.some((step) => /pagamento|cobrança/i.test(step.title))
+  );
 });
 
 test("edição paralela do mesmo projeto preserva detecção de conflito", () => {
@@ -608,10 +620,13 @@ test("interface oferece presença, comentários e notificações no mesmo plano"
     "registrarComentario(state, actor",
     "marcarNotificacaoLida(state, actor",
     "receberAtualizacaoCompartilhada",
-    "window.addEventListener(\"storage\"",
+    'window.addEventListener("storage"',
     "o estado local foi preservado",
   ]) {
-    assert.ok(component.includes(expected), `Ausente na interface: ${expected}`);
+    assert.ok(
+      component.includes(expected),
+      `Ausente na interface: ${expected}`
+    );
   }
 });
 
@@ -663,7 +678,10 @@ test("superfície GTM distingue mobile planejado de aplicativo disponível", asy
     "utf8"
   );
   const footer = await readFile(
-    new URL("../../apps/web/app/[locale]/components/footer.tsx", import.meta.url),
+    new URL(
+      "../../apps/web/app/[locale]/components/footer.tsx",
+      import.meta.url
+    ),
     "utf8"
   );
 
@@ -732,7 +750,10 @@ test("notificações Knock reutilizam provider existente somente com configuraç
   );
 
   assert.match(layout, /<NotificationsProvider userId=\{user\.id\}>/);
-  assert.match(component, /externalNotificationsAvailable && <NotificationsTrigger/);
+  assert.match(
+    component,
+    /externalNotificationsAvailable && <NotificationsTrigger/
+  );
 });
 
 test("sugestões de menção retornam userId Clerk e não ID de membership", async () => {

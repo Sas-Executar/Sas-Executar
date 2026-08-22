@@ -67,4 +67,3 @@ export const createMetadata = ({
 
   return metadata;
 };
-

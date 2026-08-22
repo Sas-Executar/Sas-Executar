@@ -1,14 +1,14 @@
 import {
+  type AtorOperacional,
+  type ComentarioOperacional,
   calendarioProjeto,
+  type EstadoOperacional,
   entregasAtivas,
   filaPronta,
   focoAtual,
+  type PresencaOperacional,
   projetoAtivo,
   registrarEventoDistribuicao,
-  type AtorOperacional,
-  type ComentarioOperacional,
-  type EstadoOperacional,
-  type PresencaOperacional,
 } from "./domain.ts";
 
 export const LIMITES_DISTRIBUICAO = {
@@ -23,60 +23,59 @@ export interface DiretorioClerk {
 }
 
 export interface NotificacaoOperacional {
+  readonly body: string;
   readonly id: string;
-  readonly organizationId: string;
-  readonly projectId: string;
-  readonly userId: string;
-  readonly taskId: string | null;
   readonly kind:
     | "mencao"
     | "comentario"
     | "entrega_liberada"
     | "entrega_concluida"
     | "replanejamento";
-  readonly title: string;
-  readonly body: string;
-  readonly revision: number;
+  readonly organizationId: string;
+  readonly projectId: string;
   readonly read: boolean;
+  readonly revision: number;
+  readonly taskId: string | null;
+  readonly title: string;
+  readonly userId: string;
 }
 
 export interface ResultadoAtualizacaoCompartilhada {
-  readonly status: "aplicada" | "sem_mudanca" | "conflito";
   readonly state: EstadoOperacional;
+  readonly status: "aplicada" | "sem_mudanca" | "conflito";
 }
 
 export interface GatesMobilidade {
-  readonly webProduction: boolean;
+  readonly clerkMobile: boolean;
   readonly remoteSync: boolean;
   readonly tenantIsolation: boolean;
-  readonly clerkMobile: boolean;
+  readonly webProduction: boolean;
 }
 
 export interface PreparoMobilidade {
-  readonly ready: boolean;
-  readonly framework: "Expo";
   readonly application: "apps/mobile";
-  readonly platforms: readonly ["android", "ios"];
   readonly authority: "Clerk";
   readonly blockers: readonly string[];
+  readonly framework: "Expo";
+  readonly platforms: readonly ["android", "ios"];
+  readonly ready: boolean;
 }
 
 export interface EtapaOnboarding {
+  readonly complete: boolean;
   readonly id: string;
   readonly title: string;
-  readonly complete: boolean;
 }
 
-function validarAtor(
-  state: EstadoOperacional,
-  actor: AtorOperacional
-): void {
+function validarAtor(state: EstadoOperacional, actor: AtorOperacional): void {
   if (actor.organizationId !== state.organizationId) {
     throw new Error("A colaboração não pode acessar outra organização.");
   }
 
   if (!/^user_[A-Za-z0-9_-]+$/.test(actor.userId)) {
-    throw new Error("A colaboração exige uma identidade de usuário Clerk válida.");
+    throw new Error(
+      "A colaboração exige uma identidade de usuário Clerk válida."
+    );
   }
 
   if (!actor.displayName.trim()) {
@@ -84,10 +83,7 @@ function validarAtor(
   }
 }
 
-function validarEntregaAtiva(
-  state: EstadoOperacional,
-  taskId: string
-): void {
+function validarEntregaAtiva(state: EstadoOperacional, taskId: string): void {
   if (!entregasAtivas(state).some((task) => task.id === taskId)) {
     throw new Error("A entrega não pertence ao projeto ativo da organização.");
   }
@@ -100,10 +96,14 @@ export function salaColaboracao(
   validarAtor(state, actor);
 
   if (
-    !/^[A-Za-z0-9_-]+$/.test(state.organizationId) ||
-    !/^[A-Za-z0-9_-]+$/.test(state.activeProjectId)
+    !(
+      /^[A-Za-z0-9_-]+$/.test(state.organizationId) &&
+      /^[A-Za-z0-9_-]+$/.test(state.activeProjectId)
+    )
   ) {
-    throw new Error("Organização ou projeto inválido para a sala colaborativa.");
+    throw new Error(
+      "Organização ou projeto inválido para a sala colaborativa."
+    );
   }
 
   return `${state.organizationId}:${state.activeProjectId}`;
@@ -467,7 +467,8 @@ export function receberAtualizacaoCompartilhada(
     incoming.events.map((event) => [event.revision, event] as const)
   );
   const ancestor = current.events.every(
-    (event) => JSON.stringify(byRevision.get(event.revision)) === JSON.stringify(event)
+    (event) =>
+      JSON.stringify(byRevision.get(event.revision)) === JSON.stringify(event)
   );
 
   return ancestor

@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
+import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
-import { test } from "node:test";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const root = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../.."
+);
 const directory = path.join(root, "apps/app/public/legado/sprint-operacional");
 const base = "/legado/sprint-operacional";
 const load = (filename) => readFile(path.join(directory, filename), "utf8");
@@ -18,9 +21,16 @@ async function loadTasks() {
 
 async function evaluateReadyTasks(completedIds) {
   const source = await load("app.js");
-  const requiredFunctions = ["isDone", "depsDone", "readyTasks", "blockedTasks"];
+  const requiredFunctions = [
+    "isDone",
+    "depsDone",
+    "readyTasks",
+    "blockedTasks",
+  ];
   const implementations = requiredFunctions.map((name) => {
-    const match = source.match(new RegExp("^function " + name + "\\([^\\n]+", "m"));
+    const match = source.match(
+      new RegExp("^function " + name + "\\([^\\n]+", "m")
+    );
     assert.ok(match, "A função legada " + name + " deve existir");
     return match[0];
   });
