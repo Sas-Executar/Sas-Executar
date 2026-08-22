@@ -398,3 +398,16 @@ test("migration real mantém RLS, transação, revisão e aprovação no banco",
   assert.match(migration, /grant execute on function .* to authenticated/);
   assert.doesNotMatch(migration, /security definer/i);
 });
+
+test("CI diagnostica apenas disponibilidade, sem imprimir valores de segredos", async () => {
+  const workflow = await readFile(
+    new URL("../../.github/workflows/onda-1.yml", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(workflow, /EXECUTAR_HAS_VERCEL_TOKEN/);
+  assert.match(workflow, /EXECUTAR_HAS_CLERK_SECRET_KEY/);
+  assert.match(workflow, /EXECUTAR_HAS_SUPABASE_ACCESS_TOKEN/);
+  assert.match(workflow, /value === 'true'/);
+  assert.doesNotMatch(workflow, /console\.log\([^\n]*process\.env/);
+});

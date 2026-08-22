@@ -124,8 +124,8 @@ diagnóstico do runner, segurança de variáveis, sessão Clerk, projeto Supabas
 novo ou legado nominalmente autorizado, caminho de evidência, exportação
 canônica, migrations oficiais e os contratos SQL/RLS/Storage.
 
-Resultado local verificado: **292 testes aprovados, 0 falhas**, incluindo
-**72 testes específicos da Onda 5** e **18 testes de integração operacional**.
+Resultado local verificado: **293 testes aprovados, 0 falhas**, incluindo
+**72 testes específicos da Onda 5** e **19 testes de integração operacional**.
 
 Homologação remota verificada no PostgreSQL real: duas organizações, nove
 tabelas, SELECT/INSERT/UPDATE/DELETE, policies de Storage, bloqueio de sessões
@@ -138,7 +138,7 @@ bloqueio de sessão anônima, também sem deixar dados de teste.
 
 ## Gates reais
 
-- Gate de código da Onda 5: **PASSOU**, com 292 testes locais verdes.
+- Gate de código da Onda 5: **PASSOU**, com 293 testes locais verdes.
 - Fundação Supabase/RLS/Storage: **PASSOU** no projeto explicitamente
   autorizado, preservando o scanner anterior.
 - Gate de persistência PostgreSQL e autorização servidor: **PASSOU** para a
