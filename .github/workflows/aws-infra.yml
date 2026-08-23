@@ -126,7 +126,8 @@ jobs:
                 --output text 2>/dev/null || printf '0')"
               if test "$log_streams" = "0"; then
                 aws logs delete-log-group \
-                  --log-group-name "$retained_log_group"
+                  --log-group-name "$retained_log_group" \
+                  2>/dev/null || true
               fi
             fi
 
