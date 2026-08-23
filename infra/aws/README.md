@@ -19,6 +19,17 @@ O workflow `.github/workflows/aws-infra.yml` assume a role existente, valida o
 template, escolhe uma versão Aurora PostgreSQL 16 disponível em `sa-east-1`,
 aplica a stack e executa as migrações versionadas pela Data API.
 
+### Pré-requisito de conta
+
+O stack privado exige que o plano da conta AWS esteja como `PAID`. O plano
+`FREE` aceita Aurora somente com Express Configuration, que não pode ser
+associada a VPC e mantém um gateway de internet obrigatório. O workflow consulta
+`aws freetier get-account-plan-state` e interrompe antes do deploy enquanto esse
+pré-requisito não for atendido; ele nunca troca silenciosamente para Aurora
+público. Consulte a documentação oficial de
+[Aurora Express](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/CHAP_GettingStartedAurora.AuroraPostgreSQL.ExpressConfig.html)
+e dos [limites do plano gratuito](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-free-tier.html).
+
 O Aurora não fornece uma `DATABASE_URL` alcançável diretamente pela Vercel no
 plano atual. A integração correta usa a Data API e credenciais temporárias
 obtidas pelo OIDC da Vercel. Não abra a porta 5432 para `0.0.0.0/0`.

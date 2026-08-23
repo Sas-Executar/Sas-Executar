@@ -68,6 +68,8 @@ test("workflow assume AWS por OIDC, migra e prova isolamento real", async () => 
   assert.match(workflow, /role-to-assume: \$\{\{ env\.AWS_ROLE_ARN \}\}/);
   assert.match(workflow, /250892133959/);
   assert.match(workflow, /cloudformation deploy/);
+  assert.match(workflow, /freetier get-account-plan-state/);
+  assert.match(workflow, /account_plan" != "PAID"/);
   assert.match(workflow, /migrate-data-api\.mjs/);
   assert.match(workflow, /smoke-data-api\.mjs/);
   assert.match(workflow, /env add[\s\S]*preview "\$GITHUB_REF_NAME"/);

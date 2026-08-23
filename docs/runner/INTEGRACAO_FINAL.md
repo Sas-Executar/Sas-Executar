@@ -4,7 +4,7 @@
 
 A direção Supabase abaixo foi substituída por autorização explícita posterior. A integração canônica agora é:
 
-1. aplicar `infra/aws/template.yaml` na conta `250892133959`, região `sa-east-1`, pelo workflow `.github/workflows/aws-infra.yml` e pelo role OIDC já configurado no repositório;
+1. alterar o plano AWS de `FREE` para `PAID`, pois o plano gratuito só aceita Aurora Express fora de VPC e com gateway de internet obrigatório; depois aplicar `infra/aws/template.yaml` na conta `250892133959`, região `sa-east-1`, pelo workflow `.github/workflows/aws-infra.yml` e pelo role OIDC já configurado no repositório;
 2. manter Aurora PostgreSQL Serverless v2 em sub-redes privadas, sem entrada pública em `5432`, com RDS Data API e credenciais no Secrets Manager;
 3. executar as migrations versionadas de `infra/aws/migrations/` e o smoke real de duas organizações por `scripts/aws/`;
 4. manter evidências em S3 privado, criptografado, versionado e separado pelo identificador da organização Clerk;

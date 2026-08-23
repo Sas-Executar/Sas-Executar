@@ -149,7 +149,21 @@ jobs:
             fi
           fi
 
+      - name: Exigir plano AWS compatível com Aurora privado
+        shell: bash
+        run: |
+          account_plan="$(aws freetier get-account-plan-state \
+            --region us-east-1 \
+            --query accountPlanType \
+            --output text)"
+          if test "$account_plan" != "PAID"; then
+            printf '%s\n' \
+              '::error title=Plano AWS incompatível::Aurora privado exige full configuration. O plano FREE permite somente Express com gateway de internet obrigatório; altere a conta para PAID antes de reexecutar.'
+            exit 1
+          fi
+
       - name: Aplicar CloudFormation
+        id: deploy_stack
         shell: bash
         run: |
           parameters=(
@@ -168,7 +182,7 @@ jobs:
             --parameter-overrides "${parameters[@]}"
 
       - name: Diagnosticar falha do CloudFormation
-        if: ${{ failure() }}
+        if: ${{ steps.deploy_stack.outcome == 'failure' }}
         shell: bash
         run: |
           aws cloudformation describe-stack-events \
