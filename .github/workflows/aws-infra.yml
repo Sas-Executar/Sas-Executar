@@ -94,6 +94,61 @@ jobs:
 
           printf 'VERCEL_OIDC_PROVIDER_ARN=%s\n' "$provider_arn" >> "$GITHUB_ENV"
 
+      - name: Recuperar criação inicial revertida
+        shell: bash
+        run: |
+          stack_status="$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query 'Stacks[0].StackStatus' \
+            --output text 2>/dev/null || true)"
+
+          if test "$stack_status" = "ROLLBACK_COMPLETE"; then
+            retained_log_group="$(aws cloudformation describe-stack-resource \
+              --stack-name "$STACK_NAME" \
+              --logical-resource-id AuroraPostgresqlLogGroup \
+              --query StackResourceDetail.PhysicalResourceId \
+              --output text 2>/dev/null || true)"
+            retained_bucket="$(aws cloudformation describe-stack-resource \
+              --stack-name "$STACK_NAME" \
+              --logical-resource-id EvidenceBucket \
+              --query StackResourceDetail.PhysicalResourceId \
+              --output text 2>/dev/null || true)"
+
+            aws cloudformation delete-stack --stack-name "$STACK_NAME"
+            aws cloudformation wait stack-delete-complete \
+              --stack-name "$STACK_NAME"
+
+            if test -n "$retained_log_group" \
+              && test "$retained_log_group" != "None"; then
+              log_streams="$(aws logs describe-log-streams \
+                --log-group-name "$retained_log_group" \
+                --query 'length(logStreams)' \
+                --output text 2>/dev/null || printf '0')"
+              if test "$log_streams" = "0"; then
+                aws logs delete-log-group \
+                  --log-group-name "$retained_log_group"
+              fi
+            fi
+
+            if test -n "$retained_bucket" \
+              && test "$retained_bucket" != "None"; then
+              bucket_versions="$(aws s3api list-object-versions \
+                --bucket "$retained_bucket" \
+                --max-items 1 \
+                --query 'length(Versions || `[]`)' \
+                --output text 2>/dev/null || printf '1')"
+              delete_markers="$(aws s3api list-object-versions \
+                --bucket "$retained_bucket" \
+                --max-items 1 \
+                --query 'length(DeleteMarkers || `[]`)' \
+                --output text 2>/dev/null || printf '1')"
+              if test "$bucket_versions" = "0" \
+                && test "$delete_markers" = "0"; then
+                aws s3api delete-bucket --bucket "$retained_bucket"
+              fi
+            fi
+          fi
+
       - name: Aplicar CloudFormation
         shell: bash
         run: |

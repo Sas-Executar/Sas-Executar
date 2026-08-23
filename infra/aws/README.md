@@ -27,4 +27,4 @@ obtidas pelo OIDC da Vercel. Não abra a porta 5432 para `0.0.0.0/0`.
 
 - O writer pausa após cinco minutos ocioso e pode escalar de 0 a 1 ACU.
 - Snapshots do Aurora e objetos do bucket são retidos quando a stack é removida.
-- `DeletionProtection` permanece ativada no cluster.
+- `DeletionProtection` permanece ativada no cluster; o preview usa um dia de retenção de backup, limite imposto pelo plano AWS atual.

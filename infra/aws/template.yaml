@@ -84,7 +84,7 @@ Resources:
 
   AuroraPostgresqlLogGroup:
     Type: AWS::Logs::LogGroup
-    DeletionPolicy: Retain
+    DeletionPolicy: RetainExceptOnCreate
     UpdateReplacePolicy: Retain
     Properties:
       LogGroupName: !Sub /aws/rds/cluster/executar-${EnvironmentName}/postgresql
@@ -109,7 +109,7 @@ Resources:
     DeletionPolicy: Snapshot
     UpdateReplacePolicy: Snapshot
     Properties:
-      BackupRetentionPeriod: 7
+      BackupRetentionPeriod: 1
       CopyTagsToSnapshot: true
       DatabaseName: !Ref DatabaseName
       DBClusterIdentifier: !Sub executar-${EnvironmentName}
@@ -147,7 +147,7 @@ Resources:
 
   EvidenceBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
+    DeletionPolicy: RetainExceptOnCreate
     UpdateReplacePolicy: Retain
     Properties:
       BucketEncryption:
