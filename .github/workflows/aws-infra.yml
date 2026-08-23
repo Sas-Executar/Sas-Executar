@@ -112,6 +112,15 @@ jobs:
             --no-fail-on-empty-changeset \
             --parameter-overrides "${parameters[@]}"
 
+      - name: Diagnosticar falha do CloudFormation
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          aws cloudformation describe-stack-events \
+            --stack-name "$STACK_NAME" \
+            --query "StackEvents[?contains(ResourceStatus, 'FAILED')].[Timestamp,LogicalResourceId,ResourceType,ResourceStatus,ResourceStatusReason]" \
+            --output table
+
       - name: Ler saídas sem revelar segredos
         shell: bash
         run: |
