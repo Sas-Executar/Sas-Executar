@@ -10,11 +10,23 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 neonConfig.webSocketConstructor = ws;
 
-const adapter = new PrismaNeon({ connectionString: keys().DATABASE_URL });
+const connectionString = keys().DATABASE_URL;
+const unavailable = new Proxy({} as PrismaClient, {
+  get() {
+    throw new Error(
+      "DATABASE_URL não configurada. A persistência operacional usa Aurora Data API; configure esta URL somente para rotas Prisma legadas."
+    );
+  },
+});
+const configured = connectionString
+  ? new PrismaClient({
+      adapter: new PrismaNeon({ connectionString }),
+    })
+  : unavailable;
 
-export const database = globalForPrisma.prisma || new PrismaClient({ adapter });
+export const database = globalForPrisma.prisma || configured;
 
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV !== "production" && connectionString) {
   globalForPrisma.prisma = database;
 }
 

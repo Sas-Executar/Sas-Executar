@@ -1,0 +1,188 @@
+name: AWS · infraestrutura transversal
+
+on:
+  push:
+    branches:
+      - codex/onda-1-migracao-pwa-runner
+    paths:
+      - .github/workflows/aws-infra.yml
+      - infra/aws/**
+      - scripts/aws/**
+  workflow_dispatch:
+
+concurrency:
+  group: aws-infra-preview
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'sa-east-1' }}
+  AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+  STACK_NAME: executar-preview-core
+
+jobs:
+  deploy:
+    name: Aurora, S3, IAM e migrações
+    runs-on: ubuntu-latest
+    env:
+      HAS_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assumir role AWS por OIDC
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: executar-infra-${{ github.run_id }}
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+
+      - name: Validar conta e template
+        shell: bash
+        run: |
+          test "$(aws sts get-caller-identity --query Account --output text)" = "250892133959"
+          aws cloudformation validate-template --template-body file://infra/aws/template.yaml >/dev/null
+
+      - name: Selecionar versão Aurora PostgreSQL 16
+        shell: bash
+        run: |
+          version="$(aws rds describe-db-engine-versions \
+            --engine aurora-postgresql \
+            --query 'DBEngineVersions[?starts_with(EngineVersion, `16.`)].EngineVersion' \
+            --output text | tr '\t' '\n' | sort -V | tail -1)"
+          test -n "$version"
+          printf 'AURORA_ENGINE_VERSION=%s\n' "$version" >> "$GITHUB_ENV"
+
+      - name: Reutilizar provider OIDC da Vercel quando existir
+        shell: bash
+        run: |
+          provider_arn=""
+          managed_provider_arn="$(aws cloudformation describe-stack-resource \
+            --stack-name "$STACK_NAME" \
+            --logical-resource-id VercelOidcProvider \
+            --query StackResourceDetail.PhysicalResourceId \
+            --output text 2>/dev/null || true)"
+
+          if test -z "$managed_provider_arn" \
+            || test "$managed_provider_arn" = "None"; then
+            for candidate in $(aws iam list-open-id-connect-providers \
+              --query 'OpenIDConnectProviderList[].Arn' --output text); do
+              test "$candidate" = "None" && continue
+              provider_url="$(aws iam get-open-id-connect-provider \
+                --open-id-connect-provider-arn "$candidate" \
+                --query Url --output text)"
+              if test "$provider_url" = "oidc.vercel.com/sas-executar1"; then
+                provider_arn="$candidate"
+                break
+              fi
+            done
+
+            if test -n "$provider_arn"; then
+              audience_present="$(aws iam get-open-id-connect-provider \
+                --open-id-connect-provider-arn "$provider_arn" \
+                --query "contains(ClientIDList, 'https://vercel.com/sas-executar1')" \
+                --output text)"
+              if test "$audience_present" != "True"; then
+                aws iam add-client-id-to-open-id-connect-provider \
+                  --open-id-connect-provider-arn "$provider_arn" \
+                  --client-id-list https://vercel.com/sas-executar1
+              fi
+            fi
+          fi
+
+          printf 'VERCEL_OIDC_PROVIDER_ARN=%s\n' "$provider_arn" >> "$GITHUB_ENV"
+
+      - name: Aplicar CloudFormation
+        shell: bash
+        run: |
+          parameters=(
+            AuroraEngineVersion="$AURORA_ENGINE_VERSION"
+            EnvironmentName=preview
+          )
+          if test -n "$VERCEL_OIDC_PROVIDER_ARN"; then
+            parameters+=(VercelOidcProviderArn="$VERCEL_OIDC_PROVIDER_ARN")
+          fi
+
+          aws cloudformation deploy \
+            --stack-name "$STACK_NAME" \
+            --template-file infra/aws/template.yaml \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --no-fail-on-empty-changeset \
+            --parameter-overrides "${parameters[@]}"
+
+      - name: Ler saídas sem revelar segredos
+        shell: bash
+        run: |
+          output() {
+            aws cloudformation describe-stacks \
+              --stack-name "$STACK_NAME" \
+              --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue | [0]" \
+              --output text
+          }
+          printf 'AURORA_DATABASE=%s\n' "$(output AuroraDatabase)" >> "$GITHUB_ENV"
+          printf 'AURORA_MASTER_SECRET_ARN=%s\n' "$(output AuroraMasterSecretArn)" >> "$GITHUB_ENV"
+          printf 'AURORA_RESOURCE_ARN=%s\n' "$(output AuroraResourceArn)" >> "$GITHUB_ENV"
+          printf 'AURORA_RUNTIME_SECRET_ARN=%s\n' "$(output AuroraRuntimeSecretArn)" >> "$GITHUB_ENV"
+          printf 'EVIDENCE_BUCKET=%s\n' "$(output EvidenceBucketName)" >> "$GITHUB_ENV"
+          printf 'VERCEL_AWS_ROLE_ARN=%s\n' "$(output VercelRuntimeRoleArn)" >> "$GITHUB_ENV"
+
+      - name: Executar migrações pela Data API
+        run: node scripts/aws/migrate-data-api.mjs
+
+      - name: Validar isolamento multi-tenant real
+        env:
+          SMOKE_ID: ${{ github.run_id }}
+        run: node scripts/aws/smoke-data-api.mjs
+
+      - name: Configurar runtime nos previews Vercel
+        if: ${{ env.HAS_VERCEL_TOKEN == 'true' }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          export VERCEL_TELEMETRY_DISABLED=1
+          export XDG_CACHE_HOME=/tmp/executar-vercel-cache
+          export XDG_DATA_HOME=/tmp/executar-vercel-data
+
+          sync_project() {
+            local project="$1"
+            local directory="$2"
+            npx --yes vercel@50.12.0 link \
+              --cwd "$directory" \
+              --project "$project" \
+              --scope sas-executar1 \
+              --token "$VERCEL_TOKEN" \
+              --yes >/dev/null
+
+            while IFS='=' read -r name value; do
+              printf '%s' "$value" | npx --yes vercel@50.12.0 env add \
+                "$name" preview "$GITHUB_REF_NAME" \
+                --cwd "$directory" \
+                --force \
+                --scope sas-executar1 \
+                --token "$VERCEL_TOKEN" \
+                --yes >/dev/null
+            done <<ENVVARS
+          AWS_REGION=$AWS_REGION
+          AWS_ROLE_ARN=$VERCEL_AWS_ROLE_ARN
+          AURORA_DATABASE=$AURORA_DATABASE
+          AURORA_RESOURCE_ARN=$AURORA_RESOURCE_ARN
+          AURORA_RUNTIME_SECRET_ARN=$AURORA_RUNTIME_SECRET_ARN
+          EVIDENCE_BUCKET=$EVIDENCE_BUCKET
+          ENVVARS
+          }
+
+          sync_project executar apps/app
+          sync_project executar-api apps/api
+
+      - name: Resumo
+        run: |
+          printf '### AWS EXECUTAR\n' >> "$GITHUB_STEP_SUMMARY"
+          printf -- '- Região: `%s`\n' "$AWS_REGION" >> "$GITHUB_STEP_SUMMARY"
+          printf -- '- Stack: `%s`\n' "$STACK_NAME" >> "$GITHUB_STEP_SUMMARY"
+          printf -- '- Aurora: privado, Data API, engine `%s`\n' "$AURORA_ENGINE_VERSION" >> "$GITHUB_STEP_SUMMARY"
+          printf -- '- S3: `%s`\n' "$EVIDENCE_BUCKET" >> "$GITHUB_STEP_SUMMARY"
+          printf -- '- Role Vercel: `%s`\n' "$VERCEL_AWS_ROLE_ARN" >> "$GITHUB_STEP_SUMMARY"
+          printf -- '- RLS: `smoke multi-tenant aprovado`\n' >> "$GITHUB_STEP_SUMMARY"

@@ -1,5 +1,7 @@
 # Onda 2 · produto operacional local-first
 
+> Registro histórico da direção Supabase. A decisão AWS posterior em `INTEGRACAO_FINAL.md` e `infra/aws/` substitui as referências de provedor e os gates externos deste documento.
+
 ## Resultado entregue
 
 O `apps/app` deixa de ser somente uma reprodução estática do sprint original e passa a operar projetos, entregas e dependências editáveis dentro de um único estado canônico por organização Clerk.
@@ -66,4 +68,3 @@ Resultado local verificado: **101 testes aprovados; 0 falhas**.
 - Gate completo de integração da Onda 2: **NÃO PASSOU**.
 
 Essas integrações foram explicitamente adiadas. Consulte `INTEGRACAO_FINAL.md`.
-

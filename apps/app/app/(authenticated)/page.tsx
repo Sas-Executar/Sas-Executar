@@ -24,6 +24,14 @@ const App = async () => {
         env.NEXT_PUBLIC_KNOCK_API_KEY && env.NEXT_PUBLIC_KNOCK_FEED_CHANNEL_ID
       )}
       organizationId={orgId}
+      remotePersistenceAvailable={Boolean(
+        env.AWS_REGION &&
+          env.AWS_ROLE_ARN &&
+          env.AURORA_DATABASE &&
+          env.AURORA_RESOURCE_ARN &&
+          env.AURORA_RUNTIME_SECRET_ARN &&
+          env.EVIDENCE_BUCKET
+      )}
       userId={userId}
     />
   );

@@ -2,7 +2,7 @@
 
 Fonte histórica: `Executar-26/Sprint-Operacional@7f542c368770978a1a97b7d865c56b5d08ed7aa1`.
 
-A versão migrada pertence ao repositório canônico `Executar-26/next-forge`, está em `apps/app/public/legado/sprint-operacional/` e pode ser aberta em `/legado/sprint-operacional/`.
+A versão migrada pertence ao repositório canônico `Sas-Executar/Sas-Executar`, está em `apps/app/public/legado/sprint-operacional/` e pode ser aberta em `/legado/sprint-operacional/`.
 
 ---
 

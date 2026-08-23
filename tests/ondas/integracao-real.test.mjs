@@ -502,8 +502,8 @@ test("rotas servidor derivam usuário e organização exclusivamente do Clerk", 
     ]);
 
   assert.match(context, /await auth\(\)/);
-  assert.match(context, /projectOrigin: "existente_autorizado"/);
-  assert.match(context, /getToken/);
+  assert.match(context, /criarPersistenciaAws\(actor\)/);
+  assert.doesNotMatch(context, /projectOrigin|projectReference|getToken/);
   assert.match(
     stateRoute,
     /payload\.state\.organizationId !== actor\.organizationId/
@@ -620,18 +620,7 @@ test("env de produção versionado contém somente configuração pública", asy
     assert.doesNotMatch(value, /^(?:sb_secret_|sk_|whsec_)/);
   }
 
-  assert.match(
-    productionEnv,
-    /NEXT_PUBLIC_SUPABASE_URL="https:\/\/aaaftocmuiztyxdgclqt\.supabase\.co"/
-  );
-  assert.match(
-    productionEnv,
-    /NEXT_PUBLIC_SUPABASE_PROJECT_REF="aaaftocmuiztyxdgclqt"/
-  );
-  assert.match(
-    productionEnv,
-    /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="sb_publishable_[A-Za-z0-9_-]+"/
-  );
+  assert.doesNotMatch(productionEnv, /SUPABASE|AWS_|AURORA_|EVIDENCE_BUCKET/);
   assert.match(productionEnv, /NEXT_PUBLIC_APP_URL="https:\/\/\$VERCEL_URL"/);
   assert.match(productionEnv, /NEXT_PUBLIC_WEB_URL="https:\/\/\$VERCEL_URL"/);
   assert.doesNotMatch(productionEnv, /eyJhbGciOi/);

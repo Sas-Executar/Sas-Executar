@@ -8,7 +8,7 @@ const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../.."
 );
-const canonicalRepository = "Executar-26/next-forge";
+const canonicalRepository = "Sas-Executar/Sas-Executar";
 const legacyDirectory = "apps/app/public/legado/sprint-operacional/";
 const load = (filename) => readFile(path.join(root, filename), "utf8");
 
@@ -39,7 +39,8 @@ test("plano preserva quatro ondas e autoridade de identidade do Clerk", async ()
     assert.ok(plan.includes(wave), wave);
   }
   assert.ok(plan.includes("Clerk é a autoridade"));
-  assert.ok(plan.includes("Supabase é a plataforma de dados"));
+  assert.ok(plan.includes("AWS é a plataforma de dados transversal"));
+  assert.ok(plan.includes("Aurora PostgreSQL privado"));
 });
 
 test("configuração Vercel preserva headers e escopo do service worker", async () => {
@@ -63,10 +64,20 @@ test("rota Next.js direciona para a aplicação legada preservada", async () => 
   assert.ok(route.includes("NextResponse.redirect"));
 });
 
-test("exemplos declaram variáveis públicas Supabase sem service-role pública", async () => {
+test("exemplo declara integração AWS somente no servidor", async () => {
   const appEnv = await load("apps/app/.env.example");
-  assert.ok(appEnv.includes("NEXT_PUBLIC_SUPABASE_URL="));
-  assert.ok(appEnv.includes("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="));
-  assert.ok(appEnv.includes("DIRECT_URL="));
-  assert.ok(!appEnv.includes("NEXT_PUBLIC_SUPABASE_SERVICE_ROLE"));
+  for (const variable of [
+    "AWS_REGION=",
+    "AWS_ROLE_ARN=",
+    "AURORA_DATABASE=",
+    "AURORA_RESOURCE_ARN=",
+    "AURORA_RUNTIME_SECRET_ARN=",
+    "EVIDENCE_BUCKET=",
+  ]) {
+    assert.ok(appEnv.includes(variable), variable);
+  }
+  assert.ok(!appEnv.includes("DATABASE_URL="));
+  assert.ok(!appEnv.includes("DIRECT_URL="));
+  assert.doesNotMatch(appEnv, /NEXT_PUBLIC_(?:AWS|AURORA|EVIDENCE)/);
+  assert.doesNotMatch(appEnv, /NEXT_PUBLIC_SUPABASE/);
 });

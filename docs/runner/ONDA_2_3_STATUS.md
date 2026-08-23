@@ -1,5 +1,7 @@
 # Ondas 2 e 3 · produto e Copiloto sem provisionamento externo
 
+> Registro histórico da direção Supabase. A decisão AWS posterior em `INTEGRACAO_FINAL.md` e `infra/aws/` substitui as referências de provedor e os gates externos deste documento.
+
 ## Código entregue
 
 - A página autenticada `apps/app` apresenta o produto EXECUTAR sem consultar um banco indisponível.

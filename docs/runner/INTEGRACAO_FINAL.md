@@ -1,18 +1,31 @@
 # Integração final · provisionamento e produção
 
+## Decisão vigente · AWS autorizada em 23/08/2026
+
+A direção Supabase abaixo foi substituída por autorização explícita posterior. A integração canônica agora é:
+
+1. aplicar `infra/aws/template.yaml` na conta `250892133959`, região `sa-east-1`, pelo workflow `.github/workflows/aws-infra.yml` e pelo role OIDC já configurado no repositório;
+2. manter Aurora PostgreSQL Serverless v2 em sub-redes privadas, sem entrada pública em `5432`, com RDS Data API e credenciais no Secrets Manager;
+3. executar as migrations versionadas de `infra/aws/migrations/` e o smoke real de duas organizações por `scripts/aws/`;
+4. manter evidências em S3 privado, criptografado, versionado e separado pelo identificador da organização Clerk;
+5. entregar credenciais temporárias ao runtime Vercel por OIDC, sem chaves AWS estáticas e sem `DATABASE_URL` fictícia;
+6. sincronizar os ARNs e nomes de recursos como variáveis de servidor do preview, publicar novamente e validar login, persistência, isolamento, upload/download e reload;
+7. preservar Clerk como autoridade de identidade e considerar o material Supabase apenas uma fonte de migração auditável.
+
+O gate de integração só passa depois de CloudFormation, migrations, smoke RLS e deployment Vercel reais ficarem verdes. Produção continua sendo um gate separado.
+
 ## Política de execução
 
-O desenvolvimento do produto, do domínio e do Copiloto pode avançar com adaptadores locais e testes sem serviços externos. A falta de projeto Supabase, secrets, instalação de dependências, CI hospedado ou deployment Vercel não bloqueia a implementação verificável localmente.
+O desenvolvimento do produto, do domínio e do Copiloto pode avançar com adaptadores locais e testes sem serviços externos. A falta de secrets, instalação de dependências, CI hospedado ou deployment Vercel não bloqueia a implementação verificável localmente.
 
 Essas pendências continuam bloqueando produção, sincronização em nuvem e qualquer declaração de gate de integração aprovado.
 
 Antes de executar ações externas, obter autorização explícita para iniciar a
-integração final. Essa autorização precisa cobrir o projeto Supabase nominal, a
-instalação de dependências, a configuração de credenciais e ambientes, os
-serviços conectados, os runners e o deployment Vercel. A Onda 5 organiza essas
-ações, mas não configura recursos externos por presunção.
+integração final. A autorização AWS foi registrada em 23/08/2026 para esta
+entrega; cobranças adicionais, produção e operações destrutivas continuam
+exigindo escopo explícito.
 
-## Supabase: projeto identificado e explicitamente autorizado
+## Registro histórico Supabase — não executar como direção atual
 
 1. Sem uma autorização nominal posterior, criar um **novo projeto Supabase dedicado ao SaaS EXECUTAR** quando começar a integração final.
 2. Em 22/08/2026, o responsável autorizou expressamente a exceção restrita ao
@@ -145,7 +158,7 @@ A aprovação de um gate de código nunca implica aprovação automática de int
 
 ## Handoff Git → Vercel
 
-1. Importar `Executar-26/next-forge` e selecionar `apps/app` como Root Directory.
+1. Importar `Sas-Executar/Sas-Executar` e selecionar `apps/app` como Root Directory.
 2. Manter o framework Next.js e o fluxo de build do monorepo detectados pela
    Vercel.
 3. Cadastrar as duas variáveis Clerk listadas acima ou instalar Clerk pelo

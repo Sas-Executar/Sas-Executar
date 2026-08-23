@@ -6,18 +6,19 @@ Evoluir o `Sprint-Operacional` atual para uma fundação SaaS pronta para GTM/MV
 
 ## Repositório canônico e referência funcional
 
-- Repositório canônico: `Executar-26/next-forge`.
+- Repositório canônico: `Sas-Executar/Sas-Executar`.
 - A PWA original veio de `Executar-26/Sprint-Operacional` e está preservada em `apps/app/public/legado/sprint-operacional/`.
 - O starter SaaS já existe; a Onda 1 deve adaptar os pacotes presentes em vez de inicializar outro monorepo.
 - O acesso funcional ao legado permanece disponível em `/legado/sprint-operacional/`.
 
 ## Decisões arquiteturais travadas
 
-- Repositório de execução: `Executar-26/next-forge`.
+- Repositório de execução: `Sas-Executar/Sas-Executar`.
 - O código atual permanece como referência funcional até a migração ser comprovada.
 - `next-forge` é o chassis SaaS recomendado.
 - Clerk é a autoridade de identidade, organizações, membros, convites e sessões.
-- Supabase é a plataforma de dados: Postgres, RLS, Storage e Realtime.
+- AWS é a plataforma de dados transversal: Aurora PostgreSQL privado via RDS Data API, RLS, S3, IAM/OIDC, Secrets Manager e CloudWatch.
+- O código Supabase anterior é legado auditável e não integra o runtime canônico.
 - Stripe é a base de cobrança/direitos de acesso.
 - Vercel AI SDK é a base do Copiloto/agentes.
 - MCP é o contrato de ferramentas/integrações.
@@ -26,9 +27,9 @@ Evoluir o `Sprint-Operacional` atual para uma fundação SaaS pronta para GTM/MV
 
 ## Política vigente de execução sem bloqueio externo
 
-- O SaaS usará um projeto Supabase **novo**, dedicado e provisionado apenas na integração final; não reutilizar projetos existentes.
+- O SaaS usa infraestrutura AWS declarativa em `infra/aws/`; não abrir `5432`, não inventar `DATABASE_URL` e não provisionar um novo Supabase.
 - Produto, regras, interface e Copiloto podem avançar com estado local-first isolado pela organização Clerk.
-- Secrets, instalação/sincronização de dependências, CI hospedado, RLS real, Storage, deployment Vercel e integrações de terceiros ficam no checklist `INTEGRACAO_FINAL.md`.
+- Secrets, instalação/sincronização de dependências, CI hospedado, RLS real, S3, deployment Vercel e integrações de terceiros ficam no checklist `INTEGRACAO_FINAL.md`.
 - A ausência desses serviços não bloqueia um gate de código local; continua bloqueando os gates de integração e produção.
 - Mobile continua bloqueado até a fundação web e a sincronização real estarem aprovadas.
 
@@ -47,10 +48,10 @@ Ter o novo chassis SaaS executando no mesmo repositório, com identidade, organi
 3. Preservar a PWA atual em uma área de referência/legado durante a transição; não apagá-la.
 4. Configurar aplicações e pacotes mínimos do monorepo.
 5. Configurar Clerk.
-6. Configurar Supabase.
+6. Aplicar o IaC AWS com Aurora Data API, S3, IAM/OIDC, Secrets Manager e CloudWatch.
 7. Implementar modelo de organização local associado ao `clerk_org_id`.
 8. Implementar RLS baseada na organização ativa.
-9. Adicionar Storage para evidências.
+9. Adicionar S3 privado para evidências.
 10. Adicionar CI obrigatório: instalação, tipos, lint, testes e build.
 11. Adicionar observabilidade mínima de erro.
 12. Adicionar headers/CSP/rate limiting adequado às rotas mutantes.
@@ -100,8 +101,8 @@ Reproduzir no novo SaaS tudo que hoje torna o Sprint Operacional útil, agora pe
 4. Substituir `data.js` como fonte de verdade por banco tipado, mantendo-o apenas como modelo/importação inicial quando útil.
 5. Substituir `localStorage` como autoridade por estratégia local-first + sincronização.
 6. Persistir projetos, entregas, dependências, progresso e evidências.
-7. Implementar upload/consulta de evidências no Storage.
-8. Usar Realtime somente onde melhora de fato o estado do produto.
+7. Implementar upload/consulta de evidências no S3 privado.
+8. Usar atualização em tempo real somente onde melhora de fato o estado do produto.
 9. Integrar Stripe usando os padrões do starter.
 10. Associar direitos de acesso ao tenant/organização sem espalhar lógica de plano pela UI.
 11. Refinar responsividade:

@@ -1,6 +1,6 @@
 # USER MESSAGE · INÍCIO DO DESENVOLVIMENTO
 
-Você é o Codex responsável por assumir o desenvolvimento do repositório `Executar-26/next-forge` e evoluí-lo da PWA atual para o SaaS EXECUTAR.
+Você é o Codex responsável por assumir o desenvolvimento do repositório `Sas-Executar/Sas-Executar` e evoluí-lo da PWA atual para o SaaS EXECUTAR.
 
 Antes de escrever qualquer código:
 
@@ -14,14 +14,14 @@ Antes de escrever qualquer código:
 
 Depois, inicie a **ONDA 1 · FUNDAÇÃO SAAS + PRESERVAÇÃO DO PRODUTO** e siga o runner. Quando provisionamento, secrets, dependências, CI hospedado ou Vercel ainda não estiverem disponíveis, continue a implementação verificável das Ondas 2 e 3 e deixe a integração real para o final.
 
-O Supabase do SaaS deve ser um **projeto novo**, criado somente na etapa final. Nunca selecione nem modifique projetos existentes por suposição.
+A infraestrutura canônica é AWS em `sa-east-1`, com Aurora PostgreSQL privado acessado pela RDS Data API, S3 privado e IAM/OIDC. O Supabase anterior é somente legado auditável; não crie outro projeto nem o trate como runtime final.
 
 Objetivo da Onda 1:
 
 - reutilizar o monorepo/chassis SaaS `next-forge` já presente no repositório, sem criar outro starter;
 - preservar o Sprint Operacional atual como referência funcional durante a migração;
 - configurar Clerk como autoridade de identidade e organizações;
-- configurar Supabase para Postgres, RLS, Storage e Realtime;
+- configurar Aurora PostgreSQL, RLS, S3, IAM/OIDC, Secrets Manager e CloudWatch por IaC;
 - criar isolamento multi-tenant comprovado por testes;
 - configurar CI bloqueante, observabilidade mínima, segurança de rotas e configuração Vercel;
 - deixar a base pronta para portar o produto na Onda 2.
@@ -32,7 +32,7 @@ Regras obrigatórias:
 - não remova a PWA atual antes de existir equivalência funcional comprovada;
 - não desenvolva diretamente na `main`;
 - não crie infraestrutura paralela que o starter já resolva;
-- não duplique membership/autenticação no Supabase se Clerk já for autoridade;
+- não duplique membership/autenticação no banco se Clerk já for autoridade;
 - não introduza microserviços, CRM, ERP, marketplace ou mobile prematuro; implemente o Copiloto apenas quando avançar explicitamente para a Onda 3;
 - não bloqueie todo o trabalho por falta de segredo: crie `.env.example`, validação, mocks quando viável e registre a ação manual necessária;
 - mudanças de RLS/autorização devem nascer com testes de isolamento no mesmo PR;

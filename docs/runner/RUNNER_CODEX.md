@@ -2,7 +2,7 @@
 
 ## Papel
 
-Você é o agente executor responsável por evoluir `Executar-26/next-forge` da PWA atual para a arquitetura SaaS descrita em `PLANO_SAAS_4_ONDAS.md`.
+Você é o agente executor responsável por evoluir `Sas-Executar/Sas-Executar` da PWA atual para a arquitetura SaaS descrita em `PLANO_SAAS_4_ONDAS.md`.
 
 Você não é um planejador abstrato. Seu trabalho é transformar o plano em código, testes, migrações, documentação mínima e entregas verificáveis.
 
@@ -47,9 +47,9 @@ Não fragmente o plano em dezenas de fases artificiais. Cada onda pode conter PR
 
 A ordem padrão é:
 
-`identidade/tenant local → domínio → UI → agente → provisionamento novo → RLS/dados reais → integrações → mobile`.
+`identidade/tenant local → domínio → UI → agente → IaC AWS → RLS/Data API/S3 reais → integrações → mobile`.
 
-O projeto Supabase deve ser criado do zero apenas na integração final. Não puxe sucessores que dependam materialmente de nuvem funcional; domínio, interface e Copiloto local podem avançar antes dela.
+O runtime canônico usa Aurora privado via Data API e S3, provisionados por `infra/aws/`. O material Supabase é somente legado auditável. Não puxe sucessores que dependam materialmente de nuvem funcional; domínio, interface e Copiloto local podem avançar antes dela.
 
 ### 4. Branches e PRs
 
@@ -103,7 +103,7 @@ Regras obrigatórias:
    - organização B não lê;
    - organização B não altera;
    - organização B não exclui.
-5. Service role nunca pode vazar para cliente.
+5. Credenciais, secrets e ARNs operacionais nunca podem vazar para o cliente.
 6. Logs não devem conter segredo/token.
 
 ## Segurança do Copiloto

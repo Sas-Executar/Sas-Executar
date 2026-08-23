@@ -1,5 +1,7 @@
 # Onda 3 · Copiloto executor com aprovação humana
 
+> Registro histórico da direção Supabase. A decisão AWS posterior em `INTEGRACAO_FINAL.md` e `infra/aws/` substitui as referências de provedor e os gates externos deste documento.
+
 ## Resultado entregue em código
 
 O Copiloto agora opera sobre o mesmo estado canônico, projeto, organização,

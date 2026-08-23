@@ -1,11 +1,10 @@
 import { auth } from "@repo/auth/server";
+import { criarPersistenciaAws } from "./aws-persistence";
 import type { AtorOperacional } from "./domain.ts";
 import {
-  criarPersistenciaRemota,
   ErroPersistenciaRemota,
   type PersistenciaOperacionalRemota,
 } from "./remote-persistence.ts";
-import { REFERENCIA_SUPABASE_LEGADO_AUTORIZADO } from "./supabase-project.ts";
 
 export interface ContextoPersistenciaServidor {
   readonly actor: AtorOperacional;
@@ -13,7 +12,7 @@ export interface ContextoPersistenciaServidor {
 }
 
 export async function contextoPersistenciaServidor(): Promise<ContextoPersistenciaServidor> {
-  const { orgId, userId, getToken } = await auth();
+  const { orgId, userId } = await auth();
 
   if (!(orgId && userId)) {
     throw new ErroPersistenciaRemota(
@@ -23,39 +22,15 @@ export async function contextoPersistenciaServidor(): Promise<ContextoPersistenc
     );
   }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  const projectReference =
-    process.env.NEXT_PUBLIC_SUPABASE_PROJECT_REF ??
-    REFERENCIA_SUPABASE_LEGADO_AUTORIZADO;
-
-  if (!(url && publishableKey)) {
-    throw new ErroPersistenciaRemota(
-      "A integração Supabase ainda não foi configurada neste ambiente.",
-      503,
-      "INTEGRACAO_NAO_CONFIGURADA"
-    );
-  }
+  const actor = {
+    organizationId: orgId,
+    userId,
+    displayName: userId,
+  };
 
   return {
-    actor: {
-      organizationId: orgId,
-      userId,
-      displayName: userId,
-    },
-    persistence: criarPersistenciaRemota(
-      {
-        projectOrigin: "existente_autorizado",
-        projectReference,
-        publishableKey,
-        url,
-      },
-      {
-        organizationId: orgId,
-        userId,
-        getToken,
-      }
-    ),
+    actor,
+    persistence: criarPersistenciaAws(actor),
   };
 }
 

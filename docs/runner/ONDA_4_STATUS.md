@@ -1,5 +1,7 @@
 # Onda 4 · colaboração, distribuição e preparo mobile
 
+> Registro histórico da direção Supabase. A decisão AWS posterior em `INTEGRACAO_FINAL.md` e `infra/aws/` substitui as referências de provedor e os gates externos deste documento.
+
 ## Resultado entregue em código
 
 A aplicação autenticada passa a usar o usuário e a organização ativos do Clerk

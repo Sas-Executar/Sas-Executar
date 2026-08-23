@@ -1,0 +1,276 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Infraestrutura privada do EXECUTAR em AWS, acessada por Data API e OIDC.
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: preview
+    AllowedPattern: "^[a-z][a-z0-9-]{1,20}$"
+  AuroraEngineVersion:
+    Type: String
+    Default: "16.6"
+  DatabaseName:
+    Type: String
+    Default: executar
+    AllowedPattern: "^[a-z][a-z0-9_]{1,62}$"
+  MinCapacity:
+    Type: Number
+    Default: 0
+    MinValue: 0
+  MaxCapacity:
+    Type: Number
+    Default: 1
+    MinValue: 0.5
+  AutoPauseSeconds:
+    Type: Number
+    Default: 300
+    MinValue: 300
+    MaxValue: 86400
+  VercelOidcProviderArn:
+    Type: String
+    Default: ""
+    Description: ARN de um provider OIDC Vercel já existente nesta conta.
+
+Conditions:
+  CreateVercelOidcProvider: !Equals [!Ref VercelOidcProviderArn, ""]
+
+Resources:
+  Network:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.40.0.0/20
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub executar-${EnvironmentName}
+
+  DatabaseSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      CidrBlock: 10.40.0.0/24
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref Network
+      Tags:
+        - Key: Name
+          Value: !Sub executar-${EnvironmentName}-db-a
+
+  DatabaseSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      CidrBlock: 10.40.1.0/24
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref Network
+      Tags:
+        - Key: Name
+          Value: !Sub executar-${EnvironmentName}-db-b
+
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Sub-redes privadas do Aurora EXECUTAR
+      SubnetIds:
+        - !Ref DatabaseSubnetA
+        - !Ref DatabaseSubnetB
+
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Aurora privado sem entrada TCP externa
+      SecurityGroupEgress: []
+      VpcId: !Ref Network
+
+  AuroraPostgresqlLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub /aws/rds/cluster/executar-${EnvironmentName}/postgresql
+      RetentionInDays: 30
+
+  RuntimeDatabaseSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Credencial do role PostgreSQL de runtime do EXECUTAR
+      GenerateSecretString:
+        ExcludeCharacters: "'\"@/\\"
+        GenerateStringKey: password
+        PasswordLength: 40
+        SecretStringTemplate: '{"username":"executar_runtime"}'
+      Tags:
+        - Key: executar:environment
+          Value: !Ref EnvironmentName
+
+  AuroraCluster:
+    Type: AWS::RDS::DBCluster
+    DependsOn: AuroraPostgresqlLogGroup
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    Properties:
+      BackupRetentionPeriod: 7
+      CopyTagsToSnapshot: true
+      DatabaseName: !Ref DatabaseName
+      DBClusterIdentifier: !Sub executar-${EnvironmentName}
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      DeletionProtection: true
+      EnableCloudwatchLogsExports:
+        - postgresql
+      EnableHttpEndpoint: true
+      Engine: aurora-postgresql
+      EngineMode: provisioned
+      EngineVersion: !Ref AuroraEngineVersion
+      ManageMasterUserPassword: true
+      MasterUsername: executar_admin
+      Port: 5432
+      ServerlessV2ScalingConfiguration:
+        MinCapacity: !Ref MinCapacity
+        MaxCapacity: !Ref MaxCapacity
+        SecondsUntilAutoPause: !Ref AutoPauseSeconds
+      StorageEncrypted: true
+      VpcSecurityGroupIds:
+        - !Ref DatabaseSecurityGroup
+      Tags:
+        - Key: executar:environment
+          Value: !Ref EnvironmentName
+
+  AuroraWriter:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AutoMinorVersionUpgrade: true
+      DBClusterIdentifier: !Ref AuroraCluster
+      DBInstanceClass: db.serverless
+      DBInstanceIdentifier: !Sub executar-${EnvironmentName}-writer
+      Engine: aurora-postgresql
+      PubliclyAccessible: false
+
+  EvidenceBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: RemoverVersoesAntigas
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            Status: Enabled
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: executar:environment
+          Value: !Ref EnvironmentName
+
+  EvidenceBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref EvidenceBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource:
+              - !GetAtt EvidenceBucket.Arn
+              - !Sub ${EvidenceBucket.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
+  VercelOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: CreateVercelOidcProvider
+    Properties:
+      ClientIdList:
+        - https://vercel.com/sas-executar1
+      Tags:
+        - Key: executar:environment
+          Value: !Ref EnvironmentName
+      Url: https://oidc.vercel.com/sas-executar1
+
+  VercelRuntimeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub executar-vercel-${EnvironmentName}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !If
+                - CreateVercelOidcProvider
+                - !Ref VercelOidcProvider
+                - !Ref VercelOidcProviderArn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                "oidc.vercel.com/sas-executar1:aud": https://vercel.com/sas-executar1
+                "oidc.vercel.com/sas-executar1:sub":
+                  - owner:sas-executar1:project:executar:environment:preview
+                  - owner:sas-executar1:project:executar:environment:production
+                  - owner:sas-executar1:project:executar-api:environment:preview
+                  - owner:sas-executar1:project:executar-api:environment:production
+      Policies:
+        - PolicyName: executar-runtime
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: DataApi
+                Effect: Allow
+                Action:
+                  - rds-data:BatchExecuteStatement
+                  - rds-data:BeginTransaction
+                  - rds-data:CommitTransaction
+                  - rds-data:ExecuteStatement
+                  - rds-data:RollbackTransaction
+                Resource: !Sub arn:${AWS::Partition}:rds:${AWS::Region}:${AWS::AccountId}:cluster:${AuroraCluster}
+              - Sid: RuntimeDatabaseSecret
+                Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Ref RuntimeDatabaseSecret
+              - Sid: EvidenceBucketList
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !GetAtt EvidenceBucket.Arn
+              - Sid: EvidenceObjects
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub ${EvidenceBucket.Arn}/*
+      Tags:
+        - Key: executar:environment
+          Value: !Ref EnvironmentName
+
+Outputs:
+  AuroraDatabase:
+    Value: !Ref DatabaseName
+  AuroraResourceArn:
+    Value: !Sub arn:${AWS::Partition}:rds:${AWS::Region}:${AWS::AccountId}:cluster:${AuroraCluster}
+  AuroraRuntimeSecretArn:
+    Value: !Ref RuntimeDatabaseSecret
+  AuroraMasterSecretArn:
+    Value: !GetAtt AuroraCluster.MasterUserSecret.SecretArn
+  EvidenceBucketName:
+    Value: !Ref EvidenceBucket
+  VercelRuntimeRoleArn:
+    Value: !GetAtt VercelRuntimeRole.Arn
+  VpcId:
+    Value: !Ref Network

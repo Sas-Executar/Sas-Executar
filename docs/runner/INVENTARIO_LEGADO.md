@@ -4,7 +4,7 @@
 
 - Origem: `Executar-26/Sprint-Operacional`.
 - Commit de referência: `7f542c368770978a1a97b7d865c56b5d08ed7aa1`.
-- Repositório canônico: `Executar-26/next-forge`.
+- Repositório canônico: `Sas-Executar/Sas-Executar`.
 - Local preservado: `apps/app/public/legado/sprint-operacional/`.
 - Rota funcional: `/legado/sprint-operacional/`.
 
@@ -17,7 +17,7 @@
 | PORTAR | Regras de foco, dependências, avanço e conclusão | Extrair para domínio somente na Onda 2. |
 | PORTAR | `data.js` e suas 33 entregas | Reaproveitar como seed/importação quando o modelo persistente existir. |
 | SUBSTITUIR | `localStorage` como fonte de verdade exclusiva | Adotar persistência multi-tenant e sincronização após a fundação segura. |
-| SUBSTITUIR | Neon e Vercel Blob como fornecedores finais | Adaptar os pacotes existentes para Supabase Postgres e Supabase Storage. |
+| SUBSTITUIR | Neon, Vercel Blob e o adaptador Supabase intermediário como fornecedores finais | Usar Aurora PostgreSQL privado via Data API e S3, preservando Clerk como autoridade. |
 | DESCARTAR | Nenhum componente funcional | Remoção proibida antes da equivalência comprovada. |
 
 ## Arquivos preservados

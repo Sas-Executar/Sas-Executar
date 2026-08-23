@@ -61,6 +61,7 @@ interface ExecutarOperacionalProperties {
   readonly collaborationAvailable: boolean;
   readonly externalNotificationsAvailable: boolean;
   readonly organizationId: string;
+  readonly remotePersistenceAvailable: boolean;
   readonly userId: string;
 }
 
@@ -71,11 +72,6 @@ interface MensagemCopiloto {
 }
 
 const DEPENDENCY_SEPARATOR_PATTERN = /[,;]+/;
-const PERSISTENCIA_REMOTA_HABILITADA = Boolean(
-  process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-);
-
 function criarMensagemCopiloto(
   author: MensagemCopiloto["author"],
   text: string
@@ -1296,6 +1292,7 @@ export function ExecutarOperacional({
   collaborationAvailable,
   externalNotificationsAvailable,
   organizationId,
+  remotePersistenceAvailable,
   userId,
 }: ExecutarOperacionalProperties) {
   const { user } = useUser();
@@ -1352,7 +1349,7 @@ export function ExecutarOperacional({
     setState(local);
     setLoaded(true);
 
-    if (!PERSISTENCIA_REMOTA_HABILITADA) {
+    if (!remotePersistenceAvailable) {
       return () => {
         active = false;
       };
@@ -1412,7 +1409,7 @@ export function ExecutarOperacional({
     return () => {
       active = false;
     };
-  }, [organizationId, userId]);
+  }, [organizationId, remotePersistenceAvailable, userId]);
 
   useEffect(() => {
     if (loaded && state.organizationId === organizationId) {
@@ -1426,7 +1423,7 @@ export function ExecutarOperacional({
   useEffect(() => {
     if (
       !(
-        PERSISTENCIA_REMOTA_HABILITADA &&
+        remotePersistenceAvailable &&
         loaded &&
         remoteReady &&
         state.organizationId === organizationId
@@ -1479,10 +1476,10 @@ export function ExecutarOperacional({
       active = false;
       window.clearTimeout(timer);
     };
-  }, [loaded, organizationId, remoteReady, state]);
+  }, [loaded, organizationId, remotePersistenceAvailable, remoteReady, state]);
 
   useEffect(() => {
-    if (!(PERSISTENCIA_REMOTA_HABILITADA && remoteReady)) {
+    if (!(remotePersistenceAvailable && remoteReady)) {
       return;
     }
 
@@ -1528,7 +1525,7 @@ export function ExecutarOperacional({
     }, 15_000);
 
     return () => window.clearInterval(interval);
-  }, [actor, organizationId, remoteReady]);
+  }, [actor, organizationId, remotePersistenceAvailable, remoteReady]);
 
   useEffect(() => {
     const key = chaveOrganizacao(organizationId);
@@ -1598,12 +1595,7 @@ export function ExecutarOperacional({
         ? await lerArquivoEvidencia(evidenceFile)
         : undefined;
 
-      if (
-        file &&
-        evidenceFile &&
-        PERSISTENCIA_REMOTA_HABILITADA &&
-        remoteReady
-      ) {
+      if (file && evidenceFile && remotePersistenceAvailable && remoteReady) {
         const form = new FormData();
 
         form.set("state", JSON.stringify(state));
@@ -1665,7 +1657,7 @@ export function ExecutarOperacional({
 
       setPendingApproval(answer.approval);
 
-      if (answer.approval && PERSISTENCIA_REMOTA_HABILITADA && remoteReady) {
+      if (answer.approval && remotePersistenceAvailable && remoteReady) {
         const requested = answer.approval;
 
         fetch("/api/executar/approvals", {
@@ -1837,7 +1829,7 @@ export function ExecutarOperacional({
 
     if (
       question.startsWith("/") ||
-      !(PERSISTENCIA_REMOTA_HABILITADA && remoteReady)
+      !(remotePersistenceAvailable && remoteReady)
     ) {
       executarCopilotoLocal(question);
       return;
@@ -1854,7 +1846,7 @@ export function ExecutarOperacional({
     }
 
     try {
-      if (PERSISTENCIA_REMOTA_HABILITADA && remoteReady) {
+      if (remotePersistenceAvailable && remoteReady) {
         const approvalId = serverApprovals.current.get(pendingApproval.id);
 
         if (!approvalId) {

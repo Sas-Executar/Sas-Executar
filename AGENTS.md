@@ -1,6 +1,6 @@
 # AGENTS.md · EXECUTAR Sprint Operacional
 
-Este repositório é o produto `Executar-26/next-forge`, base canônica do SaaS EXECUTAR.
+Este repositório é o produto `Sas-Executar/Sas-Executar`, base canônica do SaaS EXECUTAR.
 
 A PWA original foi migrada de `Executar-26/Sprint-Operacional` para `apps/app/public/legado/sprint-operacional/` e permanece como referência funcional até existir equivalência comprovada.
 
@@ -38,7 +38,7 @@ A direção arquitetural é:
 - `next-forge` já existente neste repositório como chassis SaaS/monorepo; não reinicializar nem criar um segundo starter.
 - Next.js para aplicação web.
 - Clerk para identidade, organizações, membros, convites e sessões.
-- Supabase para Postgres, RLS, Storage e Realtime.
+- AWS em `sa-east-1`: Aurora PostgreSQL privado com RDS Data API, RLS, S3 privado, IAM/OIDC, Secrets Manager e CloudWatch.
 - Stripe para cobrança e direitos de acesso.
 - Vercel AI SDK para Copiloto/agentes.
 - MCP para ferramentas e integrações.
@@ -46,10 +46,14 @@ A direção arquitetural é:
 - Expo para Android e iOS quando a base web estiver validada.
 - Vercel para publicação.
 
-## Prioridade vigente: desenvolver antes de provisionar
+## Prioridade vigente: infraestrutura AWS transversal
 
-- O Supabase do SaaS EXECUTAR será obrigatoriamente um projeto novo, criado na integração final; nunca reutilize ou modifique projetos existentes por suposição.
-- Continue as ondas de produto e Copiloto quando faltarem secrets, projeto Supabase, instalação de dependências, CI hospedado ou deployment Vercel, desde que o código possa ser validado localmente.
+- O IaC canônico fica em `infra/aws/` e deve ser aplicado pelo workflow `.github/workflows/aws-infra.yml`, reutilizando o OIDC GitHub já autorizado.
+- O Aurora não recebe entrada pública em `5432`: runtimes Vercel usam credenciais temporárias OIDC e RDS Data API. Não use `DATABASE_URL` fictícia para mascarar indisponibilidade.
+- Evidências ficam em bucket S3 privado, criptografado e particionado pelo identificador da organização Clerk.
+- Clerk permanece a autoridade de identidade e tenant; RLS é a última barreira no PostgreSQL e toda integração deve provar isolamento com duas organizações reais.
+- O adaptador e as migrations Supabase permanecem somente como fonte legada auditável. Não são a infraestrutura canônica nem autorização para provisionar outro projeto.
+- Continue as ondas de produto e Copiloto quando faltarem secrets, CI hospedado ou deployment Vercel, desde que o código possa ser validado localmente.
 - Reutilize Clerk, o starter e adaptadores locais isolados por organização até a integração real.
 - Distinga explicitamente gate de código, gate de integração e gate de produção; testes locais não comprovam RLS, sincronização em nuvem nem deployment.
 - O checklist canônico de provisionamento está em `docs/runner/INTEGRACAO_FINAL.md`.
@@ -59,7 +63,7 @@ A direção arquitetural é:
 - Não fazer reescrita visual radical.
 - Não mudar nomenclatura orientada à ação sem necessidade.
 - Não introduzir infraestrutura paralela quando o starter já resolver o problema.
-- Não duplicar autenticação/membership no Supabase se Clerk já for autoridade para isso.
+- Não duplicar autenticação/membership no banco se Clerk já for autoridade para isso.
 - Não remover o PWA atual antes de a versão sucessora reproduzir os fluxos essenciais.
 - Não iniciar aplicativo móvel antes do Gate Web/SaaS estar aprovado tecnicamente.
 - Não criar microserviços prematuramente.

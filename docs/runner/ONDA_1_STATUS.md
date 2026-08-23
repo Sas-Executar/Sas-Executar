@@ -1,8 +1,10 @@
 # Onda 1 · estado da fundação e configuração manual
 
+> Registro histórico da direção Supabase. A decisão AWS posterior em `INTEGRACAO_FINAL.md` e `infra/aws/` substitui as referências de provedor e os gates externos deste documento.
+
 ## Fundação existente
 
-O repositório `Executar-26/next-forge` já contém o starter `next-forge` 6.0.2 com:
+O repositório `Sas-Executar/Sas-Executar` já contém o starter `next-forge` 6.0.2 com:
 
 - `apps/app`, `apps/web` e `apps/api`.
 - Clerk em `packages/auth`, incluindo organizações no seletor existente.

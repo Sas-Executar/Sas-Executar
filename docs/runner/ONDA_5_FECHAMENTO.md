@@ -1,5 +1,7 @@
 # Onda 5 · fechamento verificável das quatro ondas
 
+> Registro histórico da direção Supabase. A decisão AWS posterior em `INTEGRACAO_FINAL.md` e `infra/aws/` substitui as referências de provedor e os gates externos deste documento.
+
 A Onda 5 é uma etapa adicional de fechamento autorizada após o plano original de
 quatro ondas. Seu objetivo é eliminar pendências implementáveis no repositório,
 materializar os contratos finais e impedir que serviços não verificados sejam
