@@ -519,6 +519,53 @@ test("produto preserva as faces, prioriza Hoje Agora Copiloto e usa o mesmo esta
   }
 });
 
+test("handoff final aplica home, navegação, sprint, três faces e documentos mobile-first", async () => {
+  const component = await readFile(
+    new URL(
+      "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
+      import.meta.url
+    ),
+    "utf8"
+  );
+  const surfaces = await readFile(
+    new URL(
+      "../../apps/app/app/(authenticated)/components/executar-handoff.tsx",
+      import.meta.url
+    ),
+    "utf8"
+  );
+  const styles = await readFile(
+    new URL("../../apps/app/app/(authenticated)/handoff.css", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(component, /useState<View>\("home"\)/);
+  assert.match(surfaces, /\/brand\/executar-mark\.png/);
+
+  for (const label of [
+    "Projetos",
+    "Documentos",
+    "Copiloto Chat",
+    "Hoje",
+    "Amanhã",
+    "Agora",
+    "Feito",
+    "Re-Plan",
+    "principal",
+    "contexto",
+    "evidencia",
+    "MODO FOCO",
+    "Buscar documentos, projetos, listas...",
+  ]) {
+    assert.ok(surfaces.includes(label), `Ausente no handoff final: ${label}`);
+  }
+
+  assert.match(surfaces, /function SprintProgress/);
+  assert.match(styles, /\.executarOperationalNav/);
+  assert.match(styles, /--executar-action: #baff33/);
+  assert.match(styles, /@media \(max-width: 820px\)/);
+});
+
 test("provisionamento exige projeto Supabase autorizado e gates separados", async () => {
   const checklist = await readFile(
     new URL("../../docs/runner/INTEGRACAO_FINAL.md", import.meta.url),
