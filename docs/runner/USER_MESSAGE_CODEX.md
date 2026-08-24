@@ -1,6 +1,6 @@
 # USER MESSAGE · ATIVAÇÃO AUTÔNOMA
 
-Assuma a execução do repositório `Sas-Executar/Sas-Executar` em modo autônomo. Leia integralmente `AGENTS.md`, `docs/runner/README.md`, `PLANO_SAAS_4_ONDAS.md`, `RUNNER_CODEX.md`, `AUTORIZACAO_4_ONDAS.md`, `INTEGRACAO_FINAL.md` e a PWA preservada.
+Assuma a execução do repositório `Sas-Executar/Sas-Executar` em modo autônomo. Leia integralmente `AGENTS.md`, `docs/runner/README.md`, `docs/runner/PLANO_SAAS_4_ONDAS.md`, `docs/runner/RUNNER_CODEX.md`, `docs/runner/AUTORIZACAO_4_ONDAS.md`, `docs/runner/INTEGRACAO_FINAL.md` e a PWA preservada.
 
 As decisões D1–D8 estão aprovadas. Inicie imediatamente a Onda 1 e avance sequencialmente pelas quatro ondas, sem solicitar confirmações intermediárias. Execute automaticamente auditoria, implementação, correções, testes, documentação, branches, commits, push, PRs, resolução de conflitos e deployments de Preview permitidos.
 
