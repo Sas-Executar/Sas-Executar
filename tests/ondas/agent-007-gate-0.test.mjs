@@ -4,7 +4,7 @@ import test from "node:test";
 
 const root = new URL("../../", import.meta.url);
 
-async function text(path) {
+function text(path) {
   return readFile(new URL(path, root), "utf8");
 }
 
@@ -99,28 +99,39 @@ test("projection contract é versionado, somente leitura e cobre os renderers", 
 });
 
 test("matriz E2E cobre fronteiras e gaps P0", async () => {
-  const matrix = await json(
-    "docs/agent-007/validation/e2e-matrix.json"
-  );
+  const matrix = await json("docs/agent-007/validation/e2e-matrix.json");
   const ids = matrix.scenarios.map((scenario) => scenario.id);
   const coveredBoundaries = new Set(
     matrix.scenarios.flatMap((scenario) => scenario.boundaries)
   );
-  const coveredGaps = new Set(matrix.scenarios.flatMap((scenario) => scenario.gaps));
+  const coveredGaps = new Set(
+    matrix.scenarios.flatMap((scenario) => scenario.gaps)
+  );
 
   assert.deepEqual(
     ids,
-    Array.from({ length: 12 }, (_, index) => `E2E-${String(index + 1).padStart(2, "0")}`)
+    Array.from(
+      { length: 12 },
+      (_, index) => `E2E-${String(index + 1).padStart(2, "0")}`
+    )
   );
   assert.equal(new Set(ids).size, ids.length);
-  assert.ok(matrix.scenarios.every((scenario) => scenario.status === "PLANNED"));
+  assert.ok(
+    matrix.scenarios.every((scenario) => scenario.status === "PLANNED")
+  );
 
   for (const boundary of matrix.requiredBoundaries) {
-    assert.ok(coveredBoundaries.has(boundary), `fronteira ausente: ${boundary}`);
+    assert.ok(
+      coveredBoundaries.has(boundary),
+      `fronteira ausente: ${boundary}`
+    );
   }
 
   for (let number = 1; number <= 8; number += 1) {
-    assert.ok(coveredGaps.has(gapId(number)), `gap P0 sem cenário: ${gapId(number)}`);
+    assert.ok(
+      coveredGaps.has(gapId(number)),
+      `gap P0 sem cenário: ${gapId(number)}`
+    );
   }
 });
 
