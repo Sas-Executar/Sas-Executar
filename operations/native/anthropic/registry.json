@@ -1,0 +1,25 @@
+{
+  "owner": "Anthropic",
+  "upstream": "anthropics/knowledge-work-plugins",
+  "upstreamCommit": "16d1ab59994b6ab9a9066f063f4264c76eff9dc8",
+  "sourceOfTruth": "../../vendor/anthropic-knowledge-work-plugins",
+  "nativePlugins": [
+    "bio-research",
+    "cowork-plugin-management",
+    "customer-support",
+    "data",
+    "design",
+    "engineering",
+    "enterprise-search",
+    "finance",
+    "human-resources",
+    "legal",
+    "marketing",
+    "operations",
+    "pdf-viewer",
+    "product-management",
+    "productivity",
+    "sales",
+    "small-business"
+  ]
+}
