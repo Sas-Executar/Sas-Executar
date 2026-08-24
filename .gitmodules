@@ -1,0 +1,4 @@
+[submodule "operations/vendor/anthropic-knowledge-work-plugins"]
+	path = operations/vendor/anthropic-knowledge-work-plugins
+	url = https://github.com/anthropics/knowledge-work-plugins.git
+	branch = main
