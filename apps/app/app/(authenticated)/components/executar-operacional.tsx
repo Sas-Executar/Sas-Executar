@@ -1,7 +1,20 @@
 "use client";
 
+import { AiMessage, type UIMessage } from "@repo/ai";
 import { OrganizationSwitcher, UserButton, useUser } from "@repo/auth/client";
 import { NotificationsTrigger } from "@repo/notifications/components/trigger";
+import {
+  ArrowUp,
+  CalendarDays,
+  Check,
+  FolderKanban,
+  Menu,
+  Plus,
+  Route,
+  Sparkles,
+  Users,
+  X,
+} from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { lerFluxoCopiloto } from "@/lib/executar/copilot-stream";
 import {
@@ -56,6 +69,8 @@ import { CollaborationProvider } from "./collaboration-provider";
 import "../executar.css";
 
 type View = "overview" | "focus" | "calendar" | "path";
+type PrimaryArea = "today" | "now" | "copilot";
+type CopilotMode = "automatic" | "local";
 
 interface ExecutarOperacionalProperties {
   readonly collaborationAvailable: boolean;
@@ -71,6 +86,12 @@ interface MensagemCopiloto {
   readonly text: string;
 }
 
+interface CopilotModeOption {
+  readonly description: string;
+  readonly id: CopilotMode;
+  readonly label: string;
+}
+
 const DEPENDENCY_SEPARATOR_PATTERN = /[,;]+/;
 function criarMensagemCopiloto(
   author: MensagemCopiloto["author"],
@@ -79,12 +100,483 @@ function criarMensagemCopiloto(
   return { author, id: crypto.randomUUID(), text };
 }
 
+function paraMensagemUi(message: MensagemCopiloto): UIMessage {
+  return {
+    id: message.id,
+    role: message.author === "pessoa" ? "user" : "assistant",
+    parts: [{ type: "text", text: message.text }],
+  };
+}
+
 const VIEWS: ReadonlyArray<{ id: View; label: string; icon: string }> = [
   { id: "overview", label: "Visão geral", icon: "▦" },
   { id: "focus", label: "Foco", icon: "▶" },
   { id: "calendar", label: "Calendário", icon: "□" },
   { id: "path", label: "Caminho", icon: "↗" },
 ];
+
+const PRIMARY_AREAS: ReadonlyArray<{
+  id: PrimaryArea;
+  label: string;
+}> = [
+  { id: "today", label: "Hoje" },
+  { id: "now", label: "Agora" },
+  { id: "copilot", label: "Copiloto" },
+];
+
+const COPILOT_MODES = [
+  {
+    id: "automatic",
+    label: "Automático",
+    description: "Usa a IA quando disponível e continua no modo local.",
+  },
+  {
+    id: "local",
+    label: "Operacional local",
+    description:
+      "Executa os comandos sem modelo externo e sem custo adicional.",
+  },
+] as const satisfies readonly CopilotModeOption[];
+
+function resolverAreaPrincipal(
+  copilotOpen: boolean,
+  view: View
+): PrimaryArea | null {
+  if (copilotOpen) {
+    return "copilot";
+  }
+  if (view === "overview") {
+    return "today";
+  }
+  if (view === "focus") {
+    return "now";
+  }
+  return null;
+}
+
+interface MobileHeaderProperties {
+  readonly activeArea: PrimaryArea | null;
+  readonly activeModeLabel: string;
+  readonly menuOpen: boolean;
+  readonly modelSelectorOpen: boolean;
+  readonly onMenuToggle: () => void;
+  readonly onModelToggle: () => void;
+  readonly onSelectArea: (area: PrimaryArea) => void;
+}
+
+function MobileHeader({
+  activeArea,
+  activeModeLabel,
+  menuOpen,
+  modelSelectorOpen,
+  onMenuToggle,
+  onModelToggle,
+  onSelectArea,
+}: MobileHeaderProperties) {
+  return (
+    <header className="executarMobileHeader">
+      <button
+        aria-expanded={menuOpen}
+        aria-label="Abrir outras funções"
+        className="executarMobileCircleButton"
+        onClick={onMenuToggle}
+        type="button"
+      >
+        <Menu aria-hidden="true" />
+      </button>
+      <nav aria-label="Áreas principais" className="executarPrimaryNavigation">
+        {PRIMARY_AREAS.map((area) => (
+          <button
+            aria-current={activeArea === area.id ? "page" : undefined}
+            className={activeArea === area.id ? "active" : ""}
+            key={area.id}
+            onClick={() => onSelectArea(area.id)}
+            type="button"
+          >
+            {area.label}
+          </button>
+        ))}
+      </nav>
+      <button
+        aria-expanded={modelSelectorOpen}
+        aria-label={`Trocar modelo do Copiloto. Atual: ${activeModeLabel}`}
+        className="executarMobileCircleButton executarModelButton"
+        onClick={onModelToggle}
+        type="button"
+      >
+        <Sparkles aria-hidden="true" />
+      </button>
+    </header>
+  );
+}
+
+interface MobileDrawerProperties {
+  readonly activeProjectName: string;
+  readonly currentView: View;
+  readonly externalNotificationsAvailable: boolean;
+  readonly onClose: () => void;
+  readonly onOpenCollaboration: () => void;
+  readonly onOpenProjects: () => void;
+  readonly onSelectView: (view: View) => void;
+  readonly open: boolean;
+  readonly unreadNotifications: number;
+}
+
+function MobileDrawer({
+  activeProjectName,
+  currentView,
+  externalNotificationsAvailable,
+  onClose,
+  onOpenCollaboration,
+  onOpenProjects,
+  onSelectView,
+  open,
+  unreadNotifications,
+}: MobileDrawerProperties) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="executarMobileDrawerLayer">
+      <button
+        aria-label="Fechar outras funções"
+        className="executarFloatingBackdrop"
+        onClick={onClose}
+        type="button"
+      />
+      <aside aria-label="Outras funções" className="executarMobileDrawer">
+        <div className="executarDrawerHead">
+          <div className="executarDrawerBrand">
+            <span>E</span>
+            <div>
+              <b>EXECUTAR</b>
+              <small>{activeProjectName}</small>
+            </div>
+          </div>
+          <button
+            aria-label="Fechar outras funções"
+            className="executarDrawerClose"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" />
+          </button>
+        </div>
+        <nav aria-label="Funções secundárias" className="executarDrawerNav">
+          <button
+            aria-current={currentView === "calendar" ? "page" : undefined}
+            onClick={() => onSelectView("calendar")}
+            type="button"
+          >
+            <CalendarDays aria-hidden="true" />
+            <span>
+              <b>Calendário</b>
+              <small>Datas, ciclos e capacidade</small>
+            </span>
+          </button>
+          <button
+            aria-current={currentView === "path" ? "page" : undefined}
+            onClick={() => onSelectView("path")}
+            type="button"
+          >
+            <Route aria-hidden="true" />
+            <span>
+              <b>Caminho</b>
+              <small>Dependências e resultado</small>
+            </span>
+          </button>
+          <button onClick={onOpenProjects} type="button">
+            <FolderKanban aria-hidden="true" />
+            <span>
+              <b>Projetos</b>
+              <small>Planos e entregas</small>
+            </span>
+          </button>
+          <button onClick={onOpenCollaboration} type="button">
+            <Users aria-hidden="true" />
+            <span>
+              <b>Equipe</b>
+              <small>
+                Colaboração
+                {unreadNotifications ? ` · ${unreadNotifications} novos` : ""}
+              </small>
+            </span>
+          </button>
+        </nav>
+        {externalNotificationsAvailable && (
+          <div className="executarDrawerNotifications">
+            <span>Notificações</span>
+            <NotificationsTrigger />
+          </div>
+        )}
+        <div className="executarDrawerAccount">
+          <OrganizationSwitcher />
+          <UserButton />
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+interface CopilotModelSelectorProperties {
+  readonly activeMode: CopilotMode;
+  readonly onClose: () => void;
+  readonly onSelect: (mode: CopilotMode) => void;
+  readonly open: boolean;
+  readonly remoteAvailable: boolean;
+}
+
+function CopilotModelSelector({
+  activeMode,
+  onClose,
+  onSelect,
+  open,
+  remoteAvailable,
+}: CopilotModelSelectorProperties) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="executarModelLayer">
+      <button
+        aria-label="Fechar seletor de modelo"
+        className="executarFloatingBackdrop"
+        onClick={onClose}
+        type="button"
+      />
+      <section
+        aria-labelledby="executar-modelo-titulo"
+        aria-modal="true"
+        className="executarModelSelector"
+        role="dialog"
+      >
+        <div className="executarModelSelectorHead">
+          <div>
+            <small>COPILOTO</small>
+            <h2 id="executar-modelo-titulo">Modelo de execução</h2>
+          </div>
+          <button
+            aria-label="Fechar seletor de modelo"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" />
+          </button>
+        </div>
+        <fieldset className="executarModelOptions">
+          <legend className="executarVisuallyHidden">
+            Modelos disponíveis
+          </legend>
+          {COPILOT_MODES.map((mode) => (
+            <label key={mode.id}>
+              <input
+                checked={activeMode === mode.id}
+                name="executar-copilot-mode"
+                onChange={() => onSelect(mode.id)}
+                type="radio"
+                value={mode.id}
+              />
+              <span className="executarModelOptionIcon">
+                {mode.id === "automatic" ? (
+                  <Sparkles aria-hidden="true" />
+                ) : (
+                  <span aria-hidden="true">E</span>
+                )}
+              </span>
+              <span>
+                <b>{mode.label}</b>
+                <small>{mode.description}</small>
+              </span>
+              {activeMode === mode.id && <Check aria-hidden="true" />}
+            </label>
+          ))}
+        </fieldset>
+        <p className="executarModelStatus">
+          {remoteAvailable
+            ? "A integração remota está disponível para o modo automático."
+            : "Sem integração remota: o modo automático permanece local e sem custo externo."}
+        </p>
+      </section>
+    </div>
+  );
+}
+
+interface CopilotCommandPanelProperties {
+  readonly onSelect: (command: string) => void;
+  readonly open: boolean;
+}
+
+function CopilotCommandPanel({
+  onSelect,
+  open,
+}: CopilotCommandPanelProperties) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="executarCommandPanel">
+      <div className="executarComandos">
+        {["/agora", "/progresso", "/concluir"].map((command) => (
+          <button
+            className="chip"
+            key={command}
+            onClick={() => onSelect(command)}
+            type="button"
+          >
+            {command}
+          </button>
+        ))}
+      </div>
+      <details className="executarAjudaCopiloto">
+        <summary>Todos os comandos</summary>
+        <small>/projeto criar Nome</small>
+        <small>/foco ID · /progresso · /concluir ID</small>
+        <small>/evidencia verificar descrição</small>
+        <small>/entrega atualizar ID data=DD/MM</small>
+        <small>/replanejamento ID data=DD/MM</small>
+      </details>
+    </div>
+  );
+}
+
+interface CopilotPanelProperties {
+  readonly activeModeLabel: string;
+  readonly commandMenuOpen: boolean;
+  readonly loading: boolean;
+  readonly message: string;
+  readonly messages: readonly MensagemCopiloto[];
+  readonly modelSelectorOpen: boolean;
+  readonly onClose: () => void;
+  readonly onDecideApproval: (approved: boolean) => void;
+  readonly onMessageChange: (message: string) => void;
+  readonly onModelToggle: () => void;
+  readonly onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  readonly onToggleCommands: () => void;
+  readonly open: boolean;
+  readonly pendingApproval: AprovacaoCopiloto | null;
+}
+
+function CopilotPanel({
+  activeModeLabel,
+  commandMenuOpen,
+  loading,
+  message,
+  messages,
+  modelSelectorOpen,
+  onClose,
+  onDecideApproval,
+  onMessageChange,
+  onModelToggle,
+  onSubmit,
+  onToggleCommands,
+  open,
+  pendingApproval,
+}: CopilotPanelProperties) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <aside aria-label="Copiloto operacional" className="executarCopiloto">
+      <div className="executarCopilotoHead">
+        <div>
+          <b>Copiloto EXECUTAR</b>
+          <small>Mesmo plano · mesma organização</small>
+        </div>
+        <div className="executarCopilotoHeadActions">
+          <button
+            aria-expanded={modelSelectorOpen}
+            className="executarCopilotModelTrigger"
+            onClick={onModelToggle}
+            type="button"
+          >
+            <Sparkles aria-hidden="true" />
+            <span>{activeModeLabel}</span>
+          </button>
+          <button
+            aria-label="Fechar Copiloto"
+            className="iconBtn"
+            onClick={onClose}
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+      <div aria-live="polite" className="executarMensagens">
+        {messages.map((entry) => (
+          <AiMessage
+            className={`executarMensagem ${entry.author}`}
+            data={paraMensagemUi(entry)}
+            key={entry.id}
+          />
+        ))}
+        {pendingApproval && (
+          <div className="executarAprovacao">
+            <strong>Aprovação humana necessária</strong>
+            <p>{pendingApproval.summary}</p>
+            <div className="executarFieldRow">
+              <button
+                className="primaryBtn"
+                onClick={() => onDecideApproval(true)}
+                type="button"
+              >
+                Aprovar ação
+              </button>
+              <button
+                className="softBtn"
+                onClick={() => onDecideApproval(false)}
+                type="button"
+              >
+                Recusar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+      <CopilotCommandPanel onSelect={onMessageChange} open={commandMenuOpen} />
+      <form className="executarChatForm" onSubmit={onSubmit}>
+        <button
+          aria-expanded={commandMenuOpen}
+          aria-label="Abrir comandos do Copiloto"
+          className="executarChatUtilityButton"
+          onClick={onToggleCommands}
+          type="button"
+        >
+          <Plus aria-hidden="true" />
+        </button>
+        <textarea
+          aria-label="Mensagem ao Copiloto"
+          onChange={(event) => onMessageChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              event.currentTarget.form?.requestSubmit();
+            }
+          }}
+          placeholder="Pergunte ao Copiloto"
+          rows={1}
+          value={message}
+        />
+        <button
+          aria-label={loading ? "Consultando" : "Enviar mensagem"}
+          className="executarChatSubmit"
+          disabled={loading || !message.trim()}
+          type="submit"
+        >
+          {loading ? (
+            <span aria-hidden="true" className="executarChatLoader" />
+          ) : (
+            <ArrowUp aria-hidden="true" />
+          )}
+        </button>
+      </form>
+    </aside>
+  );
+}
 
 const DIAS = [
   ["seg", "24/08", "Fechar a base"],
@@ -1309,6 +1801,10 @@ export function ExecutarOperacional({
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState("");
   const [copilotOpen, setCopilotOpen] = useState(false);
+  const [copilotMode, setCopilotMode] = useState<CopilotMode>("automatic");
+  const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
   const [collaborationOpen, setCollaborationOpen] = useState(false);
   const [syncNotice, setSyncNotice] = useState("");
   const [pendingApproval, setPendingApproval] =
@@ -1331,10 +1827,28 @@ export function ExecutarOperacional({
     () => ({ organizationId, userId, displayName }),
     [displayName, organizationId, userId]
   );
+  const activePrimaryArea = resolverAreaPrincipal(copilotOpen, view);
+  const activeCopilotMode =
+    COPILOT_MODES.find((mode) => mode.id === copilotMode) ?? COPILOT_MODES[0];
 
   useEffect(() => {
     latestState.current = state;
   }, [state]);
+
+  useEffect(() => {
+    function closeFloatingNavigation(event: KeyboardEvent) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      setMobileMenuOpen(false);
+      setModelSelectorOpen(false);
+      setCommandMenuOpen(false);
+    }
+
+    window.addEventListener("keydown", closeFloatingNavigation);
+    return () => window.removeEventListener("keydown", closeFloatingNavigation);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -1826,8 +2340,10 @@ export function ExecutarOperacional({
     const question = message.trim();
 
     setMessage("");
+    setCommandMenuOpen(false);
 
     if (
+      copilotMode === "local" ||
       question.startsWith("/") ||
       !(remotePersistenceAvailable && remoteReady)
     ) {
@@ -1898,6 +2414,32 @@ export function ExecutarOperacional({
     }
   }
 
+  function selectPrimaryArea(area: PrimaryArea) {
+    setMobileMenuOpen(false);
+    setModelSelectorOpen(false);
+    setCollaborationOpen(false);
+
+    if (area === "copilot") {
+      setCopilotOpen(true);
+      return;
+    }
+
+    setCopilotOpen(false);
+    setView(area === "today" ? "overview" : "focus");
+  }
+
+  function selectDrawerView(nextView: View) {
+    setMobileMenuOpen(false);
+    setCopilotOpen(false);
+    setCollaborationOpen(false);
+    setView(nextView);
+  }
+
+  function toggleModelSelector() {
+    setMobileMenuOpen(false);
+    setModelSelectorOpen((open) => !open);
+  }
+
   function toggleCollaboration() {
     if (collaborationOpen) {
       setCollaborationOpen(false);
@@ -1905,6 +2447,7 @@ export function ExecutarOperacional({
     }
 
     setState((current) => registrarPresenca(current, actor, current.focus));
+    setMobileMenuOpen(false);
     setCopilotOpen(false);
     setCollaborationOpen(true);
   }
@@ -1912,6 +2455,18 @@ export function ExecutarOperacional({
   return (
     <>
       <div id="app">
+        <MobileHeader
+          activeArea={activePrimaryArea}
+          activeModeLabel={activeCopilotMode.label}
+          menuOpen={mobileMenuOpen}
+          modelSelectorOpen={modelSelectorOpen}
+          onMenuToggle={() => {
+            setModelSelectorOpen(false);
+            setMobileMenuOpen((open) => !open);
+          }}
+          onModelToggle={toggleModelSelector}
+          onSelectArea={selectPrimaryArea}
+        />
         <aside className="side">
           <div className="brand">
             <div className="brandMark">E</div>
@@ -2024,20 +2579,31 @@ export function ExecutarOperacional({
           {view === "calendar" && <Calendar state={state} />}
           {view === "path" && <Path state={state} tasks={tasks} />}
         </main>
-        <nav aria-label="Navegação móvel" className="bottomNav">
-          {VIEWS.map((item) => (
-            <button
-              className={view === item.id ? "active" : ""}
-              key={item.id}
-              onClick={() => setView(item.id)}
-              type="button"
-            >
-              <span>{item.icon}</span>
-              <small>{item.id === "overview" ? "Visão" : item.label}</small>
-            </button>
-          ))}
-        </nav>
       </div>
+      <MobileDrawer
+        activeProjectName={activeProject.name}
+        currentView={view}
+        externalNotificationsAvailable={externalNotificationsAvailable}
+        onClose={() => setMobileMenuOpen(false)}
+        onOpenCollaboration={toggleCollaboration}
+        onOpenProjects={() => {
+          setMobileMenuOpen(false);
+          setProjectManagerOpen(true);
+        }}
+        onSelectView={selectDrawerView}
+        open={mobileMenuOpen}
+        unreadNotifications={unreadNotifications}
+      />
+      <CopilotModelSelector
+        activeMode={copilotMode}
+        onClose={() => setModelSelectorOpen(false)}
+        onSelect={(mode) => {
+          setCopilotMode(mode);
+          setModelSelectorOpen(false);
+        }}
+        open={modelSelectorOpen}
+        remoteAvailable={remotePersistenceAvailable && remoteReady}
+      />
       {projectManagerOpen && (
         <ProjectManager
           onClose={() => setProjectManagerOpen(false)}
@@ -2068,91 +2634,22 @@ export function ExecutarOperacional({
             state={state}
           />
         ))}
-      {copilotOpen && (
-        <aside aria-label="Copiloto operacional" className="executarCopiloto">
-          <div className="executarCopilotoHead">
-            <div>
-              <b>Copiloto EXECUTAR</b>
-              <small>Mesmo plano · mesma organização</small>
-            </div>
-            <button
-              aria-label="Fechar Copiloto"
-              className="iconBtn"
-              onClick={() => setCopilotOpen(false)}
-              type="button"
-            >
-              ×
-            </button>
-          </div>
-          <div aria-live="polite" className="executarMensagens">
-            {messages.map((entry) => (
-              <div
-                className={`executarMensagem ${entry.author}`}
-                key={entry.id}
-              >
-                {entry.text}
-              </div>
-            ))}
-            {pendingApproval && (
-              <div className="executarAprovacao">
-                <strong>Aprovação humana necessária</strong>
-                <p>{pendingApproval.summary}</p>
-                <div className="executarFieldRow">
-                  <button
-                    className="primaryBtn"
-                    onClick={() => decideApproval(true)}
-                    type="button"
-                  >
-                    Aprovar ação
-                  </button>
-                  <button
-                    className="softBtn"
-                    onClick={() => decideApproval(false)}
-                    type="button"
-                  >
-                    Recusar
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-          <details className="executarAjudaCopiloto">
-            <summary>Comandos para operar o plano</summary>
-            <small>/projeto criar Nome</small>
-            <small>/foco ID · /progresso · /concluir ID</small>
-            <small>/evidencia verificar descrição</small>
-            <small>/entrega atualizar ID data=DD/MM</small>
-            <small>/replanejamento ID data=DD/MM</small>
-          </details>
-          <div className="executarComandos">
-            {["/agora", "/progresso", "/concluir"].map((command) => (
-              <button
-                className="chip"
-                key={command}
-                onClick={() => setMessage(command)}
-                type="button"
-              >
-                {command}
-              </button>
-            ))}
-          </div>
-          <form className="executarChatForm" onSubmit={sendMessage}>
-            <input
-              aria-label="Mensagem ao Copiloto"
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder="O que faço agora?"
-              value={message}
-            />
-            <button
-              className="primaryBtn"
-              disabled={copilotLoading}
-              type="submit"
-            >
-              {copilotLoading ? "Consultando" : "Enviar"}
-            </button>
-          </form>
-        </aside>
-      )}
+      <CopilotPanel
+        activeModeLabel={activeCopilotMode.label}
+        commandMenuOpen={commandMenuOpen}
+        loading={copilotLoading}
+        message={message}
+        messages={messages}
+        modelSelectorOpen={modelSelectorOpen}
+        onClose={() => setCopilotOpen(false)}
+        onDecideApproval={decideApproval}
+        onMessageChange={setMessage}
+        onModelToggle={toggleModelSelector}
+        onSubmit={sendMessage}
+        onToggleCommands={() => setCommandMenuOpen((open) => !open)}
+        open={copilotOpen}
+        pendingApproval={pendingApproval}
+      />
       {evidenceOpen && focus && (
         <div className="executarEvidenceBackdrop">
           <div

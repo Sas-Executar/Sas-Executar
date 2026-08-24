@@ -472,7 +472,7 @@ test("a página principal usa Clerk e não bloqueia esperando banco", async () =
   assert.doesNotMatch(page, /database\.page\.findMany/);
 });
 
-test("produto preserva as quatro faces e o Copiloto usa o mesmo estado", async () => {
+test("produto preserva as faces, prioriza Hoje Agora Copiloto e usa o mesmo estado", async () => {
   const component = await readFile(
     new URL(
       "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
@@ -487,6 +487,11 @@ test("produto preserva as quatro faces e o Copiloto usa o mesmo estado", async (
     "Calendário",
     "Caminho",
     "Ainda não pode",
+    "Hoje",
+    "Agora",
+    "Copiloto",
+    "Automático",
+    "Operacional local",
   ]) {
     assert.ok(component.includes(label), `Ausente: ${label}`);
   }
@@ -494,6 +499,24 @@ test("produto preserva as quatro faces e o Copiloto usa o mesmo estado", async (
   assert.match(component, /executarAcaoCopiloto\(state, question\)/);
   assert.match(component, /entregasAtivas\(state\)/);
   assert.match(component, /chaveOrganizacao\(organizationId\)/);
+  assert.match(component, /function MobileDrawer/);
+  assert.match(component, /function CopilotModelSelector/);
+  assert.match(component, /copilotMode === "local"/);
+  assert.match(component, /<AiMessage/);
+
+  const styles = await readFile(
+    new URL("../../apps/app/app/(authenticated)/executar.css", import.meta.url),
+    "utf8"
+  );
+
+  for (const className of [
+    ".executarMobileHeader",
+    ".executarPrimaryNavigation",
+    ".executarMobileDrawer",
+    ".executarChatForm",
+  ]) {
+    assert.ok(styles.includes(className), `Ausente: ${className}`);
+  }
 });
 
 test("provisionamento exige projeto Supabase autorizado e gates separados", async () => {
