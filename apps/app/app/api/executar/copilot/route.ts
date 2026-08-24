@@ -7,6 +7,7 @@ import {
 } from "@/lib/executar/server-agent";
 import {
   contextoPersistenciaServidor,
+  exigirLimiteOperacional,
   respostaErroPersistencia,
 } from "@/lib/executar/server-persistence";
 
@@ -33,6 +34,7 @@ export async function POST(request: Request): Promise<Response> {
       (payload as { messages?: unknown }).messages
     );
     const { actor, persistence } = await contextoPersistenciaServidor();
+    await exigirLimiteOperacional(actor, "copilot");
     const session = await criarSessaoAgenteServidor(actor, persistence);
     const agent = criarAgenteCopiloto(actor, session);
 

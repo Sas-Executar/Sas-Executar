@@ -11,6 +11,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 neonConfig.webSocketConstructor = ws;
 
 const connectionString = keys().DATABASE_URL;
+export const databaseAvailable = Boolean(connectionString);
 const unavailable = new Proxy({} as PrismaClient, {
   get() {
     throw new Error(

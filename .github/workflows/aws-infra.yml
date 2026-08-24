@@ -3,7 +3,7 @@ name: AWS · infraestrutura transversal
 on:
   push:
     branches:
-      - codex/onda-1-migracao-pwa-runner
+      - codex/gtm-four-waves-20260824
     paths:
       - .github/workflows/aws-infra.yml
       - infra/aws/**

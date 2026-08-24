@@ -1125,16 +1125,14 @@ test("runner registra onda 5 como fechamento sem substituir o plano de quatro on
   assert.match(status, /Gate de integração.*NÃO PASSOU/);
 });
 
-test("checklist final exige autorização antes de provisionar projeto novo", async () => {
+test("checklist final exige AWS privada e gates objetivos", async () => {
   const checklist = await readFile(
     new URL("../../docs/runner/INTEGRACAO_FINAL.md", import.meta.url),
     "utf8"
   );
 
-  assert.match(
-    checklist,
-    /autorização explícita para iniciar a\s+integração final/
-  );
-  assert.match(checklist, /supabase migration new executar_multi_tenant/);
-  assert.match(checklist, /EXECUTAR_SUPABASE_TEMPLATE\.sql/);
+  assert.match(checklist, /Aurora PostgreSQL privado/);
+  assert.match(checklist, /RDS Data API/);
+  assert.match(checklist, /production-readiness\.ts/);
+  assert.match(checklist, /Piloto de sete dias/);
 });

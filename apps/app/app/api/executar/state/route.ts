@@ -2,6 +2,7 @@ import type { EstadoOperacional } from "@/lib/executar/domain";
 import { ErroPersistenciaRemota } from "@/lib/executar/remote-persistence";
 import {
   contextoPersistenciaServidor,
+  exigirLimiteOperacional,
   respostaErroPersistencia,
 } from "@/lib/executar/server-persistence";
 
@@ -19,6 +20,7 @@ export async function GET(): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   try {
     const { actor, persistence } = await contextoPersistenciaServidor();
+    await exigirLimiteOperacional(actor, "state");
     const payload = (await request.json()) as {
       expectedRevision?: number;
       state?: EstadoOperacional;
