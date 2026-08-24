@@ -19,11 +19,11 @@ const App = async () => {
 
   return (
     <ScopedExecutarOperacional
-      key={`${orgId}:${userId}`}
       collaborationAvailable={Boolean(env.LIVEBLOCKS_SECRET)}
       externalNotificationsAvailable={Boolean(
         env.NEXT_PUBLIC_KNOCK_API_KEY && env.NEXT_PUBLIC_KNOCK_FEED_CHANNEL_ID
       )}
+      key={`${orgId}:${userId}`}
       organizationId={orgId}
       remotePersistenceAvailable={Boolean(
         env.AWS_REGION &&
