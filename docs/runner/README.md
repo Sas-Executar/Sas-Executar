@@ -16,6 +16,7 @@ Este diretório contém o handoff canônico para evoluir a PWA atual do `Sprint-
 - Status detalhado do Copiloto executor, aprovações e preparação AI SDK/MCP: `ONDA_3_STATUS.md`.
 - Status detalhado de colaboração, avisos, GTM e bloqueios mobile/Actions: `ONDA_4_STATUS.md`.
 - Fechamento adicional histórico das quatro ondas e do experimento Supabase: `ONDA_5_FECHAMENTO.md`; a decisão AWS posterior o substitui como direção de infraestrutura.
+- Trilha Agent-007 (Gate 0 + três ondas internas ao Copiloto): `../agent-007/README.md`.
 
 ## Ordem de leitura
 

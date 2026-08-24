@@ -1,0 +1,137 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "PLANNED",
+  "requiredBoundaries": [
+    "identity",
+    "authority",
+    "command",
+    "read",
+    "state",
+    "action",
+    "write",
+    "evidence",
+    "projection"
+  ],
+  "scenarios": [
+    {
+      "id": "E2E-01",
+      "title": "Primeiro uso sem Drive ou Linear",
+      "wave": 2,
+      "priority": "P0",
+      "gaps": ["GAP-002", "GAP-008", "GAP-009"],
+      "boundaries": ["identity", "authority", "command", "read", "state", "action", "write", "evidence", "projection"],
+      "expected": "Setup zero cria projeto somente após confirmação, executa uma entrega e emite projeção da revisão persistida.",
+      "status": "PLANNED"
+    },
+    {
+      "id": "E2E-02",
+      "title": "Migração de CSV ou documento",
+      "wave": 2,
+      "priority": "P1",
+      "gaps": ["GAP-003", "GAP-007", "GAP-010"],
+      "boundaries": ["identity", "authority", "command", "read", "state", "action", "write"],
+      "expected": "Preview mostra tarefas, dependências, conflitos e rejeições antes da confirmação e da escrita.",
+      "status": "PLANNED"
+    },
+    {
+      "id": "E2E-03",
+      "title": "Base Drive e Linear existente",
+      "wave": 2,
+      "priority": "P0",
+      "gaps": ["GAP-002", "GAP-006", "GAP-015"],
+      "boundaries": ["identity", "authority", "command", "read", "state", "action", "write"],
+      "expected": "Bindings são encontrados por chave lógica, a autoridade AWS é preservada e nenhum objeto é duplicado.",
+      "status": "PLANNED"
+    },
+    {
+      "id": "E2E-04",
+      "title": "Comando /situacao",
+      "wave": 1,
+      "priority": "P0",
+      "gaps": ["GAP-004", "GAP-012"],
+      "boundaries": ["identity", "authority", "command", "read", "state"],
+      "expected": "Alias retorna resumo derivado do estado persistido sem criar efeito ou expor termos internos desnecessários.",
+      "status": "PLANNED"
+    },
+    {
+      "id": "E2E-05",
+      "title": "Rotina /bomdia",
+      "wave": 2,
+      "priority": "P0",
+      "gaps": ["GAP-003", "GAP-006", "GAP-013"],
+      "boundaries": ["identity", "authority", "command", "read", "state", "action"],
+      "expected": "Próxima ação, tempo, DoD e evidência são calculados somente do estado persistido e o run fica auditado.",
+      "status": "PLANNED"
+    },
+    {
+      "id": "E2E-06",
+      "title": "Conclusão sem política satisfeita",
+      "wave": 1,
+      "priority": "P0",
+      "gaps": ["GAP-001"],
+      "boundaries": ["identity", "authority", "command", "read", "state", "action", "evidence"],
+      "expected": "DONE é bloqueado sem DoD aplicável, evidência verificada e aprovação humana vigente.",
+      "status": "PLANNED"
+    },
+    {
+      "id": "E2E-07",
+      "title": "Liberação de sucessor",
+      "wave": 1,
+      "priority": "P0",
+      "gaps": ["GAP-001", "GAP-003", "GAP-007"],
+      "boundaries": ["identity", "authority", "command", "read", "state", "action", "write", "evidence"],
+      "expected": "Conclusão válida promove cada sucessor elegível uma única vez e mantém dependências restantes bloqueadas.",
+      "status": "PLANNED"
+    },
+    {
+      "id": "E2E-08",
+      "title": "Replay da mesma rotina",
+      "wave": 1,
+      "priority": "P0",
+      "gaps": ["GAP-006", "GAP-016"],
+      "boundaries": ["identity", "authority", "command", "read", "state", "action", "write"],
+      "expected": "Mesmo run e chave idempotente retornam o resultado confirmado sem duplicar qualquer efeito.",
+      "status": "PLANNED"
+    },
+    {
+      "id": "E2E-09",
+      "title": "Drive indisponível durante efeito",
+      "wave": 2,
+      "priority": "P0",
+      "gaps": ["GAP-002", "GAP-006", "GAP-011", "GAP-015"],
+      "boundaries": ["identity", "authority", "command", "read", "state", "action", "write"],
+      "expected": "Run fica falho ou recuperável, não declara sucesso parcial e pode ser repetido com a mesma chave.",
+      "status": "PLANNED"
+    },
+    {
+      "id": "E2E-10",
+      "title": "Linear indisponível",
+      "wave": 2,
+      "priority": "P1",
+      "gaps": ["GAP-002", "GAP-006"],
+      "boundaries": ["identity", "authority", "command", "read", "state"],
+      "expected": "Estado externo não confirmado é marcado como degradado e nunca substitui a revisão canônica.",
+      "status": "PLANNED"
+    },
+    {
+      "id": "E2E-11",
+      "title": "Emitir Mapa-OS",
+      "wave": 3,
+      "priority": "P0",
+      "gaps": ["GAP-005", "GAP-018", "GAP-019", "GAP-020", "GAP-021", "GAP-022"],
+      "boundaries": ["identity", "authority", "command", "read", "state", "projection"],
+      "expected": "Projeção válida alimenta template versionado; artefato abre offline, imprime com fidelidade e QR é decodificável.",
+      "status": "PLANNED"
+    },
+    {
+      "id": "E2E-12",
+      "title": "Privacidade de trace e projeção",
+      "wave": 3,
+      "priority": "P0",
+      "gaps": ["GAP-016", "GAP-017"],
+      "boundaries": ["identity", "authority", "command", "read", "state", "action", "write", "evidence", "projection"],
+      "expected": "Trace contém apenas eventos observáveis sanitizados e projeção não inclui credenciais, raciocínio privado ou bytes de evidência.",
+      "status": "PLANNED"
+    }
+  ]
+}
