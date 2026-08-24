@@ -37,7 +37,26 @@ real; teste local não substitui integração, piloto nem sign-off.
 
 ## Onda 2 · produto, sincronização e cobrança
 
-Estado: em execução.
+### Implementado
+
+- produto local-first, sincronização por revisão e conflito otimista preservados;
+- evidências privadas mantidas no modelo canônico S3 por organização;
+- Stripe deixa de procurar `stripeCustomerId` em usuário individual;
+- checkout, assinatura e cancelamento derivam somente uma organização Clerk;
+- direito de cobrança é armazenado em `privateMetadata.billing` da organização;
+- eventos divergentes, sem tenant ou repetidos são recusados/ignorados.
+
+### Evidência no mesmo SHA
+
+- `tests/ondas/billing-organization.test.mjs` cobre tenant, cancelamento e replay;
+- suíte de produto existente cobre persistência, offline, revisão, conflito,
+  evidência e recusa de outro tenant.
+
+### Gate objetivo
+
+- Código local da Onda 2: **PASSOU** com 348/348 testes consolidados.
+- Integração real da Onda 2: **NÃO PASSOU** até sincronização real entre dois
+  aparelhos e Stripe real por organização serem comprovados.
 
 ## Onda 3 · Copiloto, Agent-007 e MCP
 
