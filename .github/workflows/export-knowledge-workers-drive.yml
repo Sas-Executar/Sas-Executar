@@ -1,0 +1,84 @@
+name: Export Anthropic Knowledge Workers
+
+on:
+  push:
+    branches:
+      - ops/export-knowledge-workers-drive-stage
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone Anthropic upstream
+        run: |
+          git clone https://github.com/anthropics/knowledge-work-plugins.git upstream
+          cd upstream
+          git checkout 16d1ab59994b6ab9a9066f063f4264c76eff9dc8
+
+      - name: Build Knowledge Workers bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p bundle
+          plugins=(
+            bio-research
+            cowork-plugin-management
+            customer-support
+            data
+            design
+            engineering
+            enterprise-search
+            finance
+            human-resources
+            legal
+            marketing
+            operations
+            pdf-viewer
+            product-management
+            productivity
+            sales
+            small-business
+          )
+          for plugin in "${plugins[@]}"; do
+            cp -a "upstream/$plugin" "bundle/$plugin"
+          done
+          cp upstream/LICENSE bundle/LICENSE
+          cat > bundle/CLONE_MANIFEST.md <<'EOF'
+          # Anthropic Knowledge Workers — Drive Snapshot
+
+          Source: anthropics/knowledge-work-plugins
+          Upstream commit: 16d1ab59994b6ab9a9066f063f4264c76eff9dc8
+          Scope: 17 top-level Knowledge Work plugin directories only.
+          Excluded: partner-built, marketplace external sources, repository CI/config.
+
+          Included:
+          - bio-research
+          - cowork-plugin-management
+          - customer-support
+          - data
+          - design
+          - engineering
+          - enterprise-search
+          - finance
+          - human-resources
+          - legal
+          - marketing
+          - operations
+          - pdf-viewer
+          - product-management
+          - productivity
+          - sales
+          - small-business
+          EOF
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: anthropic-knowledge-workers
+          path: bundle/
+          if-no-files-found: error
+          retention-days: 1
+          include-hidden-files: true
