@@ -1,3 +1,8 @@
+import {
+  listarComandosCopiloto,
+  resolverComandoCopiloto,
+} from "./command-catalog.ts";
+
 const DELIVERY_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
 const OPERATIONAL_DATE_PATTERN = /^\d{2}\/\d{2}$/;
 const DEPENDENCY_SEPARATOR_PATTERN = /[|,]/;
@@ -133,7 +138,29 @@ export interface ProgressoProjeto {
   readonly started: Readonly<Record<string, number>>;
 }
 
+export interface PoliticaConclusao {
+  readonly requireDod: boolean;
+  readonly requireEvidence: boolean;
+  readonly requireHumanApproval: boolean;
+  readonly requireVerification: boolean;
+}
+
+export const POLITICA_CONCLUSAO_LEGADA: PoliticaConclusao = {
+  requireDod: false,
+  requireEvidence: true,
+  requireHumanApproval: true,
+  requireVerification: true,
+};
+
+export const POLITICA_CONCLUSAO_PADRAO: PoliticaConclusao = {
+  requireDod: true,
+  requireEvidence: true,
+  requireHumanApproval: true,
+  requireVerification: true,
+};
+
 export interface ProjetoOperacional {
+  readonly completionPolicy: PoliticaConclusao;
   readonly dailyCapacityMinutes: number;
   readonly id: string;
   readonly name: string;
@@ -176,6 +203,7 @@ export interface EstadoOperacional {
   readonly organizationId: string;
   readonly projects: readonly ProjetoOperacional[];
   readonly revision: number;
+  readonly schemaVersion: "2.0.0";
   readonly started: Readonly<Record<string, number>>;
 }
 
@@ -358,6 +386,7 @@ export function novoEstado(
     organizationId,
     projects: [
       {
+        completionPolicy: POLITICA_CONCLUSAO_LEGADA,
         id: "sprint-principal",
         name: "Sprint Operacional",
         tasks: [...seed],
@@ -376,6 +405,7 @@ export function novoEstado(
     },
     events: [],
     revision: 0,
+    schemaVersion: "2.0.0",
   };
 }
 
@@ -478,10 +508,14 @@ export function restaurarEstado(
     const state = candidate as EstadoOperacional;
 
     const defaults = novoEstado(organizationId, seed);
-    const projects =
+    const rawProjects =
       Array.isArray(state.projects) && state.projects.length
         ? state.projects
         : defaults.projects;
+    const projects = rawProjects.map((project) => ({
+      ...project,
+      completionPolicy: project.completionPolicy ?? POLITICA_CONCLUSAO_LEGADA,
+    }));
     const activeProjectId = projects.some(
       (project) => project.id === state.activeProjectId
     )
@@ -518,6 +552,7 @@ export function restaurarEstado(
       started:
         state.started && typeof state.started === "object" ? state.started : {},
       revision: Number.isSafeInteger(state.revision) ? state.revision : 0,
+      schemaVersion: "2.0.0",
     };
   } catch {
     return novoEstado(organizationId, seed);
@@ -723,6 +758,7 @@ export function criarProjeto(
   }
 
   const project: ProjetoOperacional = {
+    completionPolicy: POLITICA_CONCLUSAO_PADRAO,
     id: projectId,
     name: title,
     tasks: [...tasks],
@@ -1108,6 +1144,7 @@ export function exportarPlano(state: EstadoOperacional): string {
       organizationId: state.organizationId,
       projectId: project.id,
       name: project.name,
+      completionPolicy: project.completionPolicy,
       tasks: project.tasks,
       execution: {
         done: state.done,
@@ -1396,11 +1433,20 @@ export function concluirEntrega(
     throw new Error("A entrega não está liberada para conclusão.");
   }
 
-  const proof = state.evidence.find(
+  const policy = projetoAtivo(state).completionPolicy;
+  const evidence = state.evidence.filter((item) => item.taskId === taskId);
+  const proof = evidence.find(
     (evidence) => evidence.taskId === taskId && evidence.verified
   );
 
-  if (!proof) {
+  if (policy.requireDod && !task.dod?.trim()) {
+    throw new Error("Conclusão exige definição de pronto (DoD).");
+  }
+
+  if (
+    (policy.requireEvidence && !evidence.length) ||
+    (policy.requireVerification && !proof)
+  ) {
     throw new Error("Conclusão exige evidência e verificação concluída.");
   }
 
@@ -2289,26 +2335,6 @@ export function executarAcaoCopiloto(
   };
 }
 
-function identificarComandoCopiloto(normalized: string): string {
-  if (normalized.startsWith("/")) {
-    return normalized.split(WHITESPACE_PATTERN)[0];
-  }
-
-  if (normalized.includes("agora") || normalized.includes("próximo")) {
-    return "/agora";
-  }
-
-  if (normalized.includes("bom dia")) {
-    return "/bomdia";
-  }
-
-  if (normalized.includes("fechar")) {
-    return "/fechardia";
-  }
-
-  return normalized.includes("replanej") ? "/replanejamento" : "/estado";
-}
-
 export function executarCopiloto(
   tasks: readonly Entrega[],
   state: EstadoOperacional,
@@ -2316,7 +2342,7 @@ export function executarCopiloto(
 ): RespostaCopiloto {
   const message = input.trim();
   const normalized = message.toLocaleLowerCase("pt-BR");
-  const command = identificarComandoCopiloto(normalized);
+  const command = resolverComandoCopiloto(normalized);
   const focus = focoAtual(tasks, state);
   const ready = filaPronta(tasks, state);
   const blocked = filaBloqueada(tasks, state);
@@ -2378,8 +2404,7 @@ export function executarCopiloto(
         : "Não há entregas bloqueadas.";
       break;
     default:
-      reply =
-        "Comandos disponíveis: /bomdia, /agora, /estado, /fechardia, /replanejamento, /mapa, /evidencia e /bloqueio.";
+      reply = `Comandos disponíveis: ${listarComandosCopiloto()}.`;
   }
 
   return { command, reply, state, requiresApproval };

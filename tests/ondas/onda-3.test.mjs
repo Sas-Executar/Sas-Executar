@@ -72,6 +72,7 @@ const task = (id, deps = []) => ({
   mins: 30,
   deps,
   stage: 2,
+  dod: `Entrega ${id} validada`,
 });
 
 function initial() {
