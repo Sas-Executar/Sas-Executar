@@ -1,8 +1,13 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+const vercelDeploymentUrl = process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : undefined;
+
 export const keys = () =>
   createEnv({
+    emptyStringAsUndefined: true,
     skipValidation: process.env.SKIP_ENV_VALIDATION === "true",
     server: {
       ANALYZE: z.string().optional(),
@@ -31,8 +36,10 @@ export const keys = () =>
       VERCEL_URL: process.env.VERCEL_URL,
       VERCEL_REGION: process.env.VERCEL_REGION,
       VERCEL_PROJECT_PRODUCTION_URL: process.env.VERCEL_PROJECT_PRODUCTION_URL,
-      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-      NEXT_PUBLIC_WEB_URL: process.env.NEXT_PUBLIC_WEB_URL,
+      NEXT_PUBLIC_APP_URL:
+        process.env.NEXT_PUBLIC_APP_URL || vercelDeploymentUrl,
+      NEXT_PUBLIC_WEB_URL:
+        process.env.NEXT_PUBLIC_WEB_URL || vercelDeploymentUrl,
       NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
       NEXT_PUBLIC_DOCS_URL: process.env.NEXT_PUBLIC_DOCS_URL,
     },

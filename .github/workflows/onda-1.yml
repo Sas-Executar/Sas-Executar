@@ -1,0 +1,102 @@
+name: Onda 1 · fundação e preservação
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: onda-1-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  preservacao:
+    name: Preservação da PWA e do runner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validar sintaxe do legado
+        run: |
+          node --check apps/app/public/legado/sprint-operacional/app.js
+          node --check apps/app/public/legado/sprint-operacional/data.js
+          node --check apps/app/public/legado/sprint-operacional/sw.js
+      - name: Verificar produto e handoff canônico
+        run: node --test tests/onda-1/*.test.mjs tests/ondas/*.test.mjs
+
+  fundacao:
+    name: Instalação, tipos, lint, testes e build
+    runs-on: ubuntu-latest
+    needs: preservacao
+    env:
+      CI: true
+      SKIP_ENV_VALIDATION: true
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/executar
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_WEB_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: http://localhost:3002
+      NEXT_PUBLIC_DOCS_URL: http://localhost:3004
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+      - name: Inventariar integrações sem revelar credenciais
+        shell: bash
+        env:
+          EXECUTAR_HAS_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN != '' }}
+          EXECUTAR_HAS_VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID != '' || vars.VERCEL_PROJECT_ID != '' }}
+          EXECUTAR_HAS_VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID != '' || vars.VERCEL_ORG_ID != '' }}
+          EXECUTAR_HAS_CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY != '' }}
+          EXECUTAR_HAS_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY != '' || vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY != '' }}
+          EXECUTAR_HAS_SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+          EXECUTAR_HAS_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY != '' || vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY != '' }}
+          EXECUTAR_HAS_DATABASE_URL: ${{ secrets.DATABASE_URL != '' }}
+          EXECUTAR_HAS_DIRECT_URL: ${{ secrets.DIRECT_URL != '' }}
+        run: |
+          node <<'NODE'
+          const entries = Object.entries(process.env)
+            .filter(([name]) => name.startsWith('EXECUTAR_HAS_'))
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([name, value]) => [name, value === 'true']);
+          console.log('EXECUTAR_INTEGRATION_AVAILABILITY ' + JSON.stringify(Object.fromEntries(entries)));
+          NODE
+      - name: Instalar dependências sem alterar lockfile
+        run: bun install --frozen-lockfile
+      - name: Verificar tipos do aplicativo SaaS
+        run: bunx turbo run typecheck --filter=app
+      - name: Inventariar diagnósticos reais de lint
+        shell: bash
+        run: |
+          bunx biome check --reporter=json --max-diagnostics=300 > /tmp/executar-biome.json || true
+          node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('/tmp/executar-biome.json', 'utf8'));
+          for (const diagnostic of report.diagnostics ?? []) {
+            const file = typeof diagnostic.location?.path === 'string'
+              ? diagnostic.location.path
+              : diagnostic.location?.path?.file;
+            const offset = diagnostic.location?.span?.[0];
+            const line = file && Number.isInteger(offset)
+              ? fs.readFileSync(file, 'utf8').slice(0, offset).split('\n').length
+              : undefined;
+            console.log('EXECUTAR_LINT_DIAGNOSTIC ' + JSON.stringify({
+              category: diagnostic.category,
+              file,
+              line,
+              description: diagnostic.description,
+            }));
+          }
+          NODE
+      - name: Verificar lint e formatação
+        run: bun run check
+      - name: Executar testes do aplicativo
+        run: bunx turbo run test --filter=app
+      - name: Construir o aplicativo SaaS
+        run: bunx turbo run build --filter=app

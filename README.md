@@ -1,3 +1,33 @@
+# EXECUTAR · repositório canônico
+
+Este é o repositório principal do SaaS EXECUTAR. O starter `next-forge` existente é o chassis do produto; a PWA `Sprint-Operacional` foi incorporada como referência funcional sem reescrita visual.
+
+## Pontos de entrada
+
+- Aplicação SaaS: `apps/app/`.
+- PWA preservada: `apps/app/public/legado/sprint-operacional/`.
+- Rota da PWA: `/legado/sprint-operacional/`.
+- Plano canônico: `docs/runner/PLANO_SAAS_4_ONDAS.md`.
+- Runner do Codex: `docs/runner/RUNNER_CODEX.md`.
+- Inventário: `docs/runner/INVENTARIO_LEGADO.md`.
+
+A PWA legada somente poderá ser removida após a versão SaaS reproduzir e testar Visão Geral, Foco, fila por dependências, Calendário, Caminho, Evidências e funcionamento PWA/offline.
+
+A migração preserva Clerk como autoridade de identidade e organizações. A infraestrutura canônica é AWS em `sa-east-1`: Aurora PostgreSQL privado com RDS Data API, S3 privado, IAM/OIDC e Secrets Manager. O projeto Supabase legado permanece somente como fonte de migração auditável; não é a infraestrutura final e não substitui Clerk Auth.
+
+## Infraestrutura AWS
+
+- Template: `infra/aws/template.yaml`.
+- Migrações Aurora: `infra/aws/migrations/`.
+- Workflow: `.github/workflows/aws-infra.yml`.
+- Autenticação de CI: GitHub Actions OIDC existente; não criar credenciais AWS estáticas.
+- Autenticação de runtime: OIDC da Vercel com credenciais temporárias e escopo mínimo.
+- O cluster não possui acesso público. Aplicações Vercel usam a RDS Data API por HTTPS.
+
+Consulte `infra/aws/README.md` antes de aplicar ou destruir a stack.
+
+---
+
 # ▲ / next-forge
 
 **Production-grade Turborepo template for Next.js apps.**

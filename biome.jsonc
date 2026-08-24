@@ -11,6 +11,18 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["tests/**/*.mjs"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "useTopLevelRegex": "off"
+          }
+        }
+      }
+    }
+  ],
   "files": {
     "includes": [
       "**/*",
@@ -19,6 +31,7 @@
       "!packages/design-system/hooks",
       "!packages/collaboration/config.ts",
       "!docs",
+      "!apps/app/public/legado/sprint-operacional",
       "!apps/docs/**/*.json",
       "!apps/email/.react-email",
       "!packages/cms/basehub-types.d.ts"

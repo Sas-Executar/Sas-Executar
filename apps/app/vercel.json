@@ -1,5 +1,29 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "bunVersion": "1.x",
-  "ignoreCommand": "node scripts/skip-ci.js"
+  "ignoreCommand": "node scripts/skip-ci.js",
+  "headers": [
+    {
+      "source": "/legado/sprint-operacional/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/legado/sprint-operacional/"
+        }
+      ]
+    },
+    {
+      "source": "/legado/sprint-operacional/manifest.webmanifest",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json; charset=utf-8"
+        }
+      ]
+    }
+  ]
 }

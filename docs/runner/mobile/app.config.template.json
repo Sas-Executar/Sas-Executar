@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "EXECUTAR",
+    "slug": "executar",
+    "scheme": "executar",
+    "version": "1.0.0",
+    "platforms": ["android", "ios"],
+    "android": {
+      "package": "${EXECUTAR_ANDROID_PACKAGE}"
+    },
+    "ios": {
+      "bundleIdentifier": "${EXECUTAR_IOS_BUNDLE_IDENTIFIER}"
+    },
+    "extra": {
+      "apiUrl": "${EXECUTAR_PUBLIC_API_URL}",
+      "clerkPublishableKey": "${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}",
+      "identityAuthority": "Clerk"
+    }
+  }
+}

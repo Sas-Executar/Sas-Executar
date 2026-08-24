@@ -43,11 +43,19 @@ export const searchUsers = async (
       limit: 100,
     });
 
-    const users = members.data.map((user) => ({
-      id: user.id,
-      name: getName(user) ?? user.publicUserData?.identifier,
-      imageUrl: user.publicUserData?.imageUrl,
-    }));
+    const users = members.data.flatMap((user) => {
+      const userId = user.publicUserData?.userId;
+
+      return userId
+        ? [
+            {
+              id: userId,
+              name: getName(user) ?? user.publicUserData?.identifier,
+              imageUrl: user.publicUserData?.imageUrl,
+            },
+          ]
+        : [];
+    });
 
     const fuse = new Fuse(users, {
       keys: ["name"],
