@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { env } from "@/env";
 import "../../public/legado/sprint-operacional/app.css";
-import { ExecutarOperacional } from "./components/executar-operacional";
+import { ScopedExecutarOperacional } from "./components/scoped-executar-operacional";
 
 export const metadata: Metadata = {
   title: "EXECUTAR · Próximo 1 por vez",
@@ -18,7 +18,8 @@ const App = async () => {
   }
 
   return (
-    <ExecutarOperacional
+    <ScopedExecutarOperacional
+      key={`${orgId}:${userId}`}
       collaborationAvailable={Boolean(env.LIVEBLOCKS_SECRET)}
       externalNotificationsAvailable={Boolean(
         env.NEXT_PUBLIC_KNOCK_API_KEY && env.NEXT_PUBLIC_KNOCK_FEED_CHANNEL_ID
