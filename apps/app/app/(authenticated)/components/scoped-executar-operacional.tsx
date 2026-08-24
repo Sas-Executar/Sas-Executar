@@ -29,7 +29,9 @@ export function ScopedExecutarOperacional(
     [properties.organizationId, properties.userId]
   );
   const installation = useRef<ExecutarStorageScopeInstallation | null>(null);
-  const [installedScopeKey, setInstalledScopeKey] = useState<string | null>(null);
+  const [installedScopeKey, setInstalledScopeKey] = useState<string | null>(
+    null
+  );
 
   useLayoutEffect(() => {
     setInstalledScopeKey(null);
