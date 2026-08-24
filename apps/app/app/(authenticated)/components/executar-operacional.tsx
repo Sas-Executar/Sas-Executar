@@ -1,7 +1,22 @@
 "use client";
 
+import { AiMessage, type UIMessage } from "@repo/ai";
 import { OrganizationSwitcher, UserButton, useUser } from "@repo/auth/client";
 import { NotificationsTrigger } from "@repo/notifications/components/trigger";
+import {
+  ArrowUp,
+  CalendarDays,
+  Check,
+  FileText,
+  FolderKanban,
+  Home,
+  MessageCircle,
+  Plus,
+  Route,
+  Sparkles,
+  Users,
+  X,
+} from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { lerFluxoCopiloto } from "@/lib/executar/copilot-stream";
 import {
@@ -35,7 +50,6 @@ import {
   estadoEntrega,
   executarAcaoCopiloto,
   exportarPlano,
-  filaBloqueada,
   filaPronta,
   focoAtual,
   importarPlano,
@@ -53,9 +67,25 @@ import {
 } from "@/lib/executar/domain";
 import { ENTREGAS_SPRINT } from "@/lib/executar/seed";
 import { CollaborationProvider } from "./collaboration-provider";
+import {
+  DocumentsSurface,
+  DoneSurface,
+  ExecutarBrand,
+  FocusSurface,
+  HomeSurface,
+  MobileProductHeader,
+  OperationalNavigation,
+  type ProductView,
+  ReplanSurface,
+  SprintProgress,
+  type TaskFace,
+  TimelineSurface,
+} from "./executar-handoff";
 import "../executar.css";
+import "../handoff.css";
 
-type View = "overview" | "focus" | "calendar" | "path";
+type View = ProductView;
+type CopilotMode = "automatic" | "local";
 
 interface ExecutarOperacionalProperties {
   readonly collaborationAvailable: boolean;
@@ -71,7 +101,14 @@ interface MensagemCopiloto {
   readonly text: string;
 }
 
+interface CopilotModeOption {
+  readonly description: string;
+  readonly id: CopilotMode;
+  readonly label: string;
+}
+
 const DEPENDENCY_SEPARATOR_PATTERN = /[,;]+/;
+const WHITESPACE_PATTERN = /\s+/;
 function criarMensagemCopiloto(
   author: MensagemCopiloto["author"],
   text: string
@@ -79,12 +116,458 @@ function criarMensagemCopiloto(
   return { author, id: crypto.randomUUID(), text };
 }
 
+function paraMensagemUi(message: MensagemCopiloto): UIMessage {
+  return {
+    id: message.id,
+    role: message.author === "pessoa" ? "user" : "assistant",
+    parts: [{ type: "text", text: message.text }],
+  };
+}
+
 const VIEWS: ReadonlyArray<{ id: View; label: string; icon: string }> = [
+  { id: "home", label: "Início", icon: "⌂" },
   { id: "overview", label: "Visão geral", icon: "▦" },
-  { id: "focus", label: "Foco", icon: "▶" },
+  { id: "now", label: "Foco", icon: "▶" },
+  { id: "documents", label: "Documentos", icon: "≡" },
   { id: "calendar", label: "Calendário", icon: "□" },
   { id: "path", label: "Caminho", icon: "↗" },
 ];
+
+const VIEW_TITLES: Readonly<Record<View, string>> = {
+  calendar: "Calendário",
+  documents: "Documentos",
+  done: "Feito",
+  home: "Início",
+  now: "Agora",
+  overview: "Visão geral",
+  path: "Caminho do resultado",
+  replan: "Re-Plan",
+  today: "Hoje",
+  tomorrow: "Amanhã",
+};
+
+const COPILOT_MODES = [
+  {
+    id: "automatic",
+    label: "Automático",
+    description: "Usa a IA quando disponível e continua no modo local.",
+  },
+  {
+    id: "local",
+    label: "Operacional local",
+    description:
+      "Executa os comandos sem modelo externo e sem custo adicional.",
+  },
+] as const satisfies readonly CopilotModeOption[];
+
+interface MobileDrawerProperties {
+  readonly activeProjectName: string;
+  readonly currentView: View;
+  readonly externalNotificationsAvailable: boolean;
+  readonly onClose: () => void;
+  readonly onOpenCollaboration: () => void;
+  readonly onOpenCopilot: () => void;
+  readonly onOpenProjects: () => void;
+  readonly onSelectView: (view: View) => void;
+  readonly open: boolean;
+  readonly unreadNotifications: number;
+}
+
+function MobileDrawer({
+  activeProjectName,
+  currentView,
+  externalNotificationsAvailable,
+  onClose,
+  onOpenCollaboration,
+  onOpenCopilot,
+  onOpenProjects,
+  onSelectView,
+  open,
+  unreadNotifications,
+}: MobileDrawerProperties) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="executarMobileDrawerLayer">
+      <button
+        aria-label="Fechar outras funções"
+        className="executarFloatingBackdrop"
+        onClick={onClose}
+        type="button"
+      />
+      <aside aria-label="Outras funções" className="executarMobileDrawer">
+        <div className="executarDrawerHead">
+          <div className="executarDrawerBrand">
+            <ExecutarBrand compact />
+            <div>
+              <small>{activeProjectName}</small>
+            </div>
+          </div>
+          <button
+            aria-label="Fechar outras funções"
+            className="executarDrawerClose"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" />
+          </button>
+        </div>
+        <nav aria-label="Funções secundárias" className="executarDrawerNav">
+          <button
+            aria-current={currentView === "home" ? "page" : undefined}
+            onClick={() => onSelectView("home")}
+            type="button"
+          >
+            <Home aria-hidden="true" />
+            <span>
+              <b>Início</b>
+              <small>Projetos, documentos e Copiloto</small>
+            </span>
+          </button>
+          <button
+            aria-current={currentView === "overview" ? "page" : undefined}
+            onClick={() => onSelectView("overview")}
+            type="button"
+          >
+            <FolderKanban aria-hidden="true" />
+            <span>
+              <b>Visão dos projetos</b>
+              <small>Plano, métricas e entregas</small>
+            </span>
+          </button>
+          <button
+            aria-current={currentView === "documents" ? "page" : undefined}
+            onClick={() => onSelectView("documents")}
+            type="button"
+          >
+            <FileText aria-hidden="true" />
+            <span>
+              <b>Documentos</b>
+              <small>Projetos, listas e recentes</small>
+            </span>
+          </button>
+          <button onClick={onOpenCopilot} type="button">
+            <MessageCircle aria-hidden="true" />
+            <span>
+              <b>Copiloto Chat</b>
+              <small>Converse, planeje e resolva</small>
+            </span>
+          </button>
+          <button
+            aria-current={currentView === "calendar" ? "page" : undefined}
+            onClick={() => onSelectView("calendar")}
+            type="button"
+          >
+            <CalendarDays aria-hidden="true" />
+            <span>
+              <b>Calendário</b>
+              <small>Datas, ciclos e capacidade</small>
+            </span>
+          </button>
+          <button
+            aria-current={currentView === "path" ? "page" : undefined}
+            onClick={() => onSelectView("path")}
+            type="button"
+          >
+            <Route aria-hidden="true" />
+            <span>
+              <b>Caminho</b>
+              <small>Ainda não pode · dependências e resultado</small>
+            </span>
+          </button>
+          <button onClick={onOpenProjects} type="button">
+            <FolderKanban aria-hidden="true" />
+            <span>
+              <b>Projetos</b>
+              <small>Planos e entregas</small>
+            </span>
+          </button>
+          <button onClick={onOpenCollaboration} type="button">
+            <Users aria-hidden="true" />
+            <span>
+              <b>Equipe</b>
+              <small>
+                Colaboração
+                {unreadNotifications ? ` · ${unreadNotifications} novos` : ""}
+              </small>
+            </span>
+          </button>
+        </nav>
+        {externalNotificationsAvailable && (
+          <div className="executarDrawerNotifications">
+            <span>Notificações</span>
+            <NotificationsTrigger />
+          </div>
+        )}
+        <div className="executarDrawerAccount">
+          <OrganizationSwitcher />
+          <UserButton />
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+interface CopilotModelSelectorProperties {
+  readonly activeMode: CopilotMode;
+  readonly onClose: () => void;
+  readonly onSelect: (mode: CopilotMode) => void;
+  readonly open: boolean;
+  readonly remoteAvailable: boolean;
+}
+
+function CopilotModelSelector({
+  activeMode,
+  onClose,
+  onSelect,
+  open,
+  remoteAvailable,
+}: CopilotModelSelectorProperties) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="executarModelLayer">
+      <button
+        aria-label="Fechar seletor de modelo"
+        className="executarFloatingBackdrop"
+        onClick={onClose}
+        type="button"
+      />
+      <section
+        aria-labelledby="executar-modelo-titulo"
+        aria-modal="true"
+        className="executarModelSelector"
+        role="dialog"
+      >
+        <div className="executarModelSelectorHead">
+          <div>
+            <small>COPILOTO</small>
+            <h2 id="executar-modelo-titulo">Modelo de execução</h2>
+          </div>
+          <button
+            aria-label="Fechar seletor de modelo"
+            onClick={onClose}
+            type="button"
+          >
+            <X aria-hidden="true" />
+          </button>
+        </div>
+        <fieldset className="executarModelOptions">
+          <legend className="executarVisuallyHidden">
+            Modelos disponíveis
+          </legend>
+          {COPILOT_MODES.map((mode) => (
+            <label key={mode.id}>
+              <input
+                checked={activeMode === mode.id}
+                name="executar-copilot-mode"
+                onChange={() => onSelect(mode.id)}
+                type="radio"
+                value={mode.id}
+              />
+              <span className="executarModelOptionIcon">
+                {mode.id === "automatic" ? (
+                  <Sparkles aria-hidden="true" />
+                ) : (
+                  <span aria-hidden="true">E</span>
+                )}
+              </span>
+              <span>
+                <b>{mode.label}</b>
+                <small>{mode.description}</small>
+              </span>
+              {activeMode === mode.id && <Check aria-hidden="true" />}
+            </label>
+          ))}
+        </fieldset>
+        <p className="executarModelStatus">
+          {remoteAvailable
+            ? "A integração remota está disponível para o modo automático."
+            : "Sem integração remota: o modo automático permanece local e sem custo externo."}
+        </p>
+      </section>
+    </div>
+  );
+}
+
+interface CopilotCommandPanelProperties {
+  readonly onSelect: (command: string) => void;
+  readonly open: boolean;
+}
+
+function CopilotCommandPanel({
+  onSelect,
+  open,
+}: CopilotCommandPanelProperties) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="executarCommandPanel">
+      <div className="executarComandos">
+        {["/agora", "/progresso", "/concluir"].map((command) => (
+          <button
+            className="chip"
+            key={command}
+            onClick={() => onSelect(command)}
+            type="button"
+          >
+            {command}
+          </button>
+        ))}
+      </div>
+      <details className="executarAjudaCopiloto">
+        <summary>Todos os comandos</summary>
+        <small>/projeto criar Nome</small>
+        <small>/foco ID · /progresso · /concluir ID</small>
+        <small>/evidencia verificar descrição</small>
+        <small>/entrega atualizar ID data=DD/MM</small>
+        <small>/replanejamento ID data=DD/MM</small>
+      </details>
+    </div>
+  );
+}
+
+interface CopilotPanelProperties {
+  readonly activeModeLabel: string;
+  readonly commandMenuOpen: boolean;
+  readonly loading: boolean;
+  readonly message: string;
+  readonly messages: readonly MensagemCopiloto[];
+  readonly modelSelectorOpen: boolean;
+  readonly onClose: () => void;
+  readonly onDecideApproval: (approved: boolean) => void;
+  readonly onMessageChange: (message: string) => void;
+  readonly onModelToggle: () => void;
+  readonly onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  readonly onToggleCommands: () => void;
+  readonly open: boolean;
+  readonly pendingApproval: AprovacaoCopiloto | null;
+}
+
+function CopilotPanel({
+  activeModeLabel,
+  commandMenuOpen,
+  loading,
+  message,
+  messages,
+  modelSelectorOpen,
+  onClose,
+  onDecideApproval,
+  onMessageChange,
+  onModelToggle,
+  onSubmit,
+  onToggleCommands,
+  open,
+  pendingApproval,
+}: CopilotPanelProperties) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <aside aria-label="Copiloto operacional" className="executarCopiloto">
+      <div className="executarCopilotoHead">
+        <div>
+          <b>Copiloto EXECUTAR</b>
+          <small>Mesmo plano · mesma organização</small>
+        </div>
+        <div className="executarCopilotoHeadActions">
+          <button
+            aria-expanded={modelSelectorOpen}
+            className="executarCopilotModelTrigger"
+            onClick={onModelToggle}
+            type="button"
+          >
+            <Sparkles aria-hidden="true" />
+            <span>{activeModeLabel}</span>
+          </button>
+          <button
+            aria-label="Fechar Copiloto"
+            className="iconBtn"
+            onClick={onClose}
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+      <div aria-live="polite" className="executarMensagens">
+        {messages.map((entry) => (
+          <AiMessage
+            className={`executarMensagem ${entry.author}`}
+            data={paraMensagemUi(entry)}
+            key={entry.id}
+          />
+        ))}
+        {pendingApproval && (
+          <div className="executarAprovacao">
+            <strong>Aprovação humana necessária</strong>
+            <p>{pendingApproval.summary}</p>
+            <div className="executarFieldRow">
+              <button
+                className="primaryBtn"
+                onClick={() => onDecideApproval(true)}
+                type="button"
+              >
+                Aprovar ação
+              </button>
+              <button
+                className="softBtn"
+                onClick={() => onDecideApproval(false)}
+                type="button"
+              >
+                Recusar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+      <CopilotCommandPanel onSelect={onMessageChange} open={commandMenuOpen} />
+      <form className="executarChatForm" onSubmit={onSubmit}>
+        <button
+          aria-expanded={commandMenuOpen}
+          aria-label="Abrir comandos do Copiloto"
+          className="executarChatUtilityButton"
+          onClick={onToggleCommands}
+          type="button"
+        >
+          <Plus aria-hidden="true" />
+        </button>
+        <textarea
+          aria-label="Mensagem ao Copiloto"
+          onChange={(event) => onMessageChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              event.currentTarget.form?.requestSubmit();
+            }
+          }}
+          placeholder="Pergunte ao Copiloto"
+          rows={1}
+          value={message}
+        />
+        <button
+          aria-label={loading ? "Consultando" : "Enviar mensagem"}
+          className="executarChatSubmit"
+          disabled={loading || !message.trim()}
+          type="submit"
+        >
+          {loading ? (
+            <span aria-hidden="true" className="executarChatLoader" />
+          ) : (
+            <ArrowUp aria-hidden="true" />
+          )}
+        </button>
+      </form>
+    </aside>
+  );
+}
 
 const DIAS = [
   ["seg", "24/08", "Fechar a base"],
@@ -248,7 +731,7 @@ function Overview({
       <div className="three executarResumo">
         <button
           className="card actionCard executarAcao"
-          onClick={() => changeView("focus")}
+          onClick={() => changeView("now")}
           type="button"
         >
           <div className="actionTop">
@@ -307,194 +790,6 @@ function Overview({
         </div>
       </div>
     </>
-  );
-}
-
-function Focus({
-  state,
-  tasks,
-  focus,
-  setState,
-  openEvidence,
-}: {
-  readonly state: EstadoOperacional;
-  readonly tasks: readonly Entrega[];
-  readonly focus: Entrega | null;
-  readonly setState: (state: EstadoOperacional) => void;
-  readonly openEvidence: () => void;
-}) {
-  if (!focus) {
-    return (
-      <div className="card cardBody">
-        <h2>Fase concluída</h2>
-        <p>Todas as entregas liberadas foram fechadas.</p>
-      </div>
-    );
-  }
-
-  const ready = filaPronta(tasks, state).filter((task) => task.id !== focus.id);
-  const blocked = filaBloqueada(tasks, state);
-  const steps = Math.max(1, Math.ceil(focus.mins / 15));
-  const completedSteps = state.started[focus.id] ?? 0;
-  const evidence = state.evidence.filter((proof) => proof.taskId === focus.id);
-
-  return (
-    <div className="focusGrid">
-      <div className="focusStage">
-        <div className="flashShell">
-          <div className="flashCard">
-            <div className="flashVisual">
-              <div className="bigIcon">✓</div>
-              <div className="counter">{focus.stage}/4</div>
-            </div>
-            <div className="flashText">
-              <div className="eyebrow">
-                {focus.front.toLocaleUpperCase("pt-BR")}
-              </div>
-              <h2>{focus.title}</h2>
-              <p>
-                {focus.deps.length
-                  ? "Tudo que precisava vir antes já está fechado. Faça somente esta entrega e registre a comprovação."
-                  : "Este item já pode começar. Faça, feche e registre a comprovação."}
-              </p>
-              <div className="flashMeta">
-                <span className="chip">{focus.mins} min</span>
-                <span className="chip">{steps} passos de 15 min</span>
-                <span className="chip">{evidence.length} evidência(s)</span>
-              </div>
-            </div>
-            <button className="doneBtn" onClick={openEvidence} type="button">
-              Feito
-            </button>
-          </div>
-        </div>
-        <div className="queueLabel">
-          Fila · toque em um cartão para assumir o foco
-        </div>
-        <div className="queueTiles">
-          {Array.from({ length: 4 }, (_, index) => {
-            const task = ready[index];
-
-            return (
-              <button
-                aria-label={task?.title ?? "Sem entrega liberada"}
-                className="qTile"
-                disabled={!task}
-                key={task?.id ?? `empty-${index}`}
-                onClick={() =>
-                  task && setState(assumirFoco(tasks, state, task.id))
-                }
-                type="button"
-              >
-                <span>{task ? `${index + 1}/4` : "—"}</span>
-                {task && <b className="executarQueueId">{task.id}</b>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <div className="focusSide">
-        <div className="card">
-          <div className="cardHead">
-            <h2>Passos</h2>
-            <span>
-              {completedSteps}/{steps}
-            </span>
-          </div>
-          <div className="cardBody">
-            <div className="steps">
-              {Array.from(
-                { length: Math.min(24, steps) },
-                (_, index) => index + 1
-              ).map((step) => (
-                <span
-                  className={`step ${step <= completedSteps ? "on" : ""}`}
-                  key={`step-${focus.id}-${step}`}
-                  title={`Passo ${step}`}
-                />
-              ))}
-            </div>
-            <button
-              className="softBtn executarBotaoLargo"
-              onClick={() => setState(registrarPasso(tasks, state, focus.id))}
-              type="button"
-            >
-              Marcar próximo passo
-            </button>
-          </div>
-        </div>
-        <TaskList label="Pode fazer depois" tasks={ready.slice(0, 6)} />
-        <TaskList
-          blocked
-          label="Ainda não pode"
-          state={state}
-          tasks={blocked.slice(0, 4)}
-          total={blocked.length}
-        />
-        <div className="card">
-          <div className="cardHead">
-            <h2>Estado operacional</h2>
-            <span>
-              {
-                ROTULOS_ESTADO[
-                  estadoEntrega(focus, { ...state, focus: focus.id })
-                ]
-              }
-            </span>
-          </div>
-          <div className="cardBody">
-            <small>
-              Uma entrega em foco. Evidência e verificação exigidas para
-              concluir.
-            </small>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TaskList({
-  label,
-  tasks,
-  state,
-  blocked = false,
-  total,
-}: {
-  readonly label: string;
-  readonly tasks: readonly Entrega[];
-  readonly state?: EstadoOperacional;
-  readonly blocked?: boolean;
-  readonly total?: number;
-}) {
-  return (
-    <div className="card">
-      <div className="cardHead">
-        <h2>{label}</h2>
-        <span>{total ?? tasks.length}</span>
-      </div>
-      <div className={`cardBody ${blocked ? "lockedList" : "readyList"}`}>
-        {tasks.length ? (
-          tasks.map((task) => (
-            <div className="miniTask" key={task.id}>
-              <div>
-                <b>{task.title}</b>
-                <small>
-                  {blocked && state
-                    ? `espera ${dependenciasPendentes(task, state).join(", ")}`
-                    : task.front}
-                </small>
-              </div>
-              <span className={blocked ? undefined : "badge"}>
-                {blocked ? "⌛" : `${task.mins}m`}
-              </span>
-            </div>
-          ))
-        ) : (
-          <small>Nenhuma entrega nesta fila.</small>
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -1288,6 +1583,162 @@ function CollaborationPanel({
   );
 }
 
+interface ProductSurfaceProperties {
+  readonly activeProject: ReturnType<typeof projetoAtivo>;
+  readonly firstName: string;
+  readonly focus: Entrega | null;
+  readonly onOpenCopilot: () => void;
+  readonly onOpenEvidence: () => void;
+  readonly onOpenProjects: () => void;
+  readonly onSelectView: (view: View) => void;
+  readonly onStateChange: (state: EstadoOperacional) => void;
+  readonly onTaskFaceChange: (face: TaskFace) => void;
+  readonly state: EstadoOperacional;
+  readonly taskFace: TaskFace;
+  readonly tasks: readonly Entrega[];
+  readonly view: View;
+}
+
+function ProductSurface({
+  activeProject,
+  firstName,
+  focus,
+  onOpenCopilot,
+  onOpenEvidence,
+  onOpenProjects,
+  onSelectView,
+  onStateChange,
+  onTaskFaceChange,
+  state,
+  taskFace,
+  tasks,
+  view,
+}: ProductSurfaceProperties) {
+  const operationalDays = calendarioProjeto(state);
+  const readyTasks = filaPronta(tasks, state);
+  const currentProgress = progresso(tasks, state);
+
+  function selectTask(taskId: string) {
+    onStateChange(assumirFoco(tasks, state, taskId));
+    onTaskFaceChange("principal");
+    onSelectView("now");
+  }
+
+  switch (view) {
+    case "home":
+      return (
+        <HomeSurface
+          documentCount={state.projects.length + state.evidence.length}
+          firstName={firstName}
+          onCopilot={onOpenCopilot}
+          onDocuments={() => onSelectView("documents")}
+          onProjects={() => onSelectView("overview")}
+          progress={currentProgress.percentage}
+          projectCount={state.projects.length}
+        />
+      );
+    case "today":
+      return (
+        <>
+          <SprintProgress state={state} tasks={tasks} />
+          <TimelineSurface
+            day={operationalDays[0]}
+            emptyMessage="Nenhuma tarefa foi planejada para hoje."
+            focusId={focus?.id ?? null}
+            heading="Hoje"
+            onFocus={selectTask}
+            state={state}
+          />
+        </>
+      );
+    case "tomorrow":
+      return (
+        <>
+          <SprintProgress state={state} tasks={tasks} />
+          <TimelineSurface
+            day={operationalDays[1]}
+            emptyMessage="Nenhuma tarefa foi planejada para amanhã."
+            focusId={focus?.id ?? null}
+            heading="Amanhã"
+            onFocus={selectTask}
+            state={state}
+          />
+        </>
+      );
+    case "now":
+      return (
+        <>
+          <SprintProgress state={state} tasks={tasks} />
+          <FocusSurface
+            face={taskFace}
+            focus={focus}
+            onFaceChange={onTaskFaceChange}
+            onNext={() => {
+              const nextTask = readyTasks.find((task) => task.id !== focus?.id);
+
+              if (nextTask) {
+                onStateChange(assumirFoco(tasks, state, nextTask.id));
+                onTaskFaceChange("principal");
+              }
+            }}
+            onOpenEvidence={onOpenEvidence}
+            onReplan={() => onSelectView("replan")}
+            onStart={() => {
+              if (focus) {
+                onStateChange(registrarPasso(tasks, state, focus.id));
+              }
+            }}
+            projectName={activeProject.name}
+            readyCount={readyTasks.length}
+            state={state}
+          />
+        </>
+      );
+    case "done":
+      return (
+        <>
+          <SprintProgress state={state} tasks={tasks} />
+          <DoneSurface state={state} tasks={tasks} />
+        </>
+      );
+    case "replan":
+      return (
+        <ReplanSurface
+          onCalendar={() => onSelectView("calendar")}
+          onPath={() => onSelectView("path")}
+          onProjects={onOpenProjects}
+          project={activeProject}
+          state={state}
+        />
+      );
+    case "documents":
+      return (
+        <DocumentsSurface
+          onOpenProjects={onOpenProjects}
+          onSelectProject={(projectId) =>
+            onStateChange(selecionarProjeto(state, projectId))
+          }
+          state={state}
+        />
+      );
+    case "overview":
+      return (
+        <Overview
+          changeView={onSelectView}
+          focus={focus}
+          state={state}
+          tasks={tasks}
+        />
+      );
+    case "calendar":
+      return <Calendar state={state} />;
+    case "path":
+      return <Path state={state} tasks={tasks} />;
+    default:
+      return null;
+  }
+}
+
 export function ExecutarOperacional({
   collaborationAvailable,
   externalNotificationsAvailable,
@@ -1301,7 +1752,8 @@ export function ExecutarOperacional({
   );
   const [loaded, setLoaded] = useState(false);
   const [remoteReady, setRemoteReady] = useState(false);
-  const [view, setView] = useState<View>("overview");
+  const [view, setView] = useState<View>("home");
+  const [taskFace, setTaskFace] = useState<TaskFace>("principal");
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [note, setNote] = useState("");
   const [url, setUrl] = useState("");
@@ -1309,6 +1761,10 @@ export function ExecutarOperacional({
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState("");
   const [copilotOpen, setCopilotOpen] = useState(false);
+  const [copilotMode, setCopilotMode] = useState<CopilotMode>("automatic");
+  const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
   const [collaborationOpen, setCollaborationOpen] = useState(false);
   const [syncNotice, setSyncNotice] = useState("");
   const [pendingApproval, setPendingApproval] =
@@ -1331,10 +1787,27 @@ export function ExecutarOperacional({
     () => ({ organizationId, userId, displayName }),
     [displayName, organizationId, userId]
   );
+  const activeCopilotMode =
+    COPILOT_MODES.find((mode) => mode.id === copilotMode) ?? COPILOT_MODES[0];
 
   useEffect(() => {
     latestState.current = state;
   }, [state]);
+
+  useEffect(() => {
+    function closeFloatingNavigation(event: KeyboardEvent) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      setMobileMenuOpen(false);
+      setModelSelectorOpen(false);
+      setCommandMenuOpen(false);
+    }
+
+    window.addEventListener("keydown", closeFloatingNavigation);
+    return () => window.removeEventListener("keydown", closeFloatingNavigation);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -1581,7 +2054,11 @@ export function ExecutarOperacional({
         .length,
     [actor, state]
   );
-  const title = VIEWS.find((item) => item.id === view)?.label ?? "Visão geral";
+  const title = VIEW_TITLES[view];
+  const firstName =
+    user?.firstName ??
+    displayName.trim().split(WHITESPACE_PATTERN)[0] ??
+    "você";
 
   async function saveEvidence(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1826,8 +2303,10 @@ export function ExecutarOperacional({
     const question = message.trim();
 
     setMessage("");
+    setCommandMenuOpen(false);
 
     if (
+      copilotMode === "local" ||
       question.startsWith("/") ||
       !(remotePersistenceAvailable && remoteReady)
     ) {
@@ -1898,6 +2377,34 @@ export function ExecutarOperacional({
     }
   }
 
+  function selectProductView(nextView: View) {
+    setMobileMenuOpen(false);
+    setModelSelectorOpen(false);
+    setCollaborationOpen(false);
+    setCopilotOpen(false);
+    setView(nextView);
+
+    if (nextView === "now") {
+      setTaskFace("principal");
+    }
+  }
+
+  function openCopilot() {
+    setMobileMenuOpen(false);
+    setModelSelectorOpen(false);
+    setCollaborationOpen(false);
+    setCopilotOpen(true);
+  }
+
+  function selectDrawerView(nextView: View) {
+    selectProductView(nextView);
+  }
+
+  function toggleModelSelector() {
+    setMobileMenuOpen(false);
+    setModelSelectorOpen((open) => !open);
+  }
+
   function toggleCollaboration() {
     if (collaborationOpen) {
       setCollaborationOpen(false);
@@ -1905,6 +2412,7 @@ export function ExecutarOperacional({
     }
 
     setState((current) => registrarPresenca(current, actor, current.focus));
+    setMobileMenuOpen(false);
     setCopilotOpen(false);
     setCollaborationOpen(true);
   }
@@ -1912,10 +2420,20 @@ export function ExecutarOperacional({
   return (
     <>
       <div id="app">
+        <MobileProductHeader
+          activeModeLabel={activeCopilotMode.label}
+          menuOpen={mobileMenuOpen}
+          modelSelectorOpen={modelSelectorOpen}
+          onHome={() => selectProductView("home")}
+          onMenuToggle={() => {
+            setModelSelectorOpen(false);
+            setMobileMenuOpen((open) => !open);
+          }}
+          onModelToggle={toggleModelSelector}
+        />
         <aside className="side">
           <div className="brand">
-            <div className="brandMark">E</div>
-            <span>Executar</span>
+            <ExecutarBrand />
           </div>
           <nav aria-label="Navegação principal">
             {VIEWS.map((item) => (
@@ -1923,7 +2441,7 @@ export function ExecutarOperacional({
                 aria-current={view === item.id ? "page" : undefined}
                 className={`navItem ${view === item.id ? "active" : ""}`}
                 key={item.id}
-                onClick={() => setView(item.id)}
+                onClick={() => selectProductView(item.id)}
                 type="button"
               >
                 <span>{item.icon}</span>
@@ -1968,7 +2486,7 @@ export function ExecutarOperacional({
               <div className="eyebrow">
                 PRÓXIMO 1 POR VEZ · {activeProject.name}
               </div>
-              <h1>{view === "path" ? "Caminho do resultado" : title}</h1>
+              <h1>{title}</h1>
             </div>
             <div className="topActions">
               <span className="dateChip">24 ago — 04 set</span>
@@ -1992,8 +2510,11 @@ export function ExecutarOperacional({
                 aria-expanded={copilotOpen}
                 className="softBtn"
                 onClick={() => {
-                  setCollaborationOpen(false);
-                  setCopilotOpen((open) => !open);
+                  if (copilotOpen) {
+                    setCopilotOpen(false);
+                  } else {
+                    openCopilot();
+                  }
                 }}
                 type="button"
               >
@@ -2004,40 +2525,55 @@ export function ExecutarOperacional({
           {syncNotice && (
             <output className="executarSyncNotice">{syncNotice}</output>
           )}
-          {view === "overview" && (
-            <Overview
-              changeView={setView}
-              focus={focus}
-              state={state}
-              tasks={tasks}
-            />
-          )}
-          {view === "focus" && (
-            <Focus
-              focus={focus}
-              openEvidence={() => setEvidenceOpen(true)}
-              setState={setState}
-              state={state}
-              tasks={tasks}
-            />
-          )}
-          {view === "calendar" && <Calendar state={state} />}
-          {view === "path" && <Path state={state} tasks={tasks} />}
+          <ProductSurface
+            activeProject={activeProject}
+            firstName={firstName}
+            focus={focus}
+            onOpenCopilot={openCopilot}
+            onOpenEvidence={() => setEvidenceOpen(true)}
+            onOpenProjects={() => setProjectManagerOpen(true)}
+            onSelectView={selectProductView}
+            onStateChange={setState}
+            onTaskFaceChange={setTaskFace}
+            state={state}
+            taskFace={taskFace}
+            tasks={tasks}
+            view={view}
+          />
         </main>
-        <nav aria-label="Navegação móvel" className="bottomNav">
-          {VIEWS.map((item) => (
-            <button
-              className={view === item.id ? "active" : ""}
-              key={item.id}
-              onClick={() => setView(item.id)}
-              type="button"
-            >
-              <span>{item.icon}</span>
-              <small>{item.id === "overview" ? "Visão" : item.label}</small>
-            </button>
-          ))}
-        </nav>
       </div>
+      <OperationalNavigation
+        activeView={view}
+        hidden={
+          copilotOpen || collaborationOpen || evidenceOpen || projectManagerOpen
+        }
+        onSelect={selectProductView}
+      />
+      <MobileDrawer
+        activeProjectName={activeProject.name}
+        currentView={view}
+        externalNotificationsAvailable={externalNotificationsAvailable}
+        onClose={() => setMobileMenuOpen(false)}
+        onOpenCollaboration={toggleCollaboration}
+        onOpenCopilot={openCopilot}
+        onOpenProjects={() => {
+          setMobileMenuOpen(false);
+          setProjectManagerOpen(true);
+        }}
+        onSelectView={selectDrawerView}
+        open={mobileMenuOpen}
+        unreadNotifications={unreadNotifications}
+      />
+      <CopilotModelSelector
+        activeMode={copilotMode}
+        onClose={() => setModelSelectorOpen(false)}
+        onSelect={(mode) => {
+          setCopilotMode(mode);
+          setModelSelectorOpen(false);
+        }}
+        open={modelSelectorOpen}
+        remoteAvailable={remotePersistenceAvailable && remoteReady}
+      />
       {projectManagerOpen && (
         <ProjectManager
           onClose={() => setProjectManagerOpen(false)}
@@ -2068,91 +2604,22 @@ export function ExecutarOperacional({
             state={state}
           />
         ))}
-      {copilotOpen && (
-        <aside aria-label="Copiloto operacional" className="executarCopiloto">
-          <div className="executarCopilotoHead">
-            <div>
-              <b>Copiloto EXECUTAR</b>
-              <small>Mesmo plano · mesma organização</small>
-            </div>
-            <button
-              aria-label="Fechar Copiloto"
-              className="iconBtn"
-              onClick={() => setCopilotOpen(false)}
-              type="button"
-            >
-              ×
-            </button>
-          </div>
-          <div aria-live="polite" className="executarMensagens">
-            {messages.map((entry) => (
-              <div
-                className={`executarMensagem ${entry.author}`}
-                key={entry.id}
-              >
-                {entry.text}
-              </div>
-            ))}
-            {pendingApproval && (
-              <div className="executarAprovacao">
-                <strong>Aprovação humana necessária</strong>
-                <p>{pendingApproval.summary}</p>
-                <div className="executarFieldRow">
-                  <button
-                    className="primaryBtn"
-                    onClick={() => decideApproval(true)}
-                    type="button"
-                  >
-                    Aprovar ação
-                  </button>
-                  <button
-                    className="softBtn"
-                    onClick={() => decideApproval(false)}
-                    type="button"
-                  >
-                    Recusar
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-          <details className="executarAjudaCopiloto">
-            <summary>Comandos para operar o plano</summary>
-            <small>/projeto criar Nome</small>
-            <small>/foco ID · /progresso · /concluir ID</small>
-            <small>/evidencia verificar descrição</small>
-            <small>/entrega atualizar ID data=DD/MM</small>
-            <small>/replanejamento ID data=DD/MM</small>
-          </details>
-          <div className="executarComandos">
-            {["/agora", "/progresso", "/concluir"].map((command) => (
-              <button
-                className="chip"
-                key={command}
-                onClick={() => setMessage(command)}
-                type="button"
-              >
-                {command}
-              </button>
-            ))}
-          </div>
-          <form className="executarChatForm" onSubmit={sendMessage}>
-            <input
-              aria-label="Mensagem ao Copiloto"
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder="O que faço agora?"
-              value={message}
-            />
-            <button
-              className="primaryBtn"
-              disabled={copilotLoading}
-              type="submit"
-            >
-              {copilotLoading ? "Consultando" : "Enviar"}
-            </button>
-          </form>
-        </aside>
-      )}
+      <CopilotPanel
+        activeModeLabel={activeCopilotMode.label}
+        commandMenuOpen={commandMenuOpen}
+        loading={copilotLoading}
+        message={message}
+        messages={messages}
+        modelSelectorOpen={modelSelectorOpen}
+        onClose={() => setCopilotOpen(false)}
+        onDecideApproval={decideApproval}
+        onMessageChange={setMessage}
+        onModelToggle={toggleModelSelector}
+        onSubmit={sendMessage}
+        onToggleCommands={() => setCommandMenuOpen((open) => !open)}
+        open={copilotOpen}
+        pendingApproval={pendingApproval}
+      />
       {evidenceOpen && focus && (
         <div className="executarEvidenceBackdrop">
           <div
