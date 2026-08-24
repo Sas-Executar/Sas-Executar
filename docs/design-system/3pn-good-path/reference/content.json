@@ -1,0 +1,137 @@
+{
+  "view": {
+    "eyebrow": "Sistema Executar · 3PN + Good Path",
+    "title": "Cards que explicam. Workflows que executam.",
+    "subtitle": "O card 3PN continua sendo a unidade de contexto. Abaixo, Good Paths funcionam como portas de entrada para sequências operacionais prontas.",
+    "modes": ["Chat", "Gestor"]
+  },
+  "chat": {
+    "name": "Copiloto EXECUTAR",
+    "status": "Card operacional + workflows disponíveis",
+    "message": "Estruturei a execução. Você pode inspecionar o 3PN ou abrir um Good Path para iniciar um workflow completo."
+  },
+  "taskManager": {
+    "title": "Hoje",
+    "meta": "WIP 1 · 3PN"
+  },
+  "card": {
+    "id": "EXE-214",
+    "sprintId": "SPRINT-001",
+    "statusLabel": "Em progresso",
+    "title": "Validar proposta central",
+    "description": "Transformar uma intenção aberta em uma unidade verificável de execução, com evidência e output acessível.",
+    "progress": { "completed": 2, "total": 3 },
+    "sections": [
+      {
+        "key": "problem",
+        "index": "01",
+        "name": "Problema",
+        "summary": "Dor que justifica a tarefa",
+        "defaultOpen": true,
+        "content": "O usuário perde contexto quando a tarefa vira apenas uma linha. O card deve manter problema, progresso, próximo passo e evidência juntos."
+      },
+      {
+        "key": "progress",
+        "index": "02",
+        "name": "Progresso",
+        "summary": "2 de 3 etapas",
+        "defaultOpen": false,
+        "content": "Concluído: público prioritário e dor principal. Em andamento: validar o resultado prometido."
+      },
+      {
+        "key": "next",
+        "index": "03",
+        "name": "Próximo passo",
+        "summary": "Teste com evidência",
+        "defaultOpen": false,
+        "content": "Agora: testar o card em um fluxo real e anexar evidência objetiva."
+      },
+      {
+        "key": "outputs",
+        "index": "↗",
+        "name": "Outputs",
+        "summary": "2 artefatos",
+        "defaultOpen": false,
+        "outputs": [
+          { "icon": "◇", "name": "3PN-card-spec.md", "subtitle": "Especificação · v0.1" },
+          { "icon": "▦", "name": "card-flow-output.json", "subtitle": "Output estruturado" }
+        ]
+      }
+    ]
+  },
+  "goodPathZone": {
+    "title": "Abrir um Good Path",
+    "copy": "Escolha um workflow pronto. Abra para ver tarefas antes de iniciar.",
+    "countLabel": "03 WORKFLOWS",
+    "workflows": [
+      {
+        "id": "artistic",
+        "icon": "ART",
+        "type": "Good Path · Artistic",
+        "name": "Cartografia do Intervalo",
+        "subtitle": "Exploração → prototipagem → seleção conceitual",
+        "idleStatus": "5 tarefas",
+        "meta": "5 PASSOS · ARTÍSTICO",
+        "tasks": [
+          "Reunir referências e materiais ligados a silêncio, deslocamento e repetição.",
+          "Organizar o material em núcleos de linguagem por atmosfera, contraste e recorrência.",
+          "Criar três protótipos de pequena escala para testar combinações.",
+          "Testar os protótipos por conceito, duração, acesso e relação com o espaço.",
+          "Selecionar os componentes essenciais pela força conceitual."
+        ]
+      },
+      {
+        "id": "technical",
+        "icon": "TEC",
+        "type": "Good Path · Technical",
+        "name": "Authentication Migration",
+        "subtitle": "Auditoria → implementação → staging",
+        "idleStatus": "5 tarefas",
+        "meta": "5 PASSOS · TÉCNICO",
+        "tasks": [
+          "Revisar autenticação atual usando código, logs, contratos e testes existentes.",
+          "Modelar o fluxo alvo relacionando frontend, API, Supabase, cookies e segurança.",
+          "Implementar sessões persistentes preservando contas existentes e rotas públicas.",
+          "Criar testes unitários, integrados e ponta a ponta para os fluxos críticos.",
+          "Validar a solução em staging comparando comportamento antes e depois."
+        ]
+      },
+      {
+        "id": "operational",
+        "icon": "OPS",
+        "type": "Good Path · Operational",
+        "name": "Abertura da Unidade",
+        "subtitle": "Pré-operação → sistemas → treinamento",
+        "idleStatus": "5 tarefas",
+        "meta": "5 PASSOS · OPERACIONAL",
+        "tasks": [
+          "Consolidar licenças, contratos, escalas e requisitos de abertura.",
+          "Desenhar a jornada operacional do cliente ponta a ponta.",
+          "Definir níveis mínimos de estoque e validar reposição.",
+          "Preparar acessos, sistemas, terminais e integrações.",
+          "Treinar a equipe com prática supervisionada e simulações."
+        ]
+      }
+    ],
+    "ctaIdle": "Iniciar workflow →",
+    "ctaRunning": "Workflow iniciado ✓",
+    "statusRunning": "Em andamento",
+    "activeNoticeSecondLine": "A primeira tarefa foi posicionada como próxima ação do 3PN.",
+    "liveSuccess": "Workflow iniciado. A tarefa 1 agora é a próxima ação."
+  },
+  "sidebar": {
+    "architectureTitle": "Arquitetura do card",
+    "architecture": [
+      { "letter": "P", "name": "Problema", "description": "Por que a unidade existe." },
+      { "letter": "P", "name": "Progresso", "description": "O que aconteceu até agora." },
+      { "letter": "P", "name": "Próximo", "description": "A próxima ação verificável." },
+      { "letter": "N", "name": "Núcleo", "description": "Outputs, evidências e contexto." }
+    ],
+    "goodPathTitle": "Papel do Good Path",
+    "goodPathCopy": [
+      "Card 3PN — Explica o estado de uma unidade de trabalho.",
+      "Good Path — Abre um workflow reutilizável, já com sequência de tarefas.",
+      "CTA ‘Iniciar workflow’ — Converte o template em execução ativa e posiciona a primeira tarefa como próxima ação."
+    ]
+  }
+}
