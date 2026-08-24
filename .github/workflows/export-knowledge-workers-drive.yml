@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - ops/export-knowledge-workers-drive-stage
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
