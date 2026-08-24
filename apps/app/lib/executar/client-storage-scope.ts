@@ -20,7 +20,9 @@ const STORAGE_ENVELOPE_VERSION = "1.0.0" as const;
 
 function requireScope(scope: ExecutarClientStorageScope): void {
   if (!(scope.organizationId.trim() && scope.userId.trim())) {
-    throw new Error("Organização e usuário são obrigatórios para persistência local.");
+    throw new Error(
+      "Organização e usuário são obrigatórios para persistência local."
+    );
   }
 }
 
@@ -215,10 +217,7 @@ export function installExecutarStorageScope(
   });
 
   function bridgeStorageEvent(event: StorageEvent): void {
-    if (
-      event.storageArea !== storage ||
-      !event.key?.startsWith(scopedPrefix)
-    ) {
+    if (event.storageArea !== storage || !event.key?.startsWith(scopedPrefix)) {
       return;
     }
 
@@ -233,7 +232,7 @@ export function installExecutarStorageScope(
     }
 
     targetWindow.dispatchEvent(
-      new targetWindow.StorageEvent("storage", {
+      new StorageEvent("storage", {
         key: legacyKey,
         newValue,
         oldValue,
