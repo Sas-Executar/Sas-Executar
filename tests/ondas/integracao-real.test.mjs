@@ -590,7 +590,10 @@ test("CI diagnostica apenas disponibilidade, sem imprimir valores de segredos", 
 
   assert.match(workflow, /EXECUTAR_HAS_VERCEL_TOKEN/);
   assert.match(workflow, /EXECUTAR_HAS_CLERK_SECRET_KEY/);
-  assert.match(workflow, /EXECUTAR_HAS_SUPABASE_ACCESS_TOKEN/);
+  assert.match(workflow, /EXECUTAR_HAS_AWS_ROLE_ARN/);
+  assert.match(workflow, /EXECUTAR_HAS_AURORA_RESOURCE_ARN/);
+  assert.match(workflow, /EXECUTAR_HAS_EVIDENCE_BUCKET/);
+  assert.doesNotMatch(workflow, /EXECUTAR_HAS_SUPABASE/);
   assert.match(workflow, /value === 'true'/);
   assert.doesNotMatch(workflow, /console\.log\([^\n]*process\.env/);
 });

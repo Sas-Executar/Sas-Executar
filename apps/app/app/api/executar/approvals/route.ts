@@ -2,12 +2,14 @@ import type { AprovacaoCopiloto } from "@/lib/executar/domain";
 import { ErroPersistenciaRemota } from "@/lib/executar/remote-persistence";
 import {
   contextoPersistenciaServidor,
+  exigirLimiteOperacional,
   respostaErroPersistencia,
 } from "@/lib/executar/server-persistence";
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    const { persistence } = await contextoPersistenciaServidor();
+    const { actor, persistence } = await contextoPersistenciaServidor();
+    await exigirLimiteOperacional(actor, "approvals");
     const payload = (await request.json()) as {
       action?: "solicitar" | "resolver";
       approval?: AprovacaoCopiloto;

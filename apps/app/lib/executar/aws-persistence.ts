@@ -303,6 +303,142 @@ export function criarPersistenciaAws(
   const { rds, s3 } = clientesAws(configuration);
 
   return {
+    runLedger: {
+      async iniciar(input) {
+        const result = await chamarFuncao(
+          configuration,
+          rds,
+          "select public.executar_iniciar_run(cast(:organization_id as text), cast(:actor_user_id as text), cast(:project_id as text), cast(:run_id as text), cast(:run_type as text), cast(:idempotency_key as text), cast(:lock_key as text)) as result",
+          [
+            ...parametrosAtor(actor),
+            parametroTexto("project_id", input.projectId),
+            parametroTexto("run_id", input.runId),
+            parametroTexto("run_type", input.type),
+            parametroTexto("idempotency_key", input.idempotencyKey),
+            parametroTexto("lock_key", input.lockKey),
+          ]
+        );
+        const started = result as {
+          replayed?: boolean;
+          result?: Readonly<Record<string, unknown>>;
+          run_id?: string;
+          status?: "FAILED" | "RUNNING" | "SUCCEEDED";
+        } | null;
+
+        if (
+          typeof started?.replayed !== "boolean" ||
+          started.run_id !== input.runId ||
+          !["FAILED", "RUNNING", "SUCCEEDED"].includes(started.status ?? "") ||
+          !started.result ||
+          typeof started.result !== "object" ||
+          Array.isArray(started.result)
+        ) {
+          throw new ErroPersistenciaRemota(
+            "O Aurora retornou um run inválido.",
+            502,
+            "RUN_AGENTE_INVALIDO"
+          );
+        }
+
+        return {
+          replayed: started.replayed,
+          result: started.result,
+          runId: started.run_id,
+          status: started.status as "FAILED" | "RUNNING" | "SUCCEEDED",
+        };
+      },
+
+      async reservarEfeito(reference, effectKey) {
+        const result = await chamarFuncao(
+          configuration,
+          rds,
+          "select public.executar_reservar_efeito_run(cast(:organization_id as text), cast(:actor_user_id as text), cast(:project_id as text), cast(:run_id as text), cast(:effect_key as text)) as result",
+          [
+            ...parametrosAtor(actor),
+            parametroTexto("project_id", reference.projectId),
+            parametroTexto("run_id", reference.runId),
+            parametroTexto("effect_key", effectKey),
+          ]
+        );
+
+        if (result !== true) {
+          throw new ErroPersistenciaRemota(
+            "O efeito do Agent-007 não foi reservado.",
+            502,
+            "EFEITO_AGENTE_NAO_RESERVADO"
+          );
+        }
+      },
+
+      async finalizarEfeito(reference, effectKey, status, errorCode) {
+        const result = await chamarFuncao(
+          configuration,
+          rds,
+          "select public.executar_finalizar_efeito_run(cast(:organization_id as text), cast(:actor_user_id as text), cast(:project_id as text), cast(:run_id as text), cast(:effect_key as text), cast(:status as text), cast(:error_code as text)) as result",
+          [
+            ...parametrosAtor(actor),
+            parametroTexto("project_id", reference.projectId),
+            parametroTexto("run_id", reference.runId),
+            parametroTexto("effect_key", effectKey),
+            parametroTexto("status", status),
+            parametroTexto("error_code", errorCode ?? null),
+          ]
+        );
+
+        if (result !== true) {
+          throw new ErroPersistenciaRemota(
+            "O efeito do Agent-007 não foi finalizado.",
+            502,
+            "EFEITO_AGENTE_NAO_FINALIZADO"
+          );
+        }
+      },
+
+      async finalizar(reference, runResult) {
+        const result = await chamarFuncao(
+          configuration,
+          rds,
+          "select public.executar_finalizar_run(cast(:organization_id as text), cast(:actor_user_id as text), cast(:project_id as text), cast(:run_id as text), cast(:run_result as jsonb)) as result",
+          [
+            ...parametrosAtor(actor),
+            parametroTexto("project_id", reference.projectId),
+            parametroTexto("run_id", reference.runId),
+            parametroTexto("run_result", JSON.stringify(runResult)),
+          ]
+        );
+
+        if (result !== true) {
+          throw new ErroPersistenciaRemota(
+            "O run do Agent-007 não foi finalizado.",
+            502,
+            "RUN_AGENTE_NAO_FINALIZADO"
+          );
+        }
+      },
+
+      async falhar(reference, errorCode) {
+        const result = await chamarFuncao(
+          configuration,
+          rds,
+          "select public.executar_falhar_run(cast(:organization_id as text), cast(:actor_user_id as text), cast(:project_id as text), cast(:run_id as text), cast(:error_code as text)) as result",
+          [
+            ...parametrosAtor(actor),
+            parametroTexto("project_id", reference.projectId),
+            parametroTexto("run_id", reference.runId),
+            parametroTexto("error_code", errorCode),
+          ]
+        );
+
+        if (result !== true) {
+          throw new ErroPersistenciaRemota(
+            "A falha do Agent-007 não foi registrada.",
+            502,
+            "RUN_AGENTE_FALHA_NAO_REGISTRADA"
+          );
+        }
+      },
+    },
+
     async carregar() {
       const result = await chamarFuncao(
         configuration,

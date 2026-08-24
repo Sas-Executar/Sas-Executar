@@ -1,5 +1,6 @@
 import { authMiddleware } from "@repo/auth/proxy";
 import {
+  executarContentSecurityPolicy,
   noseconeOptions,
   noseconeOptionsWithToolbar,
   securityMiddleware,
@@ -11,10 +12,28 @@ const securityHeaders = env.FLAGS_SECRET
   ? securityMiddleware(noseconeOptionsWithToolbar)
   : securityMiddleware(noseconeOptions);
 
+const applySecurityHeaders = async () => {
+  const response = await securityHeaders();
+
+  response.headers.set(
+    "Content-Security-Policy",
+    executarContentSecurityPolicy
+  );
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(self), microphone=(), geolocation=()"
+  );
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
+  return response;
+};
+
 // Clerk middleware wraps other middleware in its callback
 // For apps using Clerk, compose middleware inside authMiddleware callback
 // For apps without Clerk, use createNEMO for composition (see apps/web)
-export default authMiddleware(() => securityHeaders()) as unknown as NextProxy;
+export default authMiddleware(() =>
+  applySecurityHeaders()
+) as unknown as NextProxy;
 
 export const config = {
   matcher: [

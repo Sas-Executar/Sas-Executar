@@ -2,6 +2,7 @@ import type { EstadoOperacional } from "@/lib/executar/domain";
 import { ErroPersistenciaRemota } from "@/lib/executar/remote-persistence";
 import {
   contextoPersistenciaServidor,
+  exigirLimiteOperacional,
   respostaErroPersistencia,
 } from "@/lib/executar/server-persistence";
 
@@ -40,6 +41,7 @@ export async function GET(request: Request): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   try {
     const { actor, persistence } = await contextoPersistenciaServidor();
+    await exigirLimiteOperacional(actor, "evidence");
     const form = await request.formData();
     const raw = form.get("state");
     const taskId = form.get("taskId");

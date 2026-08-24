@@ -64,6 +64,7 @@
         "@repo/collaboration": "workspace:*",
         "@repo/database": "workspace:*",
         "@repo/design-system": "workspace:*",
+        "@repo/email": "workspace:*",
         "@repo/feature-flags": "workspace:*",
         "@repo/next-config": "workspace:*",
         "@repo/notifications": "workspace:*",
@@ -442,6 +443,14 @@
       "devDependencies": {
         "@repo/typescript-config": "workspace:*",
         "next": "16.1.6",
+      },
+    },
+    "packages/mcp": {
+      "name": "@repo/mcp",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@repo/typescript-config": "workspace:*",
+        "typescript": "^5.9.3",
       },
     },
     "packages/notifications": {
@@ -1576,6 +1585,8 @@
     "@repo/internationalization": ["@repo/internationalization@workspace:packages/internationalization"],
 
     "@repo/next-config": ["@repo/next-config@workspace:packages/next-config"],
+
+    "@repo/mcp": ["@repo/mcp@workspace:packages/mcp"],
 
     "@repo/notifications": ["@repo/notifications@workspace:packages/notifications"],
 

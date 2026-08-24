@@ -1,0 +1,44 @@
+[
+  {
+    "stepId": "pwa_preservada",
+    "source": "teste_local",
+    "reference": "tests/onda-1/pwa-preservation.test.mjs",
+    "verifiedAt": "2026-08-24T12:00:00.000Z",
+    "passed": true
+  },
+  {
+    "stepId": "fundacao_local",
+    "source": "teste_local",
+    "reference": "tests/ondas/production-readiness.test.mjs",
+    "verifiedAt": "2026-08-24T12:00:00.000Z",
+    "passed": true
+  },
+  {
+    "stepId": "produto_operacional",
+    "source": "teste_local",
+    "reference": "tests/ondas/produto-copiloto.test.mjs",
+    "verifiedAt": "2026-08-24T12:00:00.000Z",
+    "passed": true
+  },
+  {
+    "stepId": "copiloto_agent007",
+    "source": "teste_local",
+    "reference": "tests/ondas/agent-runtime-ledger.test.mjs",
+    "verifiedAt": "2026-08-24T12:00:00.000Z",
+    "passed": true
+  },
+  {
+    "stepId": "contratos_distribuicao",
+    "source": "teste_local",
+    "reference": "tests/ondas/onda-4.test.mjs",
+    "verifiedAt": "2026-08-24T12:00:00.000Z",
+    "passed": true
+  },
+  {
+    "stepId": "gtm_local",
+    "source": "teste_local",
+    "reference": "docs/gtm/LAUNCH_CHECKLIST.md",
+    "verifiedAt": "2026-08-24T12:00:00.000Z",
+    "passed": true
+  }
+]

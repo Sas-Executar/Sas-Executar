@@ -189,7 +189,9 @@ export const POST = async (request: Request): Promise<Response> => {
   const { id } = event.data;
   const eventType = event.type;
 
-  log.info("Webhook", { id, eventType, body });
+  // Não registrar o corpo: eventos Clerk podem conter e-mail, telefone e
+  // outros dados pessoais. ID e tipo bastam para correlação operacional.
+  log.info("Webhook Clerk validado", { id, eventType });
 
   let response: Response = new Response("", { status: 201 });
 

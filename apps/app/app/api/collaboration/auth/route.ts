@@ -1,5 +1,6 @@
 import { auth, currentUser } from "@repo/auth/server";
 import { authenticate } from "@repo/collaboration/auth";
+import { limitOperationalMutation } from "@repo/rate-limit";
 
 const COLORS = [
   "var(--color-red-500)",
@@ -27,6 +28,16 @@ export const POST = async () => {
 
   if (!(user && orgId)) {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  const limited = await limitOperationalMutation({
+    identifier: `${orgId}:${user.id}`,
+    limit: 30,
+    namespace: "collaboration",
+  });
+
+  if (!limited.success) {
+    return new Response("Too Many Requests", { status: 429 });
   }
 
   return authenticate({

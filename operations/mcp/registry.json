@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "local-contract-only",
+  "transport": "streamable-http",
+  "endpoint": "/api/executar/mcp",
+  "identityAuthority": "Clerk",
+  "stateAuthority": "Aurora PostgreSQL via RDS Data API",
+  "tools": [
+    { "name": "consultar_estado", "effect": "read" },
+    { "name": "criar_projeto", "effect": "write" },
+    { "name": "selecionar_projeto", "effect": "write" },
+    { "name": "renomear_projeto", "effect": "write" },
+    { "name": "criar_entrega", "effect": "write" },
+    { "name": "atualizar_entrega", "effect": "write" },
+    { "name": "importar_plano", "effect": "write" },
+    { "name": "substituir_plano", "effect": "relevant-write" },
+    { "name": "remover_entrega", "effect": "relevant-write" },
+    { "name": "replanejar_subgrafo", "effect": "write" },
+    { "name": "ajustar_capacidade", "effect": "write" },
+    { "name": "assumir_foco", "effect": "write" },
+    { "name": "registrar_progresso", "effect": "write" },
+    { "name": "registrar_evidencia", "effect": "write" },
+    { "name": "concluir_entrega", "effect": "relevant-write" }
+  ]
+}

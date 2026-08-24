@@ -4,66 +4,160 @@ import { parseError } from "@repo/observability/error";
 import { log } from "@repo/observability/log";
 import type { Stripe } from "@repo/payments";
 import { stripe } from "@repo/payments";
+import {
+  deriveOrganizationEntitlement,
+  type OrganizationBillingEntitlement,
+  shouldApplyBillingEvent,
+} from "@repo/payments/entitlements";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { env } from "@/env";
 
-const getUserFromCustomerId = async (customerId: string) => {
-  const clerk = await clerkClient();
-  const users = await clerk.users.getUserList();
+type StripeCustomer = Stripe.Customer | Stripe.DeletedCustomer;
 
-  const user = users.data.find(
-    (currentUser) => currentUser.privateMetadata.stripeCustomerId === customerId
+function stripeId(value: string | { id: string } | null): string | null {
+  return typeof value === "string" ? value : (value?.id ?? null);
+}
+
+async function customerFor(
+  value: string | StripeCustomer | null
+): Promise<StripeCustomer | null> {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  return (await stripe?.customers.retrieve(value)) ?? null;
+}
+
+function metadataOrganization(customer: StripeCustomer | null): unknown {
+  return customer && !("deleted" in customer && customer.deleted)
+    ? customer.metadata.clerkOrganizationId
+    : undefined;
+}
+
+async function persistEntitlement(
+  entitlement: OrganizationBillingEntitlement
+): Promise<boolean> {
+  const clerk = await clerkClient();
+  const organization = await clerk.organizations.getOrganization({
+    organizationId: entitlement.organizationId,
+  });
+  const currentBilling = organization.privateMetadata.billing;
+  const current =
+    currentBilling && typeof currentBilling === "object" ? currentBilling : {};
+
+  if (!shouldApplyBillingEvent(current, entitlement)) {
+    return false;
+  }
+
+  await clerk.organizations.updateOrganizationMetadata(
+    entitlement.organizationId,
+    {
+      privateMetadata: {
+        billing: entitlement,
+      },
+    }
   );
 
-  return user;
-};
-
-const handleCheckoutSessionCompleted = async (
-  data: Stripe.Checkout.Session
-) => {
-  if (!data.customer) {
-    return;
-  }
-
-  const customerId =
-    typeof data.customer === "string" ? data.customer : data.customer.id;
-  const user = await getUserFromCustomerId(customerId);
-
-  if (!user) {
-    return;
-  }
-
   analytics?.capture({
-    event: "User Subscribed",
-    distinctId: user.id,
+    event: entitlement.active
+      ? "Organization Subscription Active"
+      : "Organization Subscription Inactive",
+    distinctId: entitlement.organizationId,
+    properties: {
+      priceId: entitlement.priceId,
+      status: entitlement.status,
+    },
   });
-};
 
-const handleSubscriptionScheduleCanceled = async (
-  data: Stripe.SubscriptionSchedule
-) => {
-  if (!data.customer) {
-    return;
+  return true;
+}
+
+async function handleCheckout(
+  eventId: string,
+  eventCreated: number,
+  session: Stripe.Checkout.Session
+): Promise<void> {
+  const customer = await customerFor(session.customer);
+  const customerId = stripeId(session.customer);
+
+  if (!customerId) {
+    throw new Error("Checkout sem customer Stripe.");
   }
 
-  const customerId =
-    typeof data.customer === "string" ? data.customer : data.customer.id;
-  const user = await getUserFromCustomerId(customerId);
+  await persistEntitlement(
+    deriveOrganizationEntitlement({
+      customerId,
+      eventCreated,
+      eventId,
+      organizationCandidates: [
+        session.metadata?.clerkOrganizationId,
+        session.client_reference_id,
+        metadataOrganization(customer),
+      ],
+      status: session.payment_status,
+      subscriptionId: stripeId(session.subscription),
+    })
+  );
+}
 
-  if (!user) {
-    return;
-  }
+async function handleSubscription(
+  eventId: string,
+  eventCreated: number,
+  subscription: Stripe.Subscription
+): Promise<void> {
+  const customer = await customerFor(subscription.customer);
+  const firstItem = subscription.items.data[0];
 
-  analytics?.capture({
-    event: "User Unsubscribed",
-    distinctId: user.id,
-  });
-};
+  await persistEntitlement(
+    deriveOrganizationEntitlement({
+      customerId: stripeId(subscription.customer) ?? "",
+      currentPeriodEnd: firstItem?.current_period_end,
+      eventCreated,
+      eventId,
+      organizationCandidates: [
+        subscription.metadata.clerkOrganizationId,
+        metadataOrganization(customer),
+      ],
+      priceId: firstItem?.price.id,
+      status: subscription.status,
+      subscriptionId: subscription.id,
+    })
+  );
+}
+
+async function handleScheduleCanceled(
+  eventId: string,
+  eventCreated: number,
+  schedule: Stripe.SubscriptionSchedule
+): Promise<void> {
+  const customer = await customerFor(schedule.customer);
+
+  await persistEntitlement(
+    deriveOrganizationEntitlement({
+      customerId: stripeId(schedule.customer) ?? "",
+      eventCreated,
+      eventId,
+      organizationCandidates: [
+        schedule.metadata?.clerkOrganizationId,
+        metadataOrganization(customer),
+      ],
+      status: "canceled",
+      subscriptionId: stripeId(schedule.subscription),
+    })
+  );
+}
 
 export const POST = async (request: Request): Promise<Response> => {
   if (!(stripe && env.STRIPE_WEBHOOK_SECRET)) {
-    return NextResponse.json({ message: "Not configured", ok: false });
+    return NextResponse.json(
+      { message: "Stripe webhook não configurado.", ok: false },
+      { status: 503 }
+    );
   }
 
   try {
@@ -82,32 +176,33 @@ export const POST = async (request: Request): Promise<Response> => {
     );
 
     switch (event.type) {
-      case "checkout.session.completed": {
-        await handleCheckoutSessionCompleted(event.data.object);
+      case "checkout.session.completed":
+        await handleCheckout(event.id, event.created, event.data.object);
         break;
-      }
-      case "subscription_schedule.canceled": {
-        await handleSubscriptionScheduleCanceled(event.data.object);
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted":
+        await handleSubscription(event.id, event.created, event.data.object);
         break;
-      }
-      default: {
-        log.warn(`Unhandled event type ${event.type}`);
-      }
+      case "subscription_schedule.canceled":
+        await handleScheduleCanceled(
+          event.id,
+          event.created,
+          event.data.object
+        );
+        break;
+      default:
+        log.info(`Evento Stripe ignorado: ${event.type}`);
     }
 
     await analytics?.shutdown();
 
-    return NextResponse.json({ result: event, ok: true });
+    return NextResponse.json({ eventId: event.id, ok: true });
   } catch (error) {
-    const message = parseError(error);
-
-    log.error(message);
+    log.error(parseError(error));
 
     return NextResponse.json(
-      {
-        message: "something went wrong",
-        ok: false,
-      },
+      { message: "Falha ao processar webhook Stripe.", ok: false },
       { status: 500 }
     );
   }
