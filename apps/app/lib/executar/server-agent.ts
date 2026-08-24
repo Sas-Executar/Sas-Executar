@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   criarAdaptadorAgente,
   type DescritorFerramentaAgente,
@@ -52,6 +53,51 @@ export interface SessaoAgenteServidor {
   ): Promise<ResultadoFerramentaServidor>;
   remaining(): number;
   readonly tools: readonly DescritorFerramentaAgente[];
+}
+
+function jsonCanonico(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map(jsonCanonico).join(",")}]`;
+  }
+
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entry]) => `${JSON.stringify(key)}:${jsonCanonico(entry)}`)
+      .join(",")}}`;
+  }
+
+  return JSON.stringify(value) ?? "null";
+}
+
+function hashRun(value: unknown): string {
+  return createHash("sha256").update(jsonCanonico(value)).digest("hex");
+}
+
+function validarReplayRun(
+  result: Readonly<Record<string, unknown>>
+): ResultadoFerramentaServidor {
+  if (
+    !(result.status === "executado" ||
+      result.status === "aprovação necessária") ||
+    typeof result.text !== "string" ||
+    !Number.isSafeInteger(result.revision) ||
+    !result.context ||
+    typeof result.context !== "object" ||
+    Array.isArray(result.context) ||
+    !(result.approval === null || typeof result.approval === "object") ||
+    !(
+      result.approvalId === null || typeof result.approvalId === "string"
+    )
+  ) {
+    throw new ErroPersistenciaRemota(
+      "O replay do Agent-007 contém resultado inválido.",
+      502,
+      "REPLAY_AGENTE_INVALIDO"
+    );
+  }
+
+  return result as unknown as ResultadoFerramentaServidor;
 }
 
 export function resolverModeloCopiloto(
@@ -223,35 +269,131 @@ export async function criarSessaoAgenteServidor(
     args: Record<string, unknown>
   ): Promise<ResultadoFerramentaServidor> {
     const previous = current;
+    const ledger = persistence.runLedger;
+    const digest = hashRun({
+      args,
+      name,
+      organizationId: actor.organizationId,
+      projectId: previous.activeProjectId,
+      revision: previous.revision,
+    });
+    const reference = {
+      projectId: previous.activeProjectId,
+      runId: `agent-${digest.slice(0, 40)}`,
+    };
 
-    const result = adapter.invoke(name, args);
-    let approvalId: string | null = null;
+    if (ledger) {
+      const started = await ledger.iniciar({
+        ...reference,
+        idempotencyKey: `agent:${digest}`,
+        lockKey: `agent:${previous.activeProjectId}:state`,
+        type: "COMMAND",
+      });
 
-    if (result.approval) {
-      approvalId = await persistence.solicitarAprovacao(result.approval);
-    } else if (result.state !== previous) {
-      const next = result.state;
-      const saved = await persistence.salvar(next, actor, previous.revision);
+      if (started.replayed) {
+        if (started.status === "SUCCEEDED") {
+          return validarReplayRun(started.result);
+        }
 
-      if (saved.revision !== next.revision) {
         throw new ErroPersistenciaRemota(
-          "O servidor retornou uma revisão operacional divergente.",
+          started.status === "RUNNING"
+            ? "A mesma execução do Agent-007 ainda está ativa."
+            : "A mesma execução do Agent-007 já falhou e não será repetida.",
           409,
-          "REVISAO_COPILOTO_INVALIDA"
+          started.status === "RUNNING"
+            ? "RUN_AGENTE_EM_EXECUCAO"
+            : "RUN_AGENTE_JA_FALHOU"
         );
       }
-
-      current = next;
     }
 
-    return {
-      approval: result.approval,
-      approvalId,
-      context: contextoOperacionalAgente(current),
-      revision: current.revision,
-      status: result.status,
-      text: result.text,
-    };
+    try {
+      const result = adapter.invoke(name, args);
+      let approvalId: string | null = null;
+
+      if (result.approval) {
+        const effectKey = `effect-${hashRun(result.approval).slice(0, 48)}`;
+        await ledger?.reservarEfeito(reference, effectKey);
+
+        try {
+          approvalId = await persistence.solicitarAprovacao(result.approval);
+          await ledger?.finalizarEfeito(reference, effectKey, "SUCCEEDED");
+        } catch (error) {
+          const code =
+            error instanceof ErroPersistenciaRemota
+              ? error.code
+              : "APROVACAO_NAO_PERSISTIDA";
+          await ledger?.finalizarEfeito(
+            reference,
+            effectKey,
+            "FAILED",
+            code
+          );
+          throw error;
+        }
+      } else if (result.state !== previous) {
+        const next = result.state;
+        const effectKey = `effect-state-${next.revision}`;
+        await ledger?.reservarEfeito(reference, effectKey);
+
+        try {
+          const saved = await persistence.salvar(
+            next,
+            actor,
+            previous.revision
+          );
+
+          if (saved.revision !== next.revision) {
+            throw new ErroPersistenciaRemota(
+              "O servidor retornou uma revisão operacional divergente.",
+              409,
+              "REVISAO_COPILOTO_INVALIDA"
+            );
+          }
+
+          current = next;
+          await ledger?.finalizarEfeito(reference, effectKey, "SUCCEEDED");
+        } catch (error) {
+          const code =
+            error instanceof ErroPersistenciaRemota
+              ? error.code
+              : "ESTADO_AGENTE_NAO_PERSISTIDO";
+          await ledger?.finalizarEfeito(
+            reference,
+            effectKey,
+            "FAILED",
+            code
+          );
+          throw error;
+        }
+      }
+
+      const response: ResultadoFerramentaServidor = {
+        approval: result.approval,
+        approvalId,
+        context: contextoOperacionalAgente(current),
+        revision: current.revision,
+        status: result.status,
+        text: result.text,
+      };
+
+      await ledger?.finalizar(
+        reference,
+        response as unknown as Readonly<Record<string, unknown>>
+      );
+
+      return response;
+    } catch (error) {
+      if (ledger) {
+        const code =
+          error instanceof ErroPersistenciaRemota
+            ? error.code
+            : "EXECUCAO_AGENTE_FALHOU";
+        await ledger.falhar(reference, code);
+      }
+
+      throw error;
+    }
   }
 
   return {

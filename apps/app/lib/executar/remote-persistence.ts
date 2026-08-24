@@ -30,6 +30,48 @@ export class ErroPersistenciaRemota extends Error {
   }
 }
 
+export interface EntradaRunRemoto {
+  readonly idempotencyKey: string;
+  readonly lockKey: string;
+  readonly projectId: string;
+  readonly runId: string;
+  readonly type: "COMMAND" | "CONNECTOR" | "PROJECTION" | "ROUTINE";
+}
+
+export interface InicioRunRemoto {
+  readonly replayed: boolean;
+  readonly result: Readonly<Record<string, unknown>>;
+  readonly runId: string;
+  readonly status: "FAILED" | "RUNNING" | "SUCCEEDED";
+}
+
+export interface ReferenciaRunRemoto {
+  readonly projectId: string;
+  readonly runId: string;
+}
+
+export interface LedgerRunRemoto {
+  falhar(
+    reference: ReferenciaRunRemoto,
+    errorCode: string
+  ): Promise<void>;
+  finalizar(
+    reference: ReferenciaRunRemoto,
+    result: Readonly<Record<string, unknown>>
+  ): Promise<void>;
+  finalizarEfeito(
+    reference: ReferenciaRunRemoto,
+    effectKey: string,
+    status: "FAILED" | "SUCCEEDED",
+    errorCode?: string
+  ): Promise<void>;
+  iniciar(input: EntradaRunRemoto): Promise<InicioRunRemoto>;
+  reservarEfeito(
+    reference: ReferenciaRunRemoto,
+    effectKey: string
+  ): Promise<void>;
+}
+
 export interface PersistenciaOperacionalRemota {
   aprovar(approvalId: string, approved: boolean): Promise<void>;
   baixarEvidencia(path: string): Promise<Response>;
@@ -45,6 +87,7 @@ export interface PersistenciaOperacionalRemota {
     actor: AtorOperacional,
     expectedRevision: number
   ): Promise<{ readonly revision: number }>;
+  readonly runLedger?: LedgerRunRemoto;
   solicitarAprovacao(approval: AprovacaoCopiloto): Promise<string>;
 }
 

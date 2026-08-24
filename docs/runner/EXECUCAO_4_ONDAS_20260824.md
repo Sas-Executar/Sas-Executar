@@ -60,7 +60,29 @@ real; teste local não substitui integração, piloto nem sign-off.
 
 ## Onda 3 · Copiloto, Agent-007 e MCP
 
-Estado: aguardando predecessores locais da Onda 2.
+### Implementado
+
+- Copiloto preserva estado canônico, orçamento e aprovação humana;
+- Agent-007 inicia run Aurora antes de cada ferramenta;
+- idempotência determinística inclui organização, projeto, revisão, tool e args;
+- lock transacional por projeto impede execução concorrente silenciosa;
+- gravação e aprovação são efeitos reservados e finalizados no ledger;
+- replay concluído devolve o resultado gravado; run ativo/falho não repete efeito;
+- lease expirada marca run abandonado como falho e libera recovery controlado;
+- migration aditiva mantém `security invoker`, RLS e contexto Clerk.
+
+### Evidência no mesmo SHA
+
+- `tests/ondas/agent-runtime-ledger.test.mjs` cobre sucesso, replay,
+  concorrência lógica, falha de efeito e wiring Aurora;
+- `infra/aws/migrations/004_agent_007_runtime.sql` contém as funções runtime;
+- suíte Agent-007 existente preserva catálogo, política, bindings e projeções.
+
+### Gate objetivo
+
+- Código local da Onda 3: **PASSOU** com 353/353 testes consolidados.
+- Integração real da Onda 3: **NÃO PASSOU** até AI Gateway e MCP autenticado
+  executarem no Preview real com ledger Aurora comprovado.
 
 ## Onda 4 · colaboração, mobile e GTM
 
