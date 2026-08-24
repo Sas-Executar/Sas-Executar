@@ -17,7 +17,9 @@ const RootLayout = ({ children }: RootLayoutProperties) => (
     <body>
       <AnalyticsProvider>
         <DesignSystemProvider
-          helpUrl={env.NEXT_PUBLIC_DOCS_URL}
+          helpUrl={
+            env.NEXT_PUBLIC_DOCS_URL ?? new URL("/contact", webUrl).toString()
+          }
           privacyUrl={new URL("/legal/privacy", webUrl).toString()}
           termsUrl={new URL("/legal/terms", webUrl).toString()}
         >
