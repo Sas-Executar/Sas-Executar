@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.0.0",
+  "track": "agent-007",
+  "status": "IN_REVIEW",
+  "canonicalPlan": "docs/runner/PLANO_SAAS_4_ONDAS.md",
+  "authority": {
+    "identity": "Clerk",
+    "state": "AWS Aurora PostgreSQL",
+    "evidenceBytes": "AWS S3",
+    "contracts": "GitHub Sas-Executar/Sas-Executar",
+    "externalAdapters": ["Google Drive", "Linear"]
+  },
+  "source": {
+    "name": "HAND-OFF..zip",
+    "sha256": "0455fc66bbde6091cf26d98a4815ac48e4c72146de5e38b91f1760f5f63febe7",
+    "rawCommitted": false,
+    "sanitized": true
+  },
+  "gapCount": 22,
+  "priorities": { "P0": 8, "P1": 9, "P2": 5 },
+  "waves": ["GATE_0", "WAVE_1", "WAVE_2", "WAVE_3"],
+  "uiPolicy": "BLOCK_EXPANSION_UNTIL_GATE_0_AND_WAVE_1",
+  "artifacts": [
+    "docs/agent-007/README.md",
+    "docs/agent-007/PRD_AGENT_007.md",
+    "docs/agent-007/PLANO_DESENVOLVIMENTO.md",
+    "docs/agent-007/ADR_001_AUTORIDADE_DADOS.md",
+    "docs/agent-007/SOURCE_PROVENANCE.md",
+    "docs/agent-007/contracts/state-contract.v2.schema.json",
+    "docs/agent-007/contracts/projection-contract.v1.schema.json",
+    "docs/agent-007/validation/e2e-matrix.json",
+    "docs/agent-007/validation/E2E_MATRIX.md"
+  ]
+}
