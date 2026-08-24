@@ -70,6 +70,8 @@ real; teste local não substitui integração, piloto nem sign-off.
 - replay concluído devolve o resultado gravado; run ativo/falho não repete efeito;
 - lease expirada marca run abandonado como falho e libera recovery controlado;
 - migration aditiva mantém `security invoker`, RLS e contexto Clerk.
+- pacote `@repo/mcp` fixa autoridade Clerk, escopos e aprovação sem declarar o
+  transporte remoto como ativo; registry operacional contém as 15 tools.
 
 ### Evidência no mesmo SHA
 
@@ -86,7 +88,37 @@ real; teste local não substitui integração, piloto nem sign-off.
 
 ## Onda 4 · colaboração, mobile e GTM
 
-Estado: aguardando predecessores locais das Ondas 2 e 3.
+### Implementado
+
+- colaboração, menções, notificações e projeção mobile permanecem isoladas;
+- canal `/contact` agora envia via Resend, valida entrada e limita abuso;
+- páginas locais de privacidade e termos descrevem o runtime sem falsa vigência;
+- landing, disponibilidade/preços e analytics permanecem transparentes;
+- runbooks de lançamento, piloto, suporte, rollback e recovery versionados;
+- CLI `production-gate.mjs` produz decisão objetiva e retorna falha em `NO-GO`;
+- workflow CI inventaria somente integrações canônicas AWS/Clerk/Vercel/Stripe;
+- `apps/mobile` não é criado porque os predecessores reais ainda não passaram.
+
+### Evidência no mesmo SHA
+
+- `tests/ondas/gtm-operations.test.mjs` executa o gate e valida GTM/recovery;
+- `tests/ondas/mcp-authority.test.mjs` valida tenant, scopes e aprovação;
+- `operations/gtm/evidence.local.json` contém somente evidência local verificável;
+- React revisado para ação de servidor, acessibilidade e bundle menor no contato;
+- suíte Node consolidada: **359/359** testes passaram;
+- Turbo typecheck: **22/22** tarefas passaram para app, API, web, MCP e pagamentos;
+- builds Next.js de app, API e web: **7/7** tarefas passaram, incluindo os três
+  testes Vitest dos aplicativos;
+- Ultracite/Biome: **zero erros**; 17 avisos preexistentes de symlinks quebrados
+  em `operations/native/anthropic/` permanecem inventariados;
+- `git diff --check`: passou e a PWA preservada não contém diff contra `main`.
+
+### Gate objetivo
+
+- Código local da Onda 4: **PASSOU**.
+- CI e Preview hospedados: pendentes da publicação do SHA desta branch.
+- Gate 4 real: **NÃO PASSOU**; preço, serviços reais, E2E, recovery, piloto,
+  mobile, zero CRITICAL e sign-off continuam pendentes.
 
 ## Regra de decisão
 

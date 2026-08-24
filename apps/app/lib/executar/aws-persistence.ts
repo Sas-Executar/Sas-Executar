@@ -328,9 +328,7 @@ export function criarPersistenciaAws(
         if (
           typeof started?.replayed !== "boolean" ||
           started.run_id !== input.runId ||
-          !["FAILED", "RUNNING", "SUCCEEDED"].includes(
-            started.status ?? ""
-          ) ||
+          !["FAILED", "RUNNING", "SUCCEEDED"].includes(started.status ?? "") ||
           !started.result ||
           typeof started.result !== "object" ||
           Array.isArray(started.result)

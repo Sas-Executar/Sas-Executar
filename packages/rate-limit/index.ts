@@ -5,8 +5,7 @@ import { keys } from "./keys";
 const configuration = keys();
 
 export const redis =
-  configuration.UPSTASH_REDIS_REST_URL &&
-  configuration.UPSTASH_REDIS_REST_TOKEN
+  configuration.UPSTASH_REDIS_REST_URL && configuration.UPSTASH_REDIS_REST_TOKEN
     ? new Redis({
         url: configuration.UPSTASH_REDIS_REST_URL,
         token: configuration.UPSTASH_REDIS_REST_TOKEN,

@@ -51,10 +51,7 @@ export interface ReferenciaRunRemoto {
 }
 
 export interface LedgerRunRemoto {
-  falhar(
-    reference: ReferenciaRunRemoto,
-    errorCode: string
-  ): Promise<void>;
+  falhar(reference: ReferenciaRunRemoto, errorCode: string): Promise<void>;
   finalizar(
     reference: ReferenciaRunRemoto,
     result: Readonly<Record<string, unknown>>
@@ -82,12 +79,12 @@ export interface PersistenciaOperacionalRemota {
     taskId: string,
     file: File
   ): Promise<{ readonly path: string }>;
+  readonly runLedger?: LedgerRunRemoto;
   salvar(
     state: EstadoOperacional,
     actor: AtorOperacional,
     expectedRevision: number
   ): Promise<{ readonly revision: number }>;
-  readonly runLedger?: LedgerRunRemoto;
   solicitarAprovacao(approval: AprovacaoCopiloto): Promise<string>;
 }
 

@@ -2,9 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { novoEstado } from "../../apps/app/lib/executar/domain.ts";
-import {
-  criarSessaoAgenteServidor,
-} from "../../apps/app/lib/executar/server-agent.ts";
+import { criarSessaoAgenteServidor } from "../../apps/app/lib/executar/server-agent.ts";
 
 const actor = {
   organizationId: "org_ledger",
@@ -23,16 +21,16 @@ function runtime(started) {
     baixarEvidencia: async () => new Response(),
     carregar: async () => state,
     enviarEvidencia: async () => ({ path: "org_ledger/p/t/e.txt" }),
-    salvar: async (next) => {
+    salvar: (next) => {
       calls.push(["save", next.revision]);
       state = next;
-      return { revision: next.revision };
+      return Promise.resolve({ revision: next.revision });
     },
     solicitarAprovacao: async () => "approval-1",
     runLedger: {
-      iniciar: async (input) => {
+      iniciar: (input) => {
         calls.push(["start", input]);
-        return (
+        return Promise.resolve(
           started ?? {
             replayed: false,
             result: {},
@@ -41,17 +39,21 @@ function runtime(started) {
           }
         );
       },
-      reservarEfeito: async (reference, effectKey) => {
+      reservarEfeito: (reference, effectKey) => {
         calls.push(["reserve", reference, effectKey]);
+        return Promise.resolve();
       },
-      finalizarEfeito: async (reference, effectKey, status, errorCode) => {
+      finalizarEfeito: (reference, effectKey, status, errorCode) => {
         calls.push(["effect", reference, effectKey, status, errorCode]);
+        return Promise.resolve();
       },
-      finalizar: async (reference, result) => {
+      finalizar: (reference, result) => {
         calls.push(["finish", reference, result]);
+        return Promise.resolve();
       },
-      falhar: async (reference, errorCode) => {
+      falhar: (reference, errorCode) => {
         calls.push(["fail", reference, errorCode]);
+        return Promise.resolve();
       },
     },
   };
@@ -92,7 +94,10 @@ test("replay concluído devolve resultado sem repetir efeito", async () => {
   const result = await session.invoke("consultar_estado", {});
 
   assert.deepEqual(result, replayResult);
-  assert.deepEqual(remote.calls.map(([name]) => name), ["start"]);
+  assert.deepEqual(
+    remote.calls.map(([name]) => name),
+    ["start"]
+  );
 });
 
 test("run ativo ou falho não é executado novamente", async () => {
@@ -109,15 +114,16 @@ test("run ativo ou falho não é executado novamente", async () => {
       session.invoke("consultar_estado", {}),
       status === "RUNNING" ? /ainda está ativa/ : /não será repetida/
     );
-    assert.deepEqual(remote.calls.map(([name]) => name), ["start"]);
+    assert.deepEqual(
+      remote.calls.map(([name]) => name),
+      ["start"]
+    );
   }
 });
 
 test("falha de efeito é registrada antes de falhar o run", async () => {
   const remote = runtime();
-  remote.salvar = async () => {
-    throw new Error("banco indisponível");
-  };
+  remote.salvar = () => Promise.reject(new Error("banco indisponível"));
   const session = await criarSessaoAgenteServidor(actor, remote);
 
   await assert.rejects(
@@ -125,12 +131,10 @@ test("falha de efeito é registrada antes de falhar o run", async () => {
     /banco indisponível/
   );
 
-  assert.deepEqual(remote.calls.map(([name]) => name), [
-    "start",
-    "reserve",
-    "effect",
-    "fail",
-  ]);
+  assert.deepEqual(
+    remote.calls.map(([name]) => name),
+    ["start", "reserve", "effect", "fail"]
+  );
   assert.equal(remote.calls[2][3], "FAILED");
   assert.equal(remote.calls[3][2], "EXECUCAO_AGENTE_FALHOU");
 });
@@ -145,7 +149,10 @@ test("Aurora expõe funções runtime com tenant, lease e efeitos", async () => 
       "utf8"
     ),
     readFile(
-      new URL("../../apps/app/lib/executar/aws-persistence.ts", import.meta.url),
+      new URL(
+        "../../apps/app/lib/executar/aws-persistence.ts",
+        import.meta.url
+      ),
       "utf8"
     ),
     readFile(

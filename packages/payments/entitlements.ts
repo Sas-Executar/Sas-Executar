@@ -6,8 +6,8 @@ export const ACTIVE_BILLING_STATUSES = new Set([
 ]);
 
 export interface OrganizationBillingInput {
-  readonly customerId: string;
   readonly currentPeriodEnd?: number | null;
+  readonly customerId: string;
   readonly eventCreated: number;
   readonly eventId: string;
   readonly organizationCandidates: readonly unknown[];
@@ -18,8 +18,8 @@ export interface OrganizationBillingInput {
 
 export interface OrganizationBillingEntitlement {
   readonly active: boolean;
-  readonly customerId: string;
   readonly currentPeriodEnd: string | null;
+  readonly customerId: string;
   readonly eventCreated: number;
   readonly eventId: string;
   readonly organizationId: string;

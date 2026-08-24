@@ -60,10 +60,7 @@ test("cancelamento remove direito e replay não reaplica o evento", () => {
   });
 
   assert.equal(entitlement.active, false);
-  assert.equal(
-    shouldApplyBillingEvent(entitlement, entitlement),
-    false
-  );
+  assert.equal(shouldApplyBillingEvent(entitlement, entitlement), false);
   assert.equal(
     shouldApplyBillingEvent(
       { eventCreated: 1_799_000_000, eventId: "evt_event1" },

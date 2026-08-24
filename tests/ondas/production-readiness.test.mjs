@@ -81,7 +81,10 @@ test("grafo de produção é topológico e não duplica etapas", () => {
 
 test("código local não fabrica integração, produção ou mobile", () => {
   const gates = gatesProducao(
-    avaliarProducao(codeSteps.map((stepId) => evidence(stepId)), now)
+    avaliarProducao(
+      codeSteps.map((stepId) => evidence(stepId)),
+      now
+    )
   );
 
   assert.equal(gates.find((gate) => gate.id === "codigo").status, "PASSOU");
@@ -125,7 +128,11 @@ test("AWS recusa conta ou região diferentes da autorização", () => {
   assert.throws(
     () =>
       avaliarProducao(
-        [evidence("aws_conta_paid", { metadata: { accountId: "000000000000" } })],
+        [
+          evidence("aws_conta_paid", {
+            metadata: { accountId: "000000000000" },
+          }),
+        ],
         now
       ),
     /conta autorizada/

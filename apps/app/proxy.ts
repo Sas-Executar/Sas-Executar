@@ -19,7 +19,10 @@ const applySecurityHeaders = async () => {
     "Content-Security-Policy",
     executarContentSecurityPolicy
   );
-  response.headers.set("Permissions-Policy", "camera=(self), microphone=(), geolocation=()");
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(self), microphone=(), geolocation=()"
+  );
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
   return response;
@@ -28,7 +31,9 @@ const applySecurityHeaders = async () => {
 // Clerk middleware wraps other middleware in its callback
 // For apps using Clerk, compose middleware inside authMiddleware callback
 // For apps without Clerk, use createNEMO for composition (see apps/web)
-export default authMiddleware(() => applySecurityHeaders()) as unknown as NextProxy;
+export default authMiddleware(() =>
+  applySecurityHeaders()
+) as unknown as NextProxy;
 
 export const config = {
   matcher: [

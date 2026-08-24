@@ -6,7 +6,8 @@ export const GET = async () => {
       {
         ok: true,
         skipped: true,
-        reason: "A persistência canônica usa Aurora Data API e não exige keep-alive.",
+        reason:
+          "A persistência canônica usa Aurora Data API e não exige keep-alive.",
       },
       { status: 200 }
     );

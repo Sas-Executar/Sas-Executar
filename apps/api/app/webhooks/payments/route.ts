@@ -2,13 +2,13 @@ import { analytics } from "@repo/analytics/server";
 import { clerkClient } from "@repo/auth/server";
 import { parseError } from "@repo/observability/error";
 import { log } from "@repo/observability/log";
+import type { Stripe } from "@repo/payments";
+import { stripe } from "@repo/payments";
 import {
   deriveOrganizationEntitlement,
   type OrganizationBillingEntitlement,
   shouldApplyBillingEvent,
 } from "@repo/payments/entitlements";
-import type { Stripe } from "@repo/payments";
-import { stripe } from "@repo/payments";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { env } from "@/env";
@@ -48,9 +48,7 @@ async function persistEntitlement(
   });
   const currentBilling = organization.privateMetadata.billing;
   const current =
-    currentBilling && typeof currentBilling === "object"
-      ? currentBilling
-      : {};
+    currentBilling && typeof currentBilling === "object" ? currentBilling : {};
 
   if (!shouldApplyBillingEvent(current, entitlement)) {
     return false;
@@ -145,7 +143,7 @@ async function handleScheduleCanceled(
       eventCreated,
       eventId,
       organizationCandidates: [
-        schedule.metadata.clerkOrganizationId,
+        schedule.metadata?.clerkOrganizationId,
         metadataOrganization(customer),
       ],
       status: "canceled",
@@ -187,7 +185,11 @@ export const POST = async (request: Request): Promise<Response> => {
         await handleSubscription(event.id, event.created, event.data.object);
         break;
       case "subscription_schedule.canceled":
-        await handleScheduleCanceled(event.id, event.created, event.data.object);
+        await handleScheduleCanceled(
+          event.id,
+          event.created,
+          event.data.object
+        );
         break;
       default:
         log.info(`Evento Stripe ignorado: ${event.type}`);

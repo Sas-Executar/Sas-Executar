@@ -37,7 +37,6 @@ jobs:
     env:
       CI: true
       SKIP_ENV_VALIDATION: true
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/executar
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       NEXT_PUBLIC_WEB_URL: http://localhost:3001
       NEXT_PUBLIC_API_URL: http://localhost:3002
@@ -55,10 +54,15 @@ jobs:
           EXECUTAR_HAS_VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID != '' || vars.VERCEL_ORG_ID != '' }}
           EXECUTAR_HAS_CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY != '' }}
           EXECUTAR_HAS_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY != '' || vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY != '' }}
-          EXECUTAR_HAS_SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
-          EXECUTAR_HAS_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY != '' || vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY != '' }}
-          EXECUTAR_HAS_DATABASE_URL: ${{ secrets.DATABASE_URL != '' }}
-          EXECUTAR_HAS_DIRECT_URL: ${{ secrets.DIRECT_URL != '' }}
+          EXECUTAR_HAS_AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN != '' }}
+          EXECUTAR_HAS_AURORA_RESOURCE_ARN: ${{ vars.AURORA_RESOURCE_ARN != '' }}
+          EXECUTAR_HAS_AURORA_RUNTIME_SECRET_ARN: ${{ vars.AURORA_RUNTIME_SECRET_ARN != '' }}
+          EXECUTAR_HAS_EVIDENCE_BUCKET: ${{ vars.EVIDENCE_BUCKET != '' }}
+          EXECUTAR_HAS_STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY != '' }}
+          EXECUTAR_HAS_STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET != '' }}
+          EXECUTAR_HAS_LIVEBLOCKS_SECRET: ${{ secrets.LIVEBLOCKS_SECRET != '' }}
+          EXECUTAR_HAS_KNOCK_SECRET: ${{ secrets.KNOCK_SECRET_API_KEY != '' }}
+          EXECUTAR_HAS_UPSTASH_REDIS: ${{ secrets.UPSTASH_REDIS_REST_TOKEN != '' && vars.UPSTASH_REDIS_REST_URL != '' }}
         run: |
           node <<'NODE'
           const entries = Object.entries(process.env)
