@@ -64,7 +64,7 @@ test("migrations forçam RLS e mantêm eventos imutáveis", async () => {
 test("workflow assume AWS por OIDC, migra e prova isolamento real", async () => {
   const workflow = await load(".github/workflows/aws-infra.yml");
 
-  assert.match(workflow, /aws-actions\/configure-aws-credentials@v5/);
+  assert.match(workflow, /aws-actions\/configure-aws-credentials@v6/);
   assert.match(workflow, /role-to-assume: \$\{\{ env\.AWS_ROLE_ARN \}\}/);
   assert.match(workflow, /250892133959/);
   assert.match(workflow, /cloudformation deploy/);
