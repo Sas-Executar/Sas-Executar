@@ -1,0 +1,8 @@
+{
+  "name": "dados",
+  "version": "1.1.0",
+  "description": "Escreve consultas SQL, explora conjuntos de dados e gera conclusões com mais rapidez. Cria visualizações e painéis e transforma dados brutos em explicações claras para pessoas responsáveis por decisões.",
+  "author": {
+    "name": "Anthropic — adaptação para português do Executar"
+  }
+}
