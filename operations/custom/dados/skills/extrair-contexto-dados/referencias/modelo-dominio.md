@@ -1,6 +1,6 @@
 # Modelo de arquivo de referência por domínio
 
-Use este modelo para documentar um domínio específico, como receita, usuários, produto, crescimento, vendas, marketing ou suporte.
+Use este modelo para documentar um domínio específico, como receita, usuários, produto, crescimento, vendas, divulgação ou suporte.
 
 ```markdown
 # Tabelas de <DOMINIO>
@@ -110,5 +110,5 @@ ORDER BY <ordenacao>;
 - `produto.md` — eventos, sessões e uso de funcionalidades;
 - `crescimento.md` — atividade, retenção e ativação;
 - `vendas.md` — oportunidades e etapas comerciais;
-- `marketing.md` — campanhas, atribuição e contatos;
+- `divulgacao.md` — campanhas, atribuição e contatos;
 - `suporte.md` — solicitações, satisfação e tempo de resposta.
