@@ -18,5 +18,8 @@ updates:
     groups:
       workspace-updates:
         group-by: dependency-name
+    ignore:
+      - dependency-name: "@biomejs/biome"
+        versions: ["2.5.x"]
     schedule:
       interval: "monthly"
