@@ -8,8 +8,8 @@ updates:
     schedule:
       interval: "monthly"
 
-  # Maintain dependencies for npm
-  - package-ecosystem: "npm"
+  # Maintain Bun workspace dependencies and its text lockfile
+  - package-ecosystem: "bun"
     directories:
       - "/"
       - "/apps/*"
