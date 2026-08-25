@@ -15,5 +15,8 @@ updates:
       - "/apps/*"
       - "/packages/*"
     open-pull-requests-limit: 10
+    groups:
+      workspace-updates:
+        group-by: dependency-name
     schedule:
       interval: "monthly"
