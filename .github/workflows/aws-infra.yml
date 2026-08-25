@@ -30,7 +30,7 @@ jobs:
     env:
       HAS_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Assumir role AWS por OIDC
         uses: aws-actions/configure-aws-credentials@v5
