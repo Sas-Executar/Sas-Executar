@@ -507,6 +507,9 @@ export function FocusSurface({
         <div className="executarExecutionGauge">
           <svg
             aria-label={`${doneCount} de ${totalCount} ações concluídas, ${progress}%`}
+            aria-valuemax={totalCount}
+            aria-valuemin={0}
+            aria-valuenow={doneCount}
             className="executarExecutionArc"
             role="progressbar"
             viewBox="0 0 224 128"
