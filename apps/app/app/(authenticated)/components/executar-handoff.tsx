@@ -1,11 +1,11 @@
 "use client";
 
 import {
-  ArrowRight,
   Bolt,
   CalendarDays,
   Check,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Circle,
   Clock3,
@@ -15,6 +15,7 @@ import {
   FolderKanban,
   Home,
   Link2,
+  LockKeyhole,
   ListChecks,
   MapPin,
   Menu,
@@ -23,7 +24,6 @@ import {
   RefreshCw,
   Search,
   Sparkles,
-  UserRound,
   Wrench,
 } from "lucide-react";
 import Image from "next/image";
@@ -390,27 +390,54 @@ interface FocusSurfaceProperties {
   readonly face: TaskFace;
   readonly focus: Entrega | null;
   readonly onFaceChange: (face: TaskFace) => void;
-  readonly onNext: () => void;
+  readonly onFocus: (taskId: string) => void;
   readonly onOpenEvidence: () => void;
   readonly onReplan: () => void;
   readonly onStart: () => void;
   readonly projectName: string;
-  readonly readyCount: number;
   readonly state: EstadoOperacional;
+  readonly tasks: readonly Entrega[];
 }
+
+type ExecutionContext = "day" | "workflow" | "week" | "cycle";
+
+const EXECUTION_CONTEXT_LABELS: Record<ExecutionContext, string> = {
+  day: "Hoje",
+  workflow: "Workflow",
+  week: "Semana",
+  cycle: "Ciclo",
+};
 
 export function FocusSurface({
   face,
   focus,
   onFaceChange,
-  onNext,
+  onFocus,
   onOpenEvidence,
   onReplan,
   onStart,
   projectName,
-  readyCount,
   state,
+  tasks,
 }: FocusSurfaceProperties) {
+  const [context, setContext] = useState<ExecutionContext>("workflow");
+
+  const visibleTasks = useMemo(() => {
+    if (!focus) {
+      return tasks;
+    }
+
+    if (context === "day") {
+      return tasks.filter((task) => task.date === focus.date);
+    }
+
+    if (context === "cycle") {
+      return tasks.filter((task) => task.front === focus.front);
+    }
+
+    return tasks;
+  }, [context, focus, tasks]);
+
   if (!focus) {
     return (
       <EmptySurface
@@ -420,181 +447,341 @@ export function FocusSurface({
     );
   }
 
+  const contextTasks = visibleTasks.length ? visibleTasks : [focus];
+  const totalCount = contextTasks.length;
+  const doneCount = contextTasks.filter((task) =>
+    state.done.includes(task.id)
+  ).length;
+  const currentPosition = Math.max(
+    1,
+    contextTasks.findIndex((task) => task.id === focus.id) + 1
+  );
+  const progress = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
   const steps = Math.max(1, Math.ceil(focus.mins / 15));
   const completedSteps = state.started[focus.id] ?? 0;
   const evidence = state.evidence.filter((item) => item.taskId === focus.id);
+  const readyTasks = tasks.filter(
+    (task) => task.id !== focus.id && estadoEntrega(task, state) === "READY"
+  );
+  const blockedTasks = tasks.filter(
+    (task) => estadoEntrega(task, state) === "BLOCKED"
+  );
+  const taskById = new Map(tasks.map((task) => [task.id, task]));
+
+  function reveal(sectionId: string, nextFace: TaskFace) {
+    onFaceChange(nextFace);
+    document.getElementById(sectionId)?.scrollIntoView({ block: "start" });
+  }
 
   return (
-    <section className="executarFocusSurface">
-      <div aria-hidden="true" className="executarTaskStack" />
-      <article className="executarFocusCard">
-        <div
-          aria-label={`Face ${face}`}
-          className="executarFocusSteps"
-          role="tablist"
-        >
-          {(["principal", "contexto", "evidencia"] as const).map((item) => (
-            <button
-              aria-selected={face === item}
-              className={face === item ? "active" : ""}
-              key={item}
-              onClick={() => onFaceChange(item)}
-              role="tab"
-              type="button"
+    <section
+      className="executarFocusSurface executarExecutionSurface"
+      data-active-face={face}
+    >
+      <article className="executarExecutionHero">
+        <header className="executarExecutionHeader">
+          <label>
+            <span>Contexto</span>
+            <select
+              aria-label="Selecionar contexto de execução"
+              onChange={(event) =>
+                setContext(event.target.value as ExecutionContext)
+              }
+              value={context}
             >
-              {item}
-            </button>
-          ))}
+              {Object.entries(EXECUTION_CONTEXT_LABELS).map(([id, label]) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div>
+            <span>{projectName}</span>
+            <strong>
+              {doneCount} de {totalCount}
+            </strong>
+          </div>
+        </header>
+
+        <div className="executarExecutionGauge">
+          <svg
+            aria-label={`${doneCount} de ${totalCount} ações concluídas, ${progress}%`}
+            className="executarExecutionArc"
+            role="progressbar"
+            viewBox="0 0 224 128"
+          >
+            {contextTasks.map((task, index) => {
+              const segmentLength = Math.max(3, 100 / totalCount - 2.4);
+              const status = state.done.includes(task.id)
+                ? "done"
+                : task.id === focus.id
+                  ? "current"
+                  : "pending";
+
+              return (
+                <path
+                  className={status}
+                  d="M 18 112 A 94 94 0 0 1 206 112"
+                  key={task.id}
+                  pathLength="100"
+                  strokeDasharray={`${segmentLength} ${100 - segmentLength}`}
+                  strokeDashoffset={-(index * (100 / totalCount) + 1.2)}
+                />
+              );
+            })}
+          </svg>
+          <button
+            aria-label={`Concluir e comprovar: ${focus.title}`}
+            className="executarExecutionDone"
+            onClick={onOpenEvidence}
+            title="Concluir e comprovar tarefa"
+            type="button"
+          >
+            <Check aria-hidden="true" />
+          </button>
         </div>
-        {face === "principal" && (
-          <div className="executarTaskFace executarTaskPrincipal">
-            <small>
-              MODO FOCO · PASSO{" "}
-              {String(Math.min(completedSteps + 1, steps)).padStart(2, "0")}
-            </small>
-            <h1>O que você vai fazer agora para avançar esta tarefa?</h1>
-            <p className="executarFocusTaskTitle">{focus.title}</p>
-            <div className="executarFocusOptions">
-              <button onClick={onStart} type="button">
+
+        <div className="executarExecutionCurrent">
+          <small>
+            AÇÃO {String(currentPosition).padStart(2, "0")} · {progress}% CONCLUÍDO
+          </small>
+          <h1>{focus.title}</h1>
+          <p>
+            {focus.front} · {focus.mins} min
+          </p>
+        </div>
+
+        <button
+          aria-label="Rolar para os detalhes da tarefa"
+          className="executarExecutionScrollCue"
+          onClick={() => reveal("execucao-agora", "principal")}
+          title="Ver detalhes"
+          type="button"
+        >
+          <ChevronDown aria-hidden="true" />
+        </button>
+      </article>
+
+      <div className="executarExecutionStory">
+        <section
+          className="executarStorySection executarStoryCurrent"
+          id="execucao-agora"
+        >
+          <header>
+            <span>01</span>
+            <div>
+              <small>AGORA</small>
+              <h2>Avance uma ação por vez.</h2>
+            </div>
+          </header>
+          <p className="executarStoryTaskTitle">{focus.title}</p>
+          <div className="executarStoryFacts">
+            <span>
+              <b>{completedSteps}</b>
+              <small>de {steps} passos</small>
+            </span>
+            <span>
+              <b>{focus.mins}</b>
+              <small>minutos</small>
+            </span>
+            <span>
+              <b>{evidence.length}</b>
+              <small>evidências</small>
+            </span>
+          </div>
+          <p className="executarStoryDefinition">
+            <FileCheck2 aria-hidden="true" />
+            <span>
+              <small>CONCLUI QUANDO</small>
+              <b>
+                {focus.dod ??
+                  "A entrega estiver comprovada por evidência verificada."}
+              </b>
+            </span>
+          </p>
+          <div aria-label="Ações da tarefa" className="executarIconActions">
+            <span>
+              <button
+                aria-label="Registrar avanço"
+                onClick={onStart}
+                title="Registrar avanço"
+                type="button"
+              >
                 <Bolt aria-hidden="true" />
+              </button>
+              <small>Avançar</small>
+            </span>
+            <span>
+              <button
+                aria-label="Ver contexto"
+                onClick={() => reveal("execucao-contexto", "contexto")}
+                title="Ver contexto"
+                type="button"
+              >
+                <ListChecks aria-hidden="true" />
+              </button>
+              <small>Contexto</small>
+            </span>
+            <span>
+              <button
+                aria-label="Ver evidências"
+                onClick={() => reveal("execucao-evidencia", "evidencia")}
+                title="Ver evidências"
+                type="button"
+              >
+                <Paperclip aria-hidden="true" />
+              </button>
+              <small>Evidência</small>
+            </span>
+            <span>
+              <button
+                aria-label="Replanejar tarefa"
+                onClick={onReplan}
+                title="Replanejar tarefa"
+                type="button"
+              >
+                <RefreshCw aria-hidden="true" />
+              </button>
+              <small>Replanejar</small>
+            </span>
+          </div>
+        </section>
+
+        <section className="executarStorySection">
+          <header>
+            <span>02</span>
+            <div>
+              <small>DEPOIS</small>
+              <h2>As próximas ações, sem abreviação.</h2>
+            </div>
+          </header>
+          <div className="executarReadableTasks">
+            {readyTasks.map((task) => (
+              <button key={task.id} onClick={() => onFocus(task.id)} type="button">
+                <span className="executarReadableTaskIcon">
+                  <ListChecks aria-hidden="true" />
+                </span>
                 <span>
-                  <b>Executar agora</b>
+                  <b>{task.title}</b>
                   <small>
-                    {completedSteps} de {steps} passos registrados
+                    {task.front} · {task.date} · {task.mins} min
                   </small>
                 </span>
+                <ChevronRight aria-hidden="true" />
               </button>
-              <button onClick={() => onFaceChange("contexto")} type="button">
-                <ListChecks aria-hidden="true" />
-                <span>
-                  <b>Ver contexto</b>
-                  <small>Projeto, dependências e critério</small>
-                </span>
-              </button>
-              <button onClick={() => onFaceChange("evidencia")} type="button">
-                <Paperclip aria-hidden="true" />
-                <span>
-                  <b>Salvar evidência</b>
-                  <small>{evidence.length} registro(s) nesta tarefa</small>
-                </span>
-              </button>
-              <button onClick={onReplan} type="button">
-                <RefreshCw aria-hidden="true" />
-                <span>
-                  <b>Re-planejar</b>
-                  <small>Revisar datas e dependências</small>
-                </span>
-              </button>
+            ))}
+            {!readyTasks.length && (
+              <p className="executarStoryEmpty">
+                Nenhuma outra ação está liberada agora.
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section className="executarStorySection">
+          <header>
+            <span>03</span>
+            <div>
+              <small>BLOQUEIOS</small>
+              <h2>O que ainda depende de outra entrega.</h2>
             </div>
-          </div>
-        )}
-        {face === "contexto" && (
-          <div className="executarTaskFace executarTaskContext">
-            <small>CONTEXTO SOB DEMANDA</small>
-            <h1>{focus.title}</h1>
-            <dl>
-              <div>
-                <FolderKanban aria-hidden="true" />
-                <dt>Projeto</dt>
-                <dd>{projectName}</dd>
-              </div>
-              <div>
-                <UserRound aria-hidden="true" />
-                <dt>Responsável</dt>
-                <dd>Você</dd>
-              </div>
-              <div>
-                <Wrench aria-hidden="true" />
-                <dt>Frente</dt>
-                <dd>{focus.front}</dd>
-              </div>
-              <div>
-                <MapPin aria-hidden="true" />
-                <dt>Entrega</dt>
-                <dd>
-                  {focus.date} · {focus.mins} min
-                </dd>
-              </div>
-              <div>
-                <Link2 aria-hidden="true" />
-                <dt>Dependências</dt>
-                <dd>
-                  {focus.deps.length
-                    ? focus.deps.join(", ")
-                    : "Livre para começar"}
-                </dd>
-              </div>
-              <div>
-                <FileCheck2 aria-hidden="true" />
-                <dt>Conclui quando</dt>
-                <dd>
-                  {focus.dod ??
-                    "A entrega estiver comprovada por evidência verificada."}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        )}
-        {face === "evidencia" && (
-          <div className="executarTaskFace executarTaskEvidence">
-            <small>MEMÓRIA DA TAREFA</small>
-            <h1>Evidência</h1>
-            <p>
-              Salve informações, provas ou referências que sustentam esta
-              entrega.
-            </p>
-            <div className="executarEvidenceStack">
-              {evidence.map((item) => (
-                <article key={`${item.taskId}-${item.createdAt}`}>
-                  <FileCheck2 aria-hidden="true" />
+          </header>
+          <div className="executarBlockedTasks">
+            {blockedTasks.map((task) => {
+              const pending = dependenciasPendentes(task, state);
+
+              return (
+                <article key={task.id}>
+                  <LockKeyhole aria-hidden="true" />
                   <span>
-                    <b>{item.note || item.file?.name || "Referência salva"}</b>
+                    <b>{task.title}</b>
                     <small>
-                      {item.verified ? "Verificada" : "Aguardando verificação"}
+                      Aguarda {pending.map((id) => taskById.get(id)?.title ?? id).join(", ")}
                     </small>
                   </span>
                 </article>
-              ))}
-              {!evidence.length && (
-                <small>Nenhuma evidência registrada ainda.</small>
-              )}
-            </div>
-            <button
-              className="executarEvidenceAdd"
-              onClick={onOpenEvidence}
-              type="button"
-            >
-              <Paperclip aria-hidden="true" /> Adicionar evidência
-            </button>
+              );
+            })}
+            {!blockedTasks.length && (
+              <p className="executarStoryEmpty">Nenhum bloqueio neste workflow.</p>
+            )}
           </div>
-        )}
-        <footer className="executarFocusFooter">
+        </section>
+
+        <section className="executarStorySection" id="execucao-contexto">
+          <header>
+            <span>04</span>
+            <div>
+              <small>CONTEXTO</small>
+              <h2>Detalhes para decidir sem perder o foco.</h2>
+            </div>
+          </header>
+          <dl className="executarExecutionContext">
+            <div>
+              <FolderKanban aria-hidden="true" />
+              <dt>Projeto</dt>
+              <dd>{projectName}</dd>
+            </div>
+            <div>
+              <Wrench aria-hidden="true" />
+              <dt>Frente</dt>
+              <dd>{focus.front}</dd>
+            </div>
+            <div>
+              <MapPin aria-hidden="true" />
+              <dt>Entrega</dt>
+              <dd>{focus.date}</dd>
+            </div>
+            <div>
+              <Link2 aria-hidden="true" />
+              <dt>Dependências</dt>
+              <dd>
+                {focus.deps.length
+                  ? focus.deps
+                      .map((id) => taskById.get(id)?.title ?? id)
+                      .join(", ")
+                  : "Livre para começar"}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className="executarStorySection" id="execucao-evidencia">
+          <header>
+            <span>05</span>
+            <div>
+              <small>EVIDÊNCIA</small>
+              <h2>A memória verificável desta entrega.</h2>
+            </div>
+          </header>
+          <div className="executarEvidenceStack">
+            {evidence.map((item) => (
+              <article key={`${item.taskId}-${item.createdAt}`}>
+                <FileCheck2 aria-hidden="true" />
+                <span>
+                  <b>{item.note || item.file?.name || "Referência salva"}</b>
+                  <small>
+                    {item.verified ? "Verificada" : "Aguardando verificação"}
+                  </small>
+                </span>
+              </article>
+            ))}
+            {!evidence.length && (
+              <p className="executarStoryEmpty">
+                Nenhuma evidência registrada ainda.
+              </p>
+            )}
+          </div>
           <button
-            className="executarFocusBack"
-            onClick={() => onFaceChange("principal")}
-            type="button"
-          >
-            Voltar
-          </button>
-          <button
-            className="executarFocusDone"
+            className="executarEvidenceAdd"
             onClick={onOpenEvidence}
             type="button"
           >
-            Feito · comprovar
-            <CheckCircle2 aria-hidden="true" />
+            <Paperclip aria-hidden="true" /> Adicionar evidência
           </button>
-          <button
-            aria-label="Assumir próxima tarefa liberada"
-            className="executarFocusNext"
-            disabled={readyCount < 2}
-            onClick={onNext}
-            type="button"
-          >
-            <ArrowRight aria-hidden="true" />
-          </button>
-        </footer>
-      </article>
+        </section>
+      </div>
     </section>
   );
 }
