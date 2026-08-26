@@ -50,7 +50,6 @@ import {
   estadoEntrega,
   executarAcaoCopiloto,
   exportarPlano,
-  filaPronta,
   focoAtual,
   importarPlano,
   novoEstado,
@@ -1615,7 +1614,6 @@ function ProductSurface({
   view,
 }: ProductSurfaceProperties) {
   const operationalDays = calendarioProjeto(state);
-  const readyTasks = filaPronta(tasks, state);
   const currentProgress = progresso(tasks, state);
 
   function selectTask(taskId: string) {
@@ -1667,32 +1665,22 @@ function ProductSurface({
       );
     case "now":
       return (
-        <>
-          <SprintProgress state={state} tasks={tasks} />
-          <FocusSurface
-            face={taskFace}
-            focus={focus}
-            onFaceChange={onTaskFaceChange}
-            onNext={() => {
-              const nextTask = readyTasks.find((task) => task.id !== focus?.id);
-
-              if (nextTask) {
-                onStateChange(assumirFoco(tasks, state, nextTask.id));
-                onTaskFaceChange("principal");
-              }
-            }}
-            onOpenEvidence={onOpenEvidence}
-            onReplan={() => onSelectView("replan")}
-            onStart={() => {
-              if (focus) {
-                onStateChange(registrarPasso(tasks, state, focus.id));
-              }
-            }}
-            projectName={activeProject.name}
-            readyCount={readyTasks.length}
-            state={state}
-          />
-        </>
+        <FocusSurface
+          face={taskFace}
+          focus={focus}
+          onFaceChange={onTaskFaceChange}
+          onFocus={selectTask}
+          onOpenEvidence={onOpenEvidence}
+          onReplan={() => onSelectView("replan")}
+          onStart={() => {
+            if (focus) {
+              onStateChange(registrarPasso(tasks, state, focus.id));
+            }
+          }}
+          projectName={activeProject.name}
+          state={state}
+          tasks={tasks}
+        />
       );
     case "done":
       return (
