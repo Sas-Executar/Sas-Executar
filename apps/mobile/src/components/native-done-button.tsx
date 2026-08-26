@@ -6,17 +6,17 @@ export type { NativeDoneButtonProps } from "./native-done-button.types";
 export function NativeDoneButton({ onPress }: NativeDoneButtonProps) {
   return (
     <Button
-      backgroundColor="#D8FF45"
-      borderColor="#171714"
-      borderRadius={999}
-      borderWidth={1}
       color="#171714"
-      fontSize={18}
-      fontWeight="700"
-      height={88}
       onPress={onPress}
-      pressStyle={{ backgroundColor: "#C8EE38", scale: 0.97 }}
-      width={88}
+      pressStyle={{ opacity: 0.8, scale: 0.97 }}
+      style={{
+        backgroundColor: "#D8FF45",
+        borderColor: "#171714",
+        borderRadius: 999,
+        borderWidth: 1,
+        height: 88,
+        width: 88,
+      }}
     >
       Feito
     </Button>

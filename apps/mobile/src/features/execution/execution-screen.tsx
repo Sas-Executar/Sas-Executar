@@ -61,37 +61,45 @@ function QueueCard({
 }) {
   return (
     <Card
-      backgroundColor="#FFFFFF"
-      borderColor="#DEDDD6"
-      borderRadius={24}
-      borderWidth={1}
       onPress={() => {
         if (task) {
           Alert.alert(task.title, task.dod ?? "Sem critério de conclusão informado.");
         }
       }}
-      padding="$4"
       pressStyle={task ? { scale: 0.99 } : undefined}
+      style={{
+        backgroundColor: "#FFFFFF",
+        borderColor: "#DEDDD6",
+        borderRadius: 24,
+        borderWidth: 1,
+        padding: 16,
+      }}
     >
-      <XStack alignItems="center" justifyContent="space-between">
-        <SizableText color="#73736D" fontSize={11} letterSpacing={1.2}>
+      <XStack
+        style={{ alignItems: "center", justifyContent: "space-between" }}
+      >
+        <SizableText
+          style={{ color: "#73736D", fontSize: 11, letterSpacing: 1.2 }}
+        >
           {label.toLocaleUpperCase("pt-BR")}
         </SizableText>
         {task ? (
-          <SizableText color="#73736D" fontSize={12}>
+          <SizableText style={{ color: "#73736D", fontSize: 12 }}>
             {task.mins} min · {task.date}
           </SizableText>
         ) : null}
       </XStack>
       <SizableText
-        color={task ? "#171714" : "#9B9A94"}
-        fontSize={18}
-        fontWeight="600"
-        marginTop="$3"
+        style={{
+          color: task ? "#171714" : "#9B9A94",
+          fontSize: 18,
+          fontWeight: "600",
+          marginTop: 12,
+        }}
       >
         {task?.title ?? "Fila livre"}
       </SizableText>
-      <Paragraph color="#73736D" marginTop="$2" size="$3">
+      <Paragraph style={{ color: "#73736D", fontSize: 14, marginTop: 8 }}>
         {task
           ? `${task.front} · etapa ${task.stage}`
           : "Nenhuma entrega pronta nesta posição."}
@@ -141,42 +149,48 @@ export function ExecutionScreen({
           />
         }
       >
-        <YStack gap="$5">
-          <XStack alignItems="center" justifyContent="space-between">
+        <YStack style={{ gap: 20 }}>
+          <XStack
+            style={{ alignItems: "center", justifyContent: "space-between" }}
+          >
             <ScopeSelector
               onSelectionChange={setScope}
               options={SCOPE_OPTIONS}
               selection={scope}
             />
-            <Button chromeless color="#73736D" onPress={onSignOut} size="$3">
+            <Button chromeless color="#73736D" onPress={onSignOut}>
               Sair
             </Button>
           </XStack>
 
-          <YStack gap="$2">
-            <SizableText color="#73736D" fontSize={12} letterSpacing={1.5}>
+          <YStack style={{ gap: 8 }}>
+            <SizableText
+              style={{ color: "#73736D", fontSize: 12, letterSpacing: 1.5 }}
+            >
               EXECUTAR · REVISÃO {projection.revision}
             </SizableText>
-            <H1 color="#171714" fontSize={34} lineHeight={38}>
+            <H1 style={{ color: "#171714", fontSize: 34, lineHeight: 38 }}>
               {projection.projectName}
             </H1>
-            <Paragraph color="#73736D" size="$4">
+            <Paragraph style={{ color: "#73736D", fontSize: 16 }}>
               Próximo resultado, uma ação por vez.
             </Paragraph>
           </YStack>
 
-          <YStack alignItems="center" gap="$3" paddingVertical="$3">
+          <YStack
+            style={{ alignItems: "center", gap: 12, paddingVertical: 12 }}
+          >
             <ExecutionGauge
               completed={totals.completed}
               onDone={protectCompletion}
               total={totals.total}
             />
-            <SizableText color="#73736D" fontSize={13}>
+            <SizableText style={{ color: "#73736D", fontSize: 13 }}>
               {totals.completed}/{totals.total} resultados concluídos
             </SizableText>
           </YStack>
 
-          <YStack gap="$3">
+          <YStack style={{ gap: 12 }}>
             {areas.map((task, index) => (
               <QueueCard
                 key={task?.id ?? AREA_LABELS[index]}
@@ -187,16 +201,22 @@ export function ExecutionScreen({
           </YStack>
 
           <Card
-            backgroundColor="#E8E7E1"
-            borderColor="#DEDDD6"
-            borderRadius={18}
-            borderWidth={1}
-            padding="$4"
+            style={{
+              backgroundColor: "#E8E7E1",
+              borderColor: "#DEDDD6",
+              borderRadius: 18,
+              borderWidth: 1,
+              padding: 16,
+            }}
           >
-            <SizableText color="#171714" fontSize={13} fontWeight="600">
+            <SizableText
+              style={{ color: "#171714", fontSize: 13, fontWeight: "600" }}
+            >
               Estado canônico protegido
             </SizableText>
-            <Paragraph color="#73736D" marginTop="$2" size="$2">
+            <Paragraph
+              style={{ color: "#73736D", fontSize: 12, marginTop: 8 }}
+            >
               Esta fundação lê foco, fila, calendário e metadados de evidência do
               backend atual. Escritas móveis continuam bloqueadas pelo Gate Mobile.
             </Paragraph>

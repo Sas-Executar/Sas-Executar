@@ -1,4 +1,5 @@
-import { useAuth, useClerk, useHostedAuth } from "@clerk/expo";
+import { useAuth, useClerk } from "@clerk/expo";
+import { useHostedAuth } from "@clerk/expo/hosted-auth";
 import type { ProjecaoEstadoMobile } from "@repo/executar-contracts/mobile";
 import {
   type ReactNode,
@@ -23,19 +24,21 @@ function CenteredCard({
 }) {
   return (
     <SafeAreaView style={{ backgroundColor: "#F2F1ED", flex: 1 }}>
-      <YStack flex={1} justifyContent="center" padding="$5">
+      <YStack style={{ flex: 1, justifyContent: "center", padding: 20 }}>
         <Card
-          backgroundColor="#FFFFFF"
-          borderColor="#DEDDD6"
-          borderRadius={28}
-          borderWidth={1}
-          gap="$4"
-          padding="$5"
+          style={{
+            backgroundColor: "#FFFFFF",
+            borderColor: "#DEDDD6",
+            borderRadius: 28,
+            borderWidth: 1,
+            gap: 16,
+            padding: 20,
+          }}
         >
-          <H1 color="#171714" fontSize={32} lineHeight={36}>
+          <H1 style={{ color: "#171714", fontSize: 32, lineHeight: 36 }}>
             {title}
           </H1>
-          <Paragraph color="#73736D" size="$4">
+          <Paragraph style={{ color: "#73736D", fontSize: 16 }}>
             {body}
           </Paragraph>
           {action}
@@ -102,11 +105,9 @@ export function AuthGate() {
       <CenteredCard
         action={
           <Button
-            backgroundColor="#171714"
-            borderRadius={999}
             color="#FFFFFF"
             onPress={() => void startHostedAuth()}
-            size="$5"
+            style={{ backgroundColor: "#171714", borderRadius: 999 }}
           >
             Entrar com Clerk
           </Button>
@@ -122,10 +123,9 @@ export function AuthGate() {
       <CenteredCard
         action={
           <Button
-            backgroundColor="#171714"
-            borderRadius={999}
             color="#FFFFFF"
             onPress={() => void signOut()}
+            style={{ backgroundColor: "#171714", borderRadius: 999 }}
           >
             Trocar sessão
           </Button>
@@ -141,10 +141,9 @@ export function AuthGate() {
       <CenteredCard
         action={
           <Button
-            backgroundColor="#D8FF45"
-            borderRadius={999}
             color="#171714"
             onPress={() => void refresh()}
+            style={{ backgroundColor: "#D8FF45", borderRadius: 999 }}
           >
             Tentar novamente
           </Button>

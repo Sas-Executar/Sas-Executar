@@ -9,19 +9,19 @@ export function ScopeSelector({
   selection,
 }: ScopeSelectorProps) {
   return (
-    <XStack flexWrap="wrap" gap="$2">
+    <XStack style={{ flexWrap: "wrap", gap: 8 }}>
       {options.map((option) => (
         <Button
-          backgroundColor={
-            option.id === selection ? "#171714" : "#FFFFFF"
-          }
-          borderColor="#DEDDD6"
-          borderRadius="$10"
-          borderWidth={1}
           color={option.id === selection ? "#FFFFFF" : "#171714"}
           key={option.id}
           onPress={() => onSelectionChange(option.id)}
-          size="$3"
+          style={{
+            backgroundColor:
+              option.id === selection ? "#171714" : "#FFFFFF",
+            borderColor: "#DEDDD6",
+            borderRadius: 999,
+            borderWidth: 1,
+          }}
         >
           {option.label}
         </Button>
