@@ -75,6 +75,8 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Verificar tipos do aplicativo SaaS
         run: bunx turbo run typecheck --filter=app
+      - name: Verificar tipos do aplicativo Expo
+        run: bunx turbo run typecheck --filter=mobile
       - name: Inventariar diagnósticos reais de lint
         shell: bash
         run: |
@@ -102,5 +104,9 @@ jobs:
         run: bun run check
       - name: Executar testes do aplicativo
         run: bunx turbo run test --filter=app
+      - name: Executar testes da fundação mobile
+        run: bunx turbo run test --filter=mobile
       - name: Construir o aplicativo SaaS
         run: bunx turbo run build --filter=app
+      - name: Exportar bundle iOS do aplicativo Expo
+        run: bunx turbo run build --filter=mobile

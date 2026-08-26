@@ -94,3 +94,11 @@ test("Takeout permanece referência, e Gate Mobile continua não aprovado", asyn
   assert.match(integration, /scaffold Expo somente leitura/);
   assert.match(status, /Sessão real, escritas, EAS e lojas: \*\*NÃO PASSOU\*\*/);
 });
+
+test("CI valida tipos, testes e export iOS do aplicativo mobile", async () => {
+  const workflow = await read(".github/workflows/onda-1.yml");
+
+  assert.match(workflow, /typecheck --filter=mobile/);
+  assert.match(workflow, /test --filter=mobile/);
+  assert.match(workflow, /build --filter=mobile/);
+});
