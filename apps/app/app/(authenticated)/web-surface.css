@@ -1,0 +1,289 @@
+/* Web-first projection of the iPhone-first EXECUTAR surface.
+   This file intentionally changes presentation only: domain, auth and APIs stay untouched. */
+
+:root {
+  --executar-web-canvas: #e7e7e5;
+  --executar-web-surface: #ffffff;
+  --executar-web-ink: #161616;
+  --executar-web-muted: #727272;
+  --executar-web-line: rgba(22, 22, 22, 0.1);
+  --executar-web-purple: #6656ee;
+  --executar-web-orange: #ff6500;
+}
+
+html,
+body {
+  min-height: 100%;
+  background: var(--executar-web-canvas) !important;
+}
+
+body {
+  color: var(--executar-web-ink);
+}
+
+#app {
+  display: block !important;
+  min-height: 100dvh;
+  background: transparent !important;
+}
+
+#app > .side,
+#app .top {
+  display: none !important;
+}
+
+#app > .main {
+  width: min(100%, 980px) !important;
+  max-width: none !important;
+  min-height: 100dvh;
+  padding: 96px clamp(16px, 4vw, 48px) 132px !important;
+  margin: 0 auto !important;
+  background: transparent !important;
+}
+
+.executarProductHeader {
+  position: fixed !important;
+  top: max(14px, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 70;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  width: min(calc(100% - 28px), 720px);
+  min-height: 60px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  box-shadow: 0 10px 36px rgba(20, 20, 20, 0.08);
+  backdrop-filter: blur(20px) saturate(1.2);
+  transform: translateX(-50%);
+}
+
+.executarHeaderCircle,
+.executarHeaderBrand {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  color: var(--executar-web-ink);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+}
+
+.executarHeaderCircle:hover,
+.executarHeaderBrand:hover {
+  background: rgba(22, 22, 22, 0.05);
+}
+
+.executarHeaderCircle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.executarHeaderBrand .executarBrand > span {
+  display: none;
+}
+
+.executarOperationalNav {
+  position: fixed !important;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 70;
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: min(calc(100% - 28px), 560px);
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 28px;
+  box-shadow: 0 14px 42px rgba(20, 20, 20, 0.12);
+  backdrop-filter: blur(22px) saturate(1.2);
+  transform: translateX(-50%);
+}
+
+.executarOperationalNav > button {
+  display: grid;
+  gap: 4px;
+  place-items: center;
+  min-width: 0;
+  min-height: 54px;
+  padding: 7px 4px;
+  color: var(--executar-web-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 20px;
+}
+
+.executarOperationalNav > button > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+}
+
+.executarOperationalNav > button svg {
+  width: 19px;
+  height: 19px;
+}
+
+.executarOperationalNav > button small {
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.executarOperationalNav > button.active {
+  color: var(--executar-web-ink);
+  background: #f1f1ef;
+}
+
+.executarOperationalNav > button.now.active,
+.executarOperationalNav > button.now:hover {
+  color: #fff;
+  background: var(--executar-web-ink);
+}
+
+.executarHomeSurface,
+.executarTimelineSurface,
+.executarFocusSurface,
+.executarDoneSurface,
+.executarReplanSurface,
+.executarDocumentsSurface {
+  width: min(100%, 720px) !important;
+}
+
+.executarContextCard,
+.executarExecutionHero,
+.executarStorySection,
+.executarTimeline article > button,
+.executarSprint {
+  border-color: var(--executar-web-line) !important;
+  box-shadow: none !important;
+}
+
+.executarContextCard,
+.executarExecutionHero,
+.executarStorySection {
+  background: var(--executar-web-surface) !important;
+}
+
+.executarContextCard.projects > header {
+  background: var(--executar-web-purple) !important;
+}
+
+.executarContextCard.documents > header {
+  color: var(--executar-web-ink) !important;
+  background: #f0f0ee !important;
+}
+
+.executarContextCard.copilot > header {
+  color: #fff !important;
+  background: var(--executar-web-ink) !important;
+}
+
+.executarExecutionArc path.done {
+  stroke: var(--executar-web-purple) !important;
+}
+
+.executarExecutionArc path.current {
+  stroke: var(--executar-web-orange) !important;
+}
+
+.executarExecutionDone {
+  width: 86px !important;
+  height: 56px !important;
+  margin-bottom: 18px !important;
+  color: #fff !important;
+  background: var(--executar-web-ink) !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+.executarExecutionDone svg {
+  display: none;
+}
+
+.executarExecutionDone::after {
+  content: "Feito";
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.executarExecutionCurrent small {
+  color: var(--executar-web-purple) !important;
+}
+
+.executarExecutionHero {
+  min-height: min(690px, calc(100dvh - 190px)) !important;
+  border-radius: 32px !important;
+}
+
+.executarStorySection {
+  border-radius: 28px !important;
+}
+
+.executarExecutionHeader select {
+  background: #f5f5f3 !important;
+  border-color: var(--executar-web-line) !important;
+}
+
+.executarSyncNotice {
+  width: min(100%, 720px);
+  margin: 0 auto 12px;
+  border-radius: 18px;
+}
+
+@media (min-width: 760px) {
+  .executarContextCards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .executarContextCard {
+    min-height: 260px;
+  }
+
+  .executarContextCard > header {
+    align-items: flex-start;
+    min-height: 104px;
+  }
+
+  .executarContextCard > header > span:last-child {
+    max-width: 86px;
+  }
+}
+
+@media (max-width: 640px) {
+  #app > .main {
+    padding: 84px 12px 118px !important;
+  }
+
+  .executarProductHeader {
+    top: max(8px, env(safe-area-inset-top));
+    width: calc(100% - 18px);
+  }
+
+  .executarOperationalNav {
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: calc(100% - 18px);
+  }
+
+  .executarExecutionHero {
+    min-height: calc(100dvh - 174px) !important;
+    padding-inline: 18px !important;
+    border-radius: 26px !important;
+  }
+
+  .executarExecutionHeader {
+    gap: 10px;
+  }
+
+  .executarExecutionHeader select {
+    min-width: 132px;
+  }
+}
