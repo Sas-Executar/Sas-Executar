@@ -1,12 +1,7 @@
 import { useAuth, useClerk } from "@clerk/expo";
 import { useHostedAuth } from "@clerk/expo/hosted-auth";
 import type { ProjecaoEstadoMobile } from "@repo/executar-contracts/mobile";
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Card, H1, Paragraph, Spinner, YStack } from "tamagui";
 import { ExecutionScreen } from "@/features/execution/execution-screen";

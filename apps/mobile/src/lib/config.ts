@@ -8,7 +8,7 @@ export interface PublicMobileConfig {
 function normalizeApiUrl(value: string): string {
   const url = new URL(value);
 
-  if (!(["http:", "https:"].includes(url.protocol))) {
+  if (!["http:", "https:"].includes(url.protocol)) {
     throw new Error("EXPO_PUBLIC_EXECUTAR_API_URL precisa ser HTTP ou HTTPS.");
   }
 
@@ -48,7 +48,9 @@ export function requirePublicMobileConfig(): PublicMobileConfig {
   const result = readPublicMobileConfig();
 
   if (!result.configured) {
-    throw new Error(`Configuração mobile ausente: ${result.missing.join(", ")}`);
+    throw new Error(
+      `Configuração mobile ausente: ${result.missing.join(", ")}`
+    );
   }
 
   return result.value;

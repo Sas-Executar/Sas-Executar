@@ -16,8 +16,7 @@ export function ScopeSelector({
           key={option.id}
           onPress={() => onSelectionChange(option.id)}
           style={{
-            backgroundColor:
-              option.id === selection ? "#171714" : "#FFFFFF",
+            backgroundColor: option.id === selection ? "#171714" : "#FFFFFF",
             borderColor: "#DEDDD6",
             borderRadius: 999,
             borderWidth: 1,

@@ -6,9 +6,9 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { TamaguiProvider } from "tamagui";
-import tamaguiConfig from "../../tamagui.config";
 import { ConfigurationScreen } from "@/features/configuration/configuration-screen";
 import { readPublicMobileConfig } from "@/lib/config";
+import tamaguiConfig from "../../tamagui.config";
 
 export default function RootLayout() {
   let result: ReturnType<typeof readPublicMobileConfig>;
@@ -19,7 +19,9 @@ export default function RootLayout() {
     result = {
       configured: false,
       missing: [
-        error instanceof Error ? error.message : "Configuração pública inválida.",
+        error instanceof Error
+          ? error.message
+          : "Configuração pública inválida.",
       ],
     };
   }

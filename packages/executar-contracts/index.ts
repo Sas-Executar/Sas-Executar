@@ -2,11 +2,11 @@ export {
   type DiaOperacionalMobile,
   diaOperacionalMobileSchema,
   type EntregaMobile,
-  entregaMobileSchema,
   type EvidenciaMobile,
+  entregaMobileSchema,
   evidenciaMobileSchema,
   type ProjecaoEstadoMobile,
-  type RespostaEstadoMobile,
   projecaoEstadoMobileSchema,
+  type RespostaEstadoMobile,
   respostaEstadoMobileSchema,
 } from "./mobile.ts";

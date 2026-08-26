@@ -92,7 +92,10 @@ test("Takeout permanece referência, e Gate Mobile continua não aprovado", asyn
 
   assert.match(agents, /Takeout serve apenas como referência/);
   assert.match(integration, /scaffold Expo somente leitura/);
-  assert.match(status, /Sessão real, escritas, EAS e lojas: \*\*NÃO PASSOU\*\*/);
+  assert.match(
+    status,
+    /Sessão real, escritas, EAS e lojas: \*\*NÃO PASSOU\*\*/
+  );
 });
 
 test("CI valida tipos, testes e export iOS do aplicativo mobile", async () => {

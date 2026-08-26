@@ -25,16 +25,14 @@ const config: ExpoConfig = {
   },
   ios: {
     bundleIdentifier:
-      process.env.EXECUTAR_IOS_BUNDLE_IDENTIFIER ??
-      "com.sasexecutar.executar",
+      process.env.EXECUTAR_IOS_BUNDLE_IDENTIFIER ?? "com.sasexecutar.executar",
     supportsTablet: false,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {
-    package:
-      process.env.EXECUTAR_ANDROID_PACKAGE ?? "com.sasexecutar.executar",
+    package: process.env.EXECUTAR_ANDROID_PACKAGE ?? "com.sasexecutar.executar",
   },
 };
 

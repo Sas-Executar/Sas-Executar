@@ -15,10 +15,7 @@ import {
   YStack,
 } from "tamagui";
 import { ExecutionGauge } from "@/components/execution-gauge";
-import {
-  type ScopeOption,
-  ScopeSelector,
-} from "@/components/scope-selector";
+import { type ScopeOption, ScopeSelector } from "@/components/scope-selector";
 
 interface ExecutionScreenProps {
   readonly onRefresh: () => Promise<void>;
@@ -36,7 +33,9 @@ const SCOPE_OPTIONS: readonly ScopeOption[] = [
 
 const AREA_LABELS = ["Foco", "Em seguida", "Depois"] as const;
 
-function taskAreas(projection: ProjecaoEstadoMobile): readonly (EntregaMobile | null)[] {
+function taskAreas(
+  projection: ProjecaoEstadoMobile
+): readonly (EntregaMobile | null)[] {
   const unique = new Map<string, EntregaMobile>();
 
   if (projection.focus) {
@@ -63,7 +62,10 @@ function QueueCard({
     <Card
       onPress={() => {
         if (task) {
-          Alert.alert(task.title, task.dod ?? "Sem critério de conclusão informado.");
+          Alert.alert(
+            task.title,
+            task.dod ?? "Sem critério de conclusão informado."
+          );
         }
       }}
       pressStyle={task ? { scale: 0.99 } : undefined}
@@ -75,9 +77,7 @@ function QueueCard({
         padding: 16,
       }}
     >
-      <XStack
-        style={{ alignItems: "center", justifyContent: "space-between" }}
-      >
+      <XStack style={{ alignItems: "center", justifyContent: "space-between" }}>
         <SizableText
           style={{ color: "#73736D", fontSize: 11, letterSpacing: 1.2 }}
         >
@@ -214,11 +214,10 @@ export function ExecutionScreen({
             >
               Estado canônico protegido
             </SizableText>
-            <Paragraph
-              style={{ color: "#73736D", fontSize: 12, marginTop: 8 }}
-            >
-              Esta fundação lê foco, fila, calendário e metadados de evidência do
-              backend atual. Escritas móveis continuam bloqueadas pelo Gate Mobile.
+            <Paragraph style={{ color: "#73736D", fontSize: 12, marginTop: 8 }}>
+              Esta fundação lê foco, fila, calendário e metadados de evidência
+              do backend atual. Escritas móveis continuam bloqueadas pelo Gate
+              Mobile.
             </Paragraph>
           </Card>
         </YStack>

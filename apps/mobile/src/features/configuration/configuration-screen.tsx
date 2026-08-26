@@ -28,7 +28,8 @@ export function ConfigurationScreen({ details }: ConfigurationScreenProps) {
             Conecte o ambiente mobile.
           </H1>
           <Paragraph style={{ color: "#73736D", fontSize: 16 }}>
-            Copie .env.example para .env.local e informe somente valores públicos.
+            Copie .env.example para .env.local e informe somente valores
+            públicos.
           </Paragraph>
           <YStack
             style={{

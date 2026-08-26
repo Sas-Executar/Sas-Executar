@@ -8,10 +8,5 @@
       "@repo/*": ["../../packages/*"]
     }
   },
-  "include": [
-    "expo-env.d.ts",
-    ".expo/types/**/*.ts",
-    "**/*.ts",
-    "**/*.tsx"
-  ]
+  "include": ["expo-env.d.ts", ".expo/types/**/*.ts", "**/*.ts", "**/*.tsx"]
 }

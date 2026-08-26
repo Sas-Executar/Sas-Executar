@@ -19,7 +19,9 @@ export async function carregarEstadoMobile(input: {
       error?: string;
     } | null;
 
-    throw new Error(payload?.error ?? `Falha ao sincronizar (${response.status}).`);
+    throw new Error(
+      payload?.error ?? `Falha ao sincronizar (${response.status}).`
+    );
   }
 
   return respostaEstadoMobileSchema.parse(await response.json()).projection;
