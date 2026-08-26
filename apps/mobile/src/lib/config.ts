@@ -1,3 +1,5 @@
+const TRAILING_SLASH_PATTERN = /\/$/;
+
 export interface PublicMobileConfig {
   readonly apiUrl: string;
   readonly clerkPublishableKey: string;
@@ -10,7 +12,7 @@ function normalizeApiUrl(value: string): string {
     throw new Error("EXPO_PUBLIC_EXECUTAR_API_URL precisa ser HTTP ou HTTPS.");
   }
 
-  return url.toString().replace(/\/$/, "");
+  return url.toString().replace(TRAILING_SLASH_PATTERN, "");
 }
 
 export function readPublicMobileConfig():

@@ -4,7 +4,7 @@ import test from "node:test";
 
 const root = new URL("../../", import.meta.url);
 
-async function read(path) {
+function read(path) {
   return readFile(new URL(path, root), "utf8");
 }
 

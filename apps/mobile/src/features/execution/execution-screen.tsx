@@ -143,7 +143,7 @@ export function ExecutionScreen({
         contentContainerStyle={{ padding: 20, paddingBottom: 48 }}
         refreshControl={
           <RefreshControl
-            onRefresh={() => void onRefresh()}
+            onRefresh={onRefresh}
             refreshing={refreshing}
             tintColor="#171714"
           />

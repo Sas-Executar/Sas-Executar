@@ -1,3 +1,5 @@
+"use strict";
+
 const { getDefaultConfig } = require("expo/metro-config");
 const { withTamagui } = require("@tamagui/metro-plugin");
 

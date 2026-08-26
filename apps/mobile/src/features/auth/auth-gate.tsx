@@ -87,7 +87,7 @@ export function AuthGate() {
   }, [apiUrl, getToken, isSignedIn, orgId]);
 
   useEffect(() => {
-    void refresh();
+    refresh().catch(() => undefined);
   }, [refresh]);
 
   if (!isLoaded) {
@@ -106,7 +106,7 @@ export function AuthGate() {
         action={
           <Button
             color="#FFFFFF"
-            onPress={() => void startHostedAuth()}
+            onPress={() => startHostedAuth()}
             style={{ backgroundColor: "#171714", borderRadius: 999 }}
           >
             Entrar com Clerk
@@ -124,7 +124,7 @@ export function AuthGate() {
         action={
           <Button
             color="#FFFFFF"
-            onPress={() => void signOut()}
+            onPress={() => signOut()}
             style={{ backgroundColor: "#171714", borderRadius: 999 }}
           >
             Trocar sessão
@@ -142,7 +142,7 @@ export function AuthGate() {
         action={
           <Button
             color="#171714"
-            onPress={() => void refresh()}
+            onPress={() => refresh()}
             style={{ backgroundColor: "#D8FF45", borderRadius: 999 }}
           >
             Tentar novamente
@@ -167,7 +167,7 @@ export function AuthGate() {
   return (
     <ExecutionScreen
       onRefresh={refresh}
-      onSignOut={() => void signOut()}
+      onSignOut={() => signOut()}
       projection={projection}
       refreshing={refreshing}
     />

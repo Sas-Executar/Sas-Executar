@@ -1,0 +1,32 @@
+name: Mobile · format bootstrap
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    name: Formatar fontes mobile para revisão
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.10
+      - run: bun install --frozen-lockfile
+      - run: >-
+          bunx biome check --write
+          apps/mobile
+          packages/executar-contracts
+          tests/ondas/mobile-foundation.test.mjs
+      - uses: actions/upload-artifact@v6
+        with:
+          name: mobile-formatted-${{ github.sha }}
+          path: |
+            apps/mobile
+            packages/executar-contracts
+            tests/ondas/mobile-foundation.test.mjs
+          retention-days: 1

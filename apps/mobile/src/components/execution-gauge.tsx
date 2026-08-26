@@ -26,21 +26,25 @@ export function ExecutionGauge({
   return (
     <View accessibilityLabel={`${completed} de ${total} entregas concluídas`}>
       <Svg height={SIZE} width={SIZE}>
-        {Array.from({ length: SEGMENTS }, (_, index) => (
-          <Circle
-            cx={CENTER}
-            cy={CENTER}
-            fill="transparent"
-            key={index}
-            r={RADIUS}
-            rotation={index * (360 / SEGMENTS) - 90}
-            origin={`${CENTER}, ${CENTER}`}
-            stroke={index < activeSegments ? "#171714" : "#DEDDD6"}
-            strokeDasharray={`${SEGMENT_ARC * 0.56} ${CIRCUMFERENCE - SEGMENT_ARC * 0.56}`}
-            strokeLinecap="round"
-            strokeWidth={8}
-          />
-        ))}
+        {Array.from({ length: SEGMENTS }, (_, index) => {
+          const rotation = index * (360 / SEGMENTS) - 90;
+
+          return (
+            <Circle
+              cx={CENTER}
+              cy={CENTER}
+              fill="transparent"
+              key={rotation}
+              origin={`${CENTER}, ${CENTER}`}
+              r={RADIUS}
+              rotation={rotation}
+              stroke={index < activeSegments ? "#171714" : "#DEDDD6"}
+              strokeDasharray={`${SEGMENT_ARC * 0.56} ${CIRCUMFERENCE - SEGMENT_ARC * 0.56}`}
+              strokeLinecap="round"
+              strokeWidth={8}
+            />
+          );
+        })}
       </Svg>
       <View style={styles.centerButton}>
         <NativeDoneButton onPress={onDone} />
