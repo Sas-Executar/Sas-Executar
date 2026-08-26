@@ -40,11 +40,19 @@ cadastro paralelo de membros.
 
 ### Mobile e PWA
 
-- O contrato futuro declara Expo, Android, iOS, Clerk e `apps/mobile`.
+- `apps/mobile` agora contém a fundação Expo SDK 57 para Android e iOS, sem
+  migrar ou substituir `apps/app`.
+- Tamagui compõe a superfície compartilhável; seletores e ação central usam
+  `@expo/ui/swift-ui` no iOS com fallback Android explícito.
 - A projeção mobile reutiliza foco, fila, calendário e evidência do mesmo
   estado; arquivos são reduzidos a metadados, sem divulgar bytes/base64.
-- `apps/mobile` **não foi criado**: `AGENTS.md` bloqueia o aplicativo real até
-  a aprovação da web, sincronização remota, isolamento real e sessão móvel.
+- `GET /api/executar/mobile` expõe essa projeção somente após autenticação Clerk
+  e a valida com `@repo/executar-contracts` nos dois lados da rede.
+- O scaffold permanece somente leitura. Escritas, distribuição EAS e submissão
+  às lojas continuam bloqueadas até aprovação da web, sincronização remota,
+  isolamento real e sessão móvel.
+- Takeout não é dependência nem substituto do backend; é apenas referência de
+  arquitetura/starter.
 - A PWA original permanece intacta e instalável no escopo legado existente.
 
 ### GTM sem alegações indevidas
@@ -89,7 +97,9 @@ específicos da Onda 4**.
 - Código da Onda 4 · colaboração, avisos, marketing e contratos: **PASSOU**.
 - Colaboração Liveblocks entre usuários reais: **NÃO VERIFICADO**.
 - Entrega Knock em canal externo: **NÃO VERIFICADO**.
-- Android/iOS/EAS: **NÃO IMPLEMENTADO**, bloqueado por predecessores reais.
+- Scaffold Android/iOS: **IMPLEMENTADO EM CÓDIGO**, sem build nativo comprovado.
+- Sessão real, escritas, EAS e lojas: **NÃO PASSOU**, bloqueados por
+  predecessores e verificações reais.
 - GitHub Actions hospedado: **NÃO PASSOU**, sem steps e sem logs de execução.
 - Vercel, Supabase novo, RLS, Storage, Stripe e produção: **NÃO PASSOU**;
   permanecem no checklist de integração final.

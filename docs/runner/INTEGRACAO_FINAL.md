@@ -35,8 +35,9 @@ somente para auditoria da transição anterior.
    Knock com serviços reais.
 10. Executar golden path E2E, backup/restore, rollback, observabilidade,
     privacidade e piloto real de sete dias.
-11. Iniciar Expo/EAS somente depois de web, sincronização, isolamento e sessão
-    Clerk móvel aprovados.
+11. Ativar escritas móveis e iniciar distribuição/submissão EAS somente depois
+    de web, sincronização, isolamento e sessão Clerk móvel aprovados. O scaffold
+    Expo pode evoluir antes disso sem alegação de lançamento.
 12. Promover produção somente com zero CRITICAL e sign-off humano.
 
 ## Variáveis do aplicativo
@@ -113,9 +114,11 @@ OpenAI ao repositório. `EXECUTAR_AI_MODEL` aceita outro identificador
 
 - O código local pode avançar sem serviços externos.
 - A PWA legada permanece executável em `/legado/sprint-operacional/`.
+- `apps/mobile` existe como scaffold Expo somente leitura; isso não aprova o
+  Gate Mobile nem comprova builds nativos.
 - O Preview não deve receber acesso ao ambiente de produção por padrão.
-- Produção e mobile permanecem bloqueados enquanto qualquer predecessor da
-  matriz canônica estiver `NÃO PASSOU`.
+- Produção, escritas móveis e distribuição EAS permanecem bloqueadas enquanto
+  qualquer predecessor da matriz canônica estiver `NÃO PASSOU`.
 
 ## Rollback e recovery
 

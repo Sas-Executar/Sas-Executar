@@ -43,7 +43,10 @@ A direção arquitetural é:
 - Vercel AI SDK para Copiloto/agentes.
 - MCP para ferramentas e integrações.
 - colaboração em tempo real somente onde trouxer valor operacional.
-- Expo para Android e iOS quando a base web estiver validada.
+- Expo SDK 57 em `apps/mobile` para Android e iOS, com Tamagui na superfície
+  compartilhável e `@expo/ui/swift-ui` nos controles genuinamente iOS.
+- Takeout serve apenas como referência de arquitetura; não substituir o
+  `next-forge`, o `apps/app` nem o backend canônico.
 - Vercel para publicação.
 
 ## Prioridade vigente: infraestrutura AWS transversal
@@ -65,7 +68,9 @@ A direção arquitetural é:
 - Não introduzir infraestrutura paralela quando o starter já resolver o problema.
 - Não duplicar autenticação/membership no banco se Clerk já for autoridade para isso.
 - Não remover o PWA atual antes de a versão sucessora reproduzir os fluxos essenciais.
-- Não iniciar aplicativo móvel antes do Gate Web/SaaS estar aprovado tecnicamente.
+- O scaffold técnico de `apps/mobile` pode evoluir sem alegar lançamento. Não
+  habilitar escritas canônicas, builds de distribuição ou submissões EAS antes
+  de o Gate Mobile aprovar web, sessão Clerk nativa, sincronização e isolamento.
 - Não criar microserviços prematuramente.
 - Não criar CRM, ERP ou marketplace como aplicações separadas: são módulos de domínio futuros do mesmo produto.
 - Toda escrita multi-tenant deve ser testada contra vazamento entre organizações.

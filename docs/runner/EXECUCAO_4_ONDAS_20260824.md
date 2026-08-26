@@ -97,7 +97,10 @@ real; teste local não substitui integração, piloto nem sign-off.
 - runbooks de lançamento, piloto, suporte, rollback e recovery versionados;
 - CLI `production-gate.mjs` produz decisão objetiva e retorna falha em `NO-GO`;
 - workflow CI inventaria somente integrações canônicas AWS/Clerk/Vercel/Stripe;
-- `apps/mobile` não é criado porque os predecessores reais ainda não passaram.
+- decisão posterior adiciona `apps/mobile` como scaffold Expo SDK 57 somente
+  leitura, com Tamagui, controles SwiftUI no iOS e contrato compartilhado;
+- ativação de escritas, distribuição EAS e lojas permanece bloqueada porque os
+  predecessores reais ainda não passaram.
 
 ### Evidência no mesmo SHA
 
