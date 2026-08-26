@@ -1,3 +1,4 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: This isolated web shell intentionally overrides the existing component hierarchy. */
 /* Web-first projection of the iPhone-first EXECUTAR surface.
    This file intentionally changes presentation only: domain, auth and APIs stay untouched. */
 
@@ -131,9 +132,9 @@ body {
 
 .executarOperationalNav > button small {
   overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 10px;
   font-weight: 700;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -209,10 +210,10 @@ body {
 }
 
 .executarExecutionDone::after {
-  content: "Feito";
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.02em;
+  content: "Feito";
 }
 
 .executarExecutionCurrent small {
