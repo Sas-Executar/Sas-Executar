@@ -547,7 +547,7 @@ export function FocusSurface({
 
         <div className="executarExecutionCurrent">
           <small>
-            AÇÃO {String(currentPosition).padStart(2, "0")} · {progress}% CONCLUÍDO
+            MODO FOCO · AÇÃO {String(currentPosition).padStart(2, "0")} · {progress}% CONCLUÍDO
           </small>
           <h1>{focus.title}</h1>
           <p>
