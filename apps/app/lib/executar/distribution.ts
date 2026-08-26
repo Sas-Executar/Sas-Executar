@@ -1,3 +1,4 @@
+import type { ProjecaoEstadoMobile } from "@repo/executar-contracts/mobile";
 import {
   type AtorOperacional,
   type ComentarioOperacional,
@@ -512,23 +513,7 @@ export function prepararMobilidade(gates: GatesMobilidade): PreparoMobilidade {
 export function projetarEstadoMobile(
   state: EstadoOperacional,
   actor: AtorOperacional
-): {
-  readonly organizationId: string;
-  readonly projectId: string;
-  readonly projectName: string;
-  readonly focus: ReturnType<typeof focoAtual>;
-  readonly ready: ReturnType<typeof filaPronta>;
-  readonly calendar: ReturnType<typeof calendarioProjeto>;
-  readonly evidence: readonly {
-    taskId: string;
-    note: string;
-    url: string;
-    verified: boolean;
-    createdAt: string;
-    file?: { name: string; type: string; size: number };
-  }[];
-  readonly revision: number;
-} {
+): ProjecaoEstadoMobile {
   validarAtor(state, actor);
   const project = projetoAtivo(state);
 

@@ -5,11 +5,17 @@ Este é o repositório principal do SaaS EXECUTAR. O starter `next-forge` existe
 ## Pontos de entrada
 
 - Aplicação SaaS: `apps/app/`.
+- Aplicativo Expo: `apps/mobile/` (fundação técnica; Gate Mobile ainda pendente).
 - PWA preservada: `apps/app/public/legado/sprint-operacional/`.
 - Rota da PWA: `/legado/sprint-operacional/`.
 - Plano canônico: `docs/runner/PLANO_SAAS_4_ONDAS.md`.
 - Runner do Codex: `docs/runner/RUNNER_CODEX.md`.
 - Inventário: `docs/runner/INVENTARIO_LEGADO.md`.
+
+`apps/mobile` usa Expo SDK 57, Tamagui e controles SwiftUI nativos no iOS. Ele
+consome uma projeção autenticada do backend existente por
+`@repo/executar-contracts`; não importa o design system web e não substitui
+`apps/app`. Takeout é somente referência arquitetural.
 
 A PWA legada somente poderá ser removida após a versão SaaS reproduzir e testar Visão Geral, Foco, fila por dependências, Calendário, Caminho, Evidências e funcionamento PWA/offline.
 
