@@ -3,10 +3,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { env } from "@/env";
 import "../../public/legado/sprint-operacional/app.css";
+import "./web-surface.css";
 import { ScopedExecutarOperacional } from "./components/scoped-executar-operacional";
 
 export const metadata: Metadata = {
-  title: "EXECUTAR · Próximo 1 por vez",
+  title: "EXECUTAR · Superfície de execução",
   description: "Execução operacional por foco, dependências e evidências.",
 };
 
