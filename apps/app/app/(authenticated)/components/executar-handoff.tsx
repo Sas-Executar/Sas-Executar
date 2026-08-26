@@ -15,8 +15,8 @@ import {
   FolderKanban,
   Home,
   Link2,
-  LockKeyhole,
   ListChecks,
+  LockKeyhole,
   MapPin,
   Menu,
   MessageCircle,
@@ -516,11 +516,13 @@ export function FocusSurface({
           >
             {contextTasks.map((task, index) => {
               const segmentLength = Math.max(3, 100 / totalCount - 2.4);
-              const status = state.done.includes(task.id)
-                ? "done"
-                : task.id === focus.id
-                  ? "current"
-                  : "pending";
+              let status: "current" | "done" | "pending" = "pending";
+
+              if (state.done.includes(task.id)) {
+                status = "done";
+              } else if (task.id === focus.id) {
+                status = "current";
+              }
 
               return (
                 <path
@@ -603,7 +605,11 @@ export function FocusSurface({
               </b>
             </span>
           </p>
-          <div aria-label="Ações da tarefa" className="executarIconActions">
+          <div
+            aria-label="Ações da tarefa"
+            className="executarIconActions"
+            role="group"
+          >
             <span>
               <button
                 aria-label="Registrar avanço"
@@ -661,7 +667,11 @@ export function FocusSurface({
           </header>
           <div className="executarReadableTasks">
             {readyTasks.map((task) => (
-              <button key={task.id} onClick={() => onFocus(task.id)} type="button">
+              <button
+                key={task.id}
+                onClick={() => onFocus(task.id)}
+                type="button"
+              >
                 <span className="executarReadableTaskIcon">
                   <ListChecks aria-hidden="true" />
                 </span>
@@ -700,14 +710,19 @@ export function FocusSurface({
                   <span>
                     <b>{task.title}</b>
                     <small>
-                      Aguarda {pending.map((id) => taskById.get(id)?.title ?? id).join(", ")}
+                      Aguarda{" "}
+                      {pending
+                        .map((id) => taskById.get(id)?.title ?? id)
+                        .join(", ")}
                     </small>
                   </span>
                 </article>
               );
             })}
             {!blockedTasks.length && (
-              <p className="executarStoryEmpty">Nenhum bloqueio neste workflow.</p>
+              <p className="executarStoryEmpty">
+                Nenhum bloqueio neste workflow.
+              </p>
             )}
           </div>
         </section>
