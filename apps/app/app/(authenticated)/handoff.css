@@ -3,15 +3,15 @@
   --executar-action: #baff33;
   --executar-action-strong: #9bea16;
   --executar-orange: #ff6500;
-  --executar-brand-dark: #111111;
+  --executar-brand-dark: #141b33;
   --executar-brand-gray: #a8a8a8;
-  --executar-canvas: #f5f3ef;
+  --executar-canvas: #e4e5e7;
   --executar-surface: #ffffff;
-  --executar-surface-subtle: #f6f7f8;
-  --executar-text: #111318;
-  --executar-text-muted: #747983;
-  --executar-border: #e8e9eb;
-  --executar-card-shadow: 0 24px 64px rgba(21, 24, 30, 0.09);
+  --executar-surface-subtle: #f1f2f4;
+  --executar-text: #141b33;
+  --executar-text-muted: #686e7b;
+  --executar-border: #dfe1e5;
+  --executar-card-shadow: 0 24px 64px rgba(20, 27, 51, 0.09);
 }
 
 .executarBrand {
@@ -413,249 +413,534 @@
 
 .executarFocusSurface {
   position: relative;
-  padding: 12px 0 30px;
+  padding: 12px 0 56px;
 }
 
-.executarTaskStack {
+.executarExecutionSurface {
+  display: grid;
+  gap: 22px;
+}
+
+.executarExecutionHero,
+.executarStorySection {
+  background: var(--executar-surface);
+  border: 1px solid rgba(20, 27, 51, 0.08);
+  box-shadow: 0 24px 64px rgba(20, 27, 51, 0.09);
+}
+
+.executarExecutionHero {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  min-height: 620px;
+  padding: 28px 34px 24px;
+  overflow: hidden;
+  border-radius: 36px;
+}
+
+.executarExecutionHeader {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--executar-border);
+}
+
+.executarExecutionHeader label {
+  display: grid;
+  gap: 6px;
+}
+
+.executarExecutionHeader label > span,
+.executarExecutionHeader > div > span {
+  font-size: 11px;
+  font-weight: 760;
+  color: var(--executar-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.executarExecutionHeader select {
+  min-width: 148px;
+  min-height: 46px;
+  padding: 0 38px 0 14px;
+  font: inherit;
+  font-weight: 720;
+  color: var(--executar-text);
+  background: var(--executar-surface);
+  border: 1px solid var(--executar-border);
+  border-radius: 14px;
+}
+
+.executarExecutionHeader > div {
+  display: grid;
+  gap: 7px;
+  justify-items: end;
+  text-align: right;
+}
+
+.executarExecutionHeader > div strong {
+  font-size: 18px;
+}
+
+.executarExecutionGauge {
+  position: relative;
+  display: grid;
+  place-items: end center;
+  width: min(100%, 410px);
+  height: 220px;
+  margin-top: 28px;
+}
+
+.executarExecutionArc {
   position: absolute;
-  inset: 30px 34px 10px;
-  background: #fff;
-  border-radius: 34px;
-  box-shadow: 0 30px 65px rgba(25, 28, 33, 0.08);
-  transform: rotate(1.8deg);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
-.executarTaskStack::after {
-  position: absolute;
-  inset: 10px -12px -8px 12px;
-  content: "";
-  background: rgba(255, 255, 255, 0.75);
-  border-radius: inherit;
-  transform: rotate(-3deg);
+.executarExecutionArc path {
+  fill: none;
+  stroke: #dfe2e7;
+  stroke-width: 22;
+  stroke-linecap: butt;
+  transition: stroke 240ms ease;
 }
 
-.executarFocusCard {
+.executarExecutionArc path.done {
+  stroke: #315cf5;
+}
+
+.executarExecutionArc path.current {
+  stroke: #32b8e7;
+}
+
+.executarExecutionDone {
   position: relative;
   z-index: 1;
-  min-height: 650px;
-  padding: 34px;
-  background: #fff;
-  border: 1px solid var(--executar-border);
-  border-radius: 34px;
-  box-shadow: var(--executar-card-shadow);
-}
-
-.executarFocusSteps {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 9px;
-  margin-bottom: 42px;
-}
-
-.executarFocusSteps button {
-  padding: 9px 6px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #a0a4aa;
-  text-transform: uppercase;
-  white-space: nowrap;
-  background: transparent;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  margin-bottom: 17px;
+  color: #fff;
+  background: #141b33;
   border: 0;
-  border-top: 5px solid #e1e3e6;
+  border-radius: 24px;
+  box-shadow: 0 16px 34px rgba(20, 27, 51, 0.22);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
-.executarFocusSteps button.active {
-  color: #22252a;
-  border-color: var(--executar-action);
+.executarExecutionDone:hover {
+  box-shadow: 0 20px 42px rgba(20, 27, 51, 0.28);
+  transform: translateY(-2px);
 }
 
-.executarTaskFace {
-  display: grid;
-  align-content: start;
-  min-height: 450px;
+.executarExecutionDone:active {
+  transform: translateY(0) scale(0.96);
 }
 
-.executarTaskFace > small:first-child {
+.executarExecutionDone svg {
+  width: 34px;
+  height: 34px;
+  stroke-width: 3.2;
+}
+
+.executarExecutionCurrent {
+  align-self: start;
+  max-width: 650px;
+  text-align: center;
+}
+
+.executarExecutionCurrent small {
   font-weight: 780;
-  color: #777d86;
+  color: #315cf5;
   letter-spacing: 0.12em;
 }
 
-.executarTaskFace > h1 {
-  max-width: 680px;
-  margin: 20px 0 12px;
-  font-size: clamp(31px, 5vw, 48px);
+.executarExecutionCurrent h1 {
+  margin: 12px 0 9px;
+  font-size: clamp(28px, 5vw, 46px);
   line-height: 1.08;
-  letter-spacing: -0.055em;
+  letter-spacing: -0.05em;
 }
 
-.executarFocusTaskTitle {
-  margin: 0 0 26px;
-  font-size: 17px;
+.executarExecutionCurrent p {
+  margin: 0;
   color: var(--executar-text-muted);
 }
 
-.executarFocusOptions {
+.executarExecutionScrollCue {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 11px;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  color: var(--executar-text);
+  background: #f0f1f3;
+  border: 0;
+  border-radius: 16px;
 }
 
-.executarFocusOptions > button {
-  display: flex;
-  gap: 13px;
-  align-items: center;
-  min-height: 84px;
-  padding: 15px 17px;
-  text-align: left;
-  background: #fff;
-  border: 1px solid var(--executar-border);
-  border-radius: 20px;
-}
-
-.executarFocusOptions > button:hover,
-.executarFocusOptions > button:focus-visible {
-  background: #f7ffe8;
-  border-color: #a9e843;
-}
-
-.executarFocusOptions svg {
-  flex: 0 0 auto;
+.executarExecutionScrollCue svg {
   width: 22px;
   height: 22px;
 }
 
-.executarFocusOptions b,
-.executarFocusOptions small {
-  display: block;
-}
-
-.executarFocusOptions small {
-  margin-top: 4px;
-  color: var(--executar-text-muted);
-}
-
-.executarTaskContext dl {
+.executarExecutionStory {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin: 18px 0 0;
+  gap: 22px;
 }
 
-.executarTaskContext dl > div {
+.executarStorySection {
+  padding: 30px 34px 34px;
+  scroll-margin-top: 118px;
+  border-radius: 30px;
+}
+
+.executarStorySection > header {
   display: grid;
-  grid-template-columns: 28px 110px minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
-  min-height: 62px;
-  padding: 12px;
-  background: #f7f8f9;
-  border-radius: 16px;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 24px;
 }
 
-.executarTaskContext dl svg {
-  width: 18px;
-  height: 18px;
-}
-
-.executarTaskContext dt {
-  color: var(--executar-text-muted);
-}
-
-.executarTaskContext dd {
-  margin: 0;
-  font-weight: 680;
-}
-
-.executarTaskEvidence > p {
-  margin: 0 0 22px;
-  color: var(--executar-text-muted);
-}
-
-.executarEvidenceStack {
+.executarStorySection > header > span {
   display: grid;
-  gap: 9px;
-}
-
-.executarEvidenceStack article {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 14px;
-  background: #f7f8f9;
-  border-radius: 16px;
-}
-
-.executarEvidenceStack b,
-.executarEvidenceStack small {
-  display: block;
-}
-
-.executarEvidenceStack small {
-  margin-top: 4px;
-  color: var(--executar-text-muted);
-}
-
-.executarEvidenceAdd {
-  display: flex;
-  gap: 9px;
-  align-items: center;
-  justify-content: center;
-  width: fit-content;
-  padding: 13px 17px;
-  margin-top: 18px;
-  font-weight: 760;
-  background: #f0f2f4;
-  border: 0;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  font-weight: 820;
+  color: #fff;
+  background: #141b33;
   border-radius: 15px;
 }
 
-.executarFocusFooter {
-  display: flex;
-  gap: 9px;
-  align-items: center;
-  justify-content: flex-end;
-  padding-top: 24px;
+.executarStorySection > header small {
+  font-weight: 780;
+  color: #315cf5;
+  letter-spacing: 0.12em;
 }
 
-.executarFocusFooter button {
-  min-height: 50px;
-  border: 0;
-  border-radius: 17px;
+.executarStorySection > header h2 {
+  margin: 5px 0 0;
+  font-size: clamp(24px, 4vw, 34px);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
 }
 
-.executarFocusBack {
-  padding: 0 20px;
+.executarStoryTaskTitle {
+  margin: 0 0 20px;
+  font-size: 20px;
+  font-weight: 760;
+}
+
+.executarStoryFacts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.executarStoryFacts span {
+  display: grid;
+  gap: 3px;
+  min-height: 84px;
+  padding: 16px;
+  background: #f1f2f4;
+  border-radius: 18px;
+}
+
+.executarStoryFacts b {
+  font-size: 24px;
+}
+
+.executarStoryFacts small,
+.executarStoryDefinition small,
+.executarIconActions small,
+.executarReadableTasks small,
+.executarBlockedTasks small,
+.executarEvidenceStack small {
   color: var(--executar-text-muted);
-  background: transparent;
 }
 
-.executarFocusDone {
+.executarStoryDefinition {
   display: flex;
-  gap: 9px;
-  align-items: center;
-  justify-content: center;
-  min-width: 190px;
-  padding: 0 20px;
-  font-weight: 800;
-  background: linear-gradient(120deg, #ceff6f, var(--executar-action));
+  gap: 14px;
+  align-items: flex-start;
+  padding: 17px 18px;
+  margin: 0;
+  background: #edf8fc;
+  border-radius: 18px;
 }
 
-.executarFocusDone svg,
-.executarFocusNext svg {
-  width: 20px;
-  height: 20px;
+.executarStoryDefinition > svg {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  color: #187ca1;
 }
 
-.executarFocusNext {
+.executarStoryDefinition span {
+  display: grid;
+  gap: 5px;
+}
+
+.executarIconActions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.executarIconActions > span {
+  display: grid;
+  gap: 7px;
+  justify-items: center;
+}
+
+.executarIconActions button {
   display: grid;
   place-items: center;
-  width: 50px;
-  background: #f0f2f4;
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  color: #141b33;
+  background: #f1f2f4;
+  border: 1px solid transparent;
+  border-radius: 18px;
 }
 
-.executarFocusNext:disabled {
-  opacity: 0.4;
+.executarIconActions button:hover,
+.executarExecutionScrollCue:hover {
+  background: #e6f5fb;
+}
+
+.executarIconActions button svg {
+  width: 27px;
+  height: 27px;
+  stroke-width: 2.6;
+}
+
+.executarReadableTasks,
+.executarBlockedTasks {
+  display: grid;
+  gap: 10px;
+}
+
+.executarReadableTasks > button,
+.executarBlockedTasks > article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  min-height: 86px;
+  padding: 14px 16px;
+  color: var(--executar-text);
+  text-align: left;
+  background: #f4f5f6;
+  border: 1px solid transparent;
+  border-radius: 20px;
+}
+
+.executarReadableTasks > button:hover {
+  background: #edf8fc;
+  border-color: #afdff0;
+}
+
+.executarReadableTaskIcon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  color: #141b33;
+  background: #fff;
+  border-radius: 15px;
+}
+
+.executarReadableTaskIcon svg,
+.executarBlockedTasks > article > svg {
+  width: 23px;
+  height: 23px;
+}
+
+.executarReadableTasks b,
+.executarReadableTasks small,
+.executarBlockedTasks b,
+.executarBlockedTasks small {
+  display: block;
+}
+
+.executarReadableTasks small,
+.executarBlockedTasks small {
+  margin-top: 5px;
+  line-height: 1.45;
+}
+
+.executarBlockedTasks > article {
+  grid-template-columns: 30px minmax(0, 1fr);
+  background: #f5f2ef;
+}
+
+.executarBlockedTasks > article > svg {
+  color: #8e684d;
+}
+
+.executarStoryEmpty {
+  padding: 18px;
+  margin: 0;
+  color: var(--executar-text-muted);
+  background: #f4f5f6;
+  border-radius: 18px;
+}
+
+.executarExecutionContext {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0;
+}
+
+.executarExecutionContext > div {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: center;
+  min-height: 92px;
+  padding: 16px;
+  background: #f4f5f6;
+  border-radius: 18px;
+}
+
+.executarExecutionContext svg {
+  grid-row: 1 / span 2;
+  width: 21px;
+  height: 21px;
+}
+
+.executarExecutionContext dt {
+  color: var(--executar-text-muted);
+}
+
+.executarExecutionContext dd {
+  margin: 0;
+  font-weight: 720;
+  line-height: 1.4;
+}
+
+.executarStorySection .executarEvidenceStack article {
+  background: #f4f5f6;
+}
+
+.executarExecutionSurface button:focus-visible,
+.executarExecutionSurface select:focus-visible {
+  outline: 3px solid rgba(49, 92, 245, 0.35);
+  outline-offset: 3px;
+}
+
+@media (max-width: 820px) {
+  .executarExecutionHero {
+    min-height: 570px;
+    padding: 22px 20px 20px;
+    border-radius: 30px;
+  }
+
+  .executarExecutionGauge {
+    width: min(100%, 330px);
+    height: 190px;
+    margin-top: 20px;
+  }
+
+  .executarExecutionCurrent h1 {
+    font-size: 32px;
+  }
+
+  .executarStorySection {
+    padding: 24px 20px 26px;
+    border-radius: 26px;
+  }
+
+  .executarStoryFacts,
+  .executarExecutionContext {
+    grid-template-columns: 1fr;
+  }
+
+  .executarIconActions {
+    gap: 8px;
+  }
+
+  .executarReadableTasks > button {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .executarReadableTasks > button > svg:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .executarExecutionHeader {
+    align-items: end;
+  }
+
+  .executarExecutionHeader select {
+    min-width: 128px;
+  }
+
+  .executarExecutionHeader > div > span {
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .executarExecutionGauge {
+    height: 165px;
+  }
+
+  .executarExecutionDone {
+    width: 64px;
+    height: 64px;
+    border-radius: 21px;
+  }
+
+  .executarStorySection > header {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .executarStorySection > header > span {
+    width: 42px;
+    height: 42px;
+  }
+
+  .executarStorySection > header h2 {
+    font-size: 25px;
+  }
+
+  .executarIconActions small {
+    font-size: 10px;
+  }
+
+  .executarIconActions button {
+    width: 52px;
+    height: 52px;
+    border-radius: 17px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .executarExecutionArc path,
+  .executarExecutionDone {
+    transition: none;
+  }
 }
 
 .executarDoneSurface > div,
