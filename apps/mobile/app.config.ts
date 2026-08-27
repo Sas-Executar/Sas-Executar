@@ -18,6 +18,13 @@ const config: ExpoConfig = {
           "Permita que o EXECUTAR use o Face ID para proteger sua sessão.",
       },
     ],
+    [
+      "expo-camera",
+      {
+        cameraPermission:
+          "Permita que o EXECUTAR use a câmera para escanear o Prisma/Tripé impresso.",
+      },
+    ],
     "@clerk/expo",
   ],
   experiments: {

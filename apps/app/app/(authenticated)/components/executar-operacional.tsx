@@ -17,6 +17,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { lerFluxoCopiloto } from "@/lib/executar/copilot-stream";
 import {
@@ -85,6 +86,28 @@ import "../handoff.css";
 
 type View = ProductView;
 type CopilotMode = "automatic" | "local";
+
+// Destinos válidos para deep link via `?view=` (ex.: vindo do Seletor do
+// Scanner) — mantido em sincronia manual com `ProductView` de executar-handoff.
+const VIEWS_VALIDAS = new Set<ProductView>([
+  "home",
+  "today",
+  "tomorrow",
+  "now",
+  "done",
+  "replan",
+  "overview",
+  "calendar",
+  "path",
+  "documents",
+]);
+
+function viewInicialDaUrl(searchParams: URLSearchParams | null): View {
+  const solicitada = searchParams?.get("view");
+  return solicitada && VIEWS_VALIDAS.has(solicitada as ProductView)
+    ? (solicitada as View)
+    : "home";
+}
 
 interface ExecutarOperacionalProperties {
   readonly collaborationAvailable: boolean;
@@ -1631,6 +1654,9 @@ function ProductSurface({
           onCopilot={onOpenCopilot}
           onDocuments={() => onSelectView("documents")}
           onProjects={() => onSelectView("overview")}
+          onScanner={() =>
+            window.open("/scanner", "_blank", "noopener,noreferrer")
+          }
           progress={currentProgress.percentage}
           projectCount={state.projects.length}
         />
@@ -1735,12 +1761,13 @@ export function ExecutarOperacional({
   userId,
 }: ExecutarOperacionalProperties) {
   const { user } = useUser();
+  const searchParams = useSearchParams();
   const [state, setState] = useState(() =>
     novoEstado(organizationId, ENTREGAS_SPRINT)
   );
   const [loaded, setLoaded] = useState(false);
   const [remoteReady, setRemoteReady] = useState(false);
-  const [view, setView] = useState<View>("home");
+  const [view, setView] = useState<View>(() => viewInicialDaUrl(searchParams));
   const [taskFace, setTaskFace] = useState<TaskFace>("principal");
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [note, setNote] = useState("");

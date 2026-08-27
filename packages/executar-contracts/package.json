@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./index.ts",
-    "./mobile": "./mobile.ts"
+    "./mobile": "./mobile.ts",
+    "./scanner": "./scanner.ts"
   },
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",

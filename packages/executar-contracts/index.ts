@@ -10,3 +10,11 @@ export {
   type RespostaEstadoMobile,
   respostaEstadoMobileSchema,
 } from "./mobile.ts";
+export {
+  type AcaoAdminId,
+  type AcaoScannerReconhecida,
+  ATALHOS_PADRAO_SELETOR,
+  type AtalhoSeletor,
+  idempotencyKeyScanner,
+  resolverPayloadScanner,
+} from "./scanner.ts";

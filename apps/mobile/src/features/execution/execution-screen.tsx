@@ -16,6 +16,7 @@ import {
 } from "tamagui";
 import { ExecutionGauge } from "@/components/execution-gauge";
 import { type ScopeOption, ScopeSelector } from "@/components/scope-selector";
+import { ScannerScreen } from "@/features/scanner/scanner-screen";
 
 interface ExecutionScreenProps {
   readonly onRefresh: () => Promise<void>;
@@ -115,6 +116,7 @@ export function ExecutionScreen({
   refreshing,
 }: ExecutionScreenProps) {
   const [scope, setScope] = useState("day");
+  const [scannerOpen, setScannerOpen] = useState(false);
   const areas = useMemo(() => taskAreas(projection), [projection]);
   const totals = useMemo(
     () => ({
@@ -137,6 +139,15 @@ export function ExecutionScreen({
     );
   };
 
+  if (scannerOpen) {
+    return (
+      <ScannerScreen
+        onClose={() => setScannerOpen(false)}
+        projection={projection}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={{ backgroundColor: "#F2F1ED", flex: 1 }}>
       <ScrollView
@@ -158,9 +169,18 @@ export function ExecutionScreen({
               options={SCOPE_OPTIONS}
               selection={scope}
             />
-            <Button chromeless color="#73736D" onPress={onSignOut}>
-              Sair
-            </Button>
+            <XStack style={{ gap: 8 }}>
+              <Button
+                chromeless
+                color="#73736D"
+                onPress={() => setScannerOpen(true)}
+              >
+                Scanner
+              </Button>
+              <Button chromeless color="#73736D" onPress={onSignOut}>
+                Sair
+              </Button>
+            </XStack>
           </XStack>
 
           <YStack style={{ gap: 8 }}>
