@@ -22,6 +22,7 @@ import {
   MessageCircle,
   Paperclip,
   RefreshCw,
+  ScanLine,
   Search,
   Sparkles,
   Wrench,
@@ -212,6 +213,7 @@ interface HomeSurfaceProperties {
   readonly onCopilot: () => void;
   readonly onDocuments: () => void;
   readonly onProjects: () => void;
+  readonly onScanner: () => void;
   readonly progress: number;
   readonly projectCount: number;
 }
@@ -222,6 +224,7 @@ export function HomeSurface({
   onCopilot,
   onDocuments,
   onProjects,
+  onScanner,
   progress,
   projectCount,
 }: HomeSurfaceProperties) {
@@ -301,6 +304,28 @@ export function HomeSurface({
             <p>Converse, planeje, resolva.</p>
             <span className="executarCopilotPrompt">
               <Sparkles aria-hidden="true" /> Como posso ajudar?
+            </span>
+          </div>
+        </button>
+        <button
+          className="executarContextCard scanner"
+          onClick={onScanner}
+          type="button"
+        >
+          <header>
+            <span>
+              <ScanLine aria-hidden="true" />
+              <b>Scanner</b>
+            </span>
+            <span>
+              Câmera
+              <ChevronRight aria-hidden="true" />
+            </span>
+          </header>
+          <div>
+            <p>Aponte para o Prisma/Tripé e execute.</p>
+            <span className="executarCopilotPrompt">
+              <ScanLine aria-hidden="true" /> Entrada, Feito, Saída…
             </span>
           </div>
         </button>

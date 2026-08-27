@@ -154,6 +154,10 @@
   background: linear-gradient(115deg, #42bd1a, var(--executar-action));
 }
 
+.executarContextCard.scanner > header {
+  background: linear-gradient(115deg, #d6470b, #ff8a3d);
+}
+
 .executarMiniProgress {
   display: block;
   width: min(280px, 80%);
@@ -1147,7 +1151,7 @@
   }
 
   .executarContextCards {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .executarContextCard {

@@ -1,0 +1,750 @@
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+
+/*
+ * Fallback estático (Prisma). O formato ativo sobrescreve `size` via um
+ * <style> inline renderizado por mapa-os-client.tsx — @page não aceita
+ * seletor de atributo/classe, então o tamanho por formato precisa ser
+ * injetado dinamicamente a partir do estado `format`.
+ */
+@page {
+  margin: 0;
+  size: 210mm 297mm;
+}
+
+/*
+ * Mapa-OS · Prisma/Tripé — folha isolada, própria de tokens.
+ *
+ * Não estende o tema Tailwind/shadcn/Geist do resto do app (mesmo padrão de
+ * executar.css/handoff.css): este é um artefato de impressão com sistema
+ * visual próprio, definido em Onboarding.md + Regras_desing.md, não a UI
+ * viva do dashboard.
+ *
+ * Camada raw -> alias semântica (production-standards.md secao 3): os
+ * tokens --mo-raw-... não são referenciados fora deste bloco; os
+ * componentes consomem só os aliases --mo-color-..., --mo-space-...,
+ * --mo-font-....
+ */
+.mapaOsShell {
+  --mo-raw-amarelo: #e8a317; /* confirmado pelo usuário em 27/08/2026 — amarelo de ação do Onboarding.md */
+  --mo-raw-verde: #1ba957;
+  --mo-raw-azul: #167efe;
+  --mo-raw-ink: #39393b;
+  --mo-raw-bg: #f4f6f5;
+  --mo-raw-bg-frio: #e1e2e6;
+
+  --mo-color-surface: #ffffff;
+  --mo-color-bg: var(--mo-raw-bg);
+  --mo-color-bg-frio: var(--mo-raw-bg-frio);
+  --mo-color-ink: var(--mo-raw-ink);
+  --mo-color-ink-muted: color-mix(in srgb, var(--mo-raw-ink) 62%, white);
+  --mo-color-entregavel: var(--mo-raw-verde);
+  --mo-color-acao: var(--mo-raw-amarelo);
+  --mo-color-acao-secundaria: var(--mo-raw-azul);
+  --mo-color-hairline-subtle: color-mix(in srgb, var(--mo-raw-ink) 10%, white);
+  --mo-color-hairline-default: color-mix(in srgb, var(--mo-raw-ink) 18%, white);
+  --mo-color-hairline-strong: color-mix(in srgb, var(--mo-raw-ink) 32%, white);
+
+  --mo-notes-agora: #d94b4b;
+  --mo-notes-proximo: #e5b62f;
+  --mo-notes-depois: #4b9b62;
+
+  /* rampa de espaçamento — Regras_desing.md §2.1 (base 4px) */
+  --mo-space-1: 4px;
+  --mo-space-2: 8px;
+  --mo-space-3: 12px;
+  --mo-space-4: 16px;
+  --mo-space-5: 20px;
+  --mo-space-6: 24px;
+
+  --mo-font-base: Arial, "Helvetica Neue", sans-serif;
+  --mo-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+  --mo-font-support: "Courier New", Courier, monospace;
+
+  /* geometria física — Prisma A4 retrato (padrão) */
+  --mo-paper-width: 210mm;
+  --mo-paper-height: 297mm;
+  --mo-page-margin: 10mm;
+  --mo-fold-gap: 5mm;
+  --mo-header-height: 16mm;
+  --mo-footer-height: 5mm;
+  --mo-header-square: 16mm;
+  --mo-scale: 1;
+
+  min-height: 100vh;
+  font-family: var(--mo-font-base);
+  color: var(--mo-color-ink);
+  background: var(--mo-color-bg-frio);
+}
+
+.mapaOsShell * {
+  box-sizing: border-box;
+}
+
+.mapaOsShell button {
+  font: inherit;
+}
+
+.mapaOsShell {
+  padding: 28px;
+}
+
+/* ---------- controles de prévia (nunca aparecem no papel) ---------- */
+.mapaOsPrintControls {
+  position: sticky;
+  top: 16px;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mo-space-2);
+  align-items: center;
+  width: min(100%, 960px);
+  padding: 10px 12px 10px 18px;
+  margin: 0 auto 20px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--mo-color-hairline-default);
+  border-radius: 16px;
+}
+
+.mapaOsBrand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-right: auto;
+}
+
+.mapaOsBrand span {
+  font: 500 10px / 1.2 var(--mo-font-mono);
+  color: var(--mo-color-ink-muted);
+  letter-spacing: 0.12em;
+}
+
+.mapaOsBrand strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.mapaOsVisuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  clip: rect(0 0 0 0);
+}
+
+.mapaOsFormatSwitch {
+  display: inline-flex;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--mo-color-hairline-strong);
+  border-radius: 10px;
+}
+
+.mapaOsFormatSwitch button {
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  background: #fff;
+  border: none;
+}
+
+.mapaOsFormatSwitch button + button {
+  border-left: 1px solid var(--mo-color-hairline-strong);
+}
+
+.mapaOsFormatSwitch button[aria-pressed="true"] {
+  color: #fff;
+  background: var(--mo-color-ink);
+}
+
+.mapaOsPrintControls > button {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 13px;
+  color: var(--mo-color-ink);
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid var(--mo-color-hairline-strong);
+  border-radius: 10px;
+}
+
+.mapaOsPrintControls > button.primary {
+  color: #fff;
+  background: var(--mo-color-ink);
+  border-color: var(--mo-color-ink);
+}
+
+.mapaOsStage {
+  width: 100%;
+  padding: 8px 0 64px;
+  overflow: auto;
+}
+
+/* ---------- folha ---------- */
+.mapaOsSheet {
+  position: relative;
+  width: var(--mo-paper-width);
+  height: var(--mo-paper-height);
+  margin: 0 auto;
+  overflow: hidden;
+  background: var(--mo-color-surface);
+}
+
+.mapaOsSheet.tripe {
+  --mo-paper-width: 297mm;
+  --mo-paper-height: 210mm;
+  --mo-scale: 0.86;
+}
+
+.mapaOsSafeArea {
+  position: absolute;
+  inset: var(--mo-page-margin);
+  display: grid;
+}
+
+.mapaOsSheet.prisma .mapaOsSafeArea {
+  grid-template-rows:
+    1fr var(--mo-fold-gap) 1fr var(--mo-fold-gap)
+    1fr;
+  grid-template-columns: 1fr;
+}
+
+.mapaOsSheet.tripe .mapaOsSafeArea {
+  grid-template-rows: 1fr;
+  grid-template-columns:
+    1fr var(--mo-fold-gap) 1fr var(--mo-fold-gap)
+    1fr;
+}
+
+.mapaOsCutGuide {
+  position: absolute;
+  inset: var(--mo-page-margin);
+  pointer-events: none;
+  border: 0.2mm dashed var(--mo-color-hairline-strong);
+  opacity: 0;
+}
+
+.showGuides .mapaOsCutGuide {
+  opacity: 1;
+}
+
+.mapaOsFold {
+  position: relative;
+  background: var(--mo-color-surface);
+}
+
+.mapaOsFold span {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+  font: 500 4.5pt / 1 var(--mo-font-mono);
+  color: var(--mo-color-ink-muted);
+  letter-spacing: 0.12em;
+}
+
+.showGuides .mapaOsFold span {
+  display: grid;
+}
+
+/* ---------- anatomia compartilhada da face (header/main/footer) ---------- */
+.mapaOsFace {
+  position: relative;
+  display: grid;
+  grid-template-areas: "header" "main" "footer";
+  grid-template-rows: var(--mo-header-height) 1fr var(--mo-footer-height);
+  min-width: 0;
+  min-height: 0;
+  background: var(--mo-color-surface);
+  border: 0.22mm solid transparent;
+}
+
+.showGuides .mapaOsFace {
+  border-color: var(--mo-color-hairline-default);
+}
+
+.mapaOsFaceHeader {
+  display: grid;
+  grid-area: header;
+  grid-template-columns: var(--mo-header-square) 1fr var(--mo-header-square);
+  min-width: 0;
+  border-bottom: 0.22mm solid var(--mo-color-hairline-default);
+}
+
+.mapaOsFaceTitle,
+.mapaOsQrCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mapaOsFaceTitle {
+  font: 700 calc(6.5pt * var(--mo-scale)) / 1 var(--mo-font-mono);
+  letter-spacing: 0.08em;
+  border-right: 0.22mm solid var(--mo-color-hairline-default);
+}
+
+.mapaOsQrCell {
+  border-left: 0.22mm solid var(--mo-color-hairline-default);
+}
+
+.mapaOsQrCell svg {
+  width: 10.5mm;
+  height: 10.5mm;
+}
+
+.mapaOsContextBar {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mapaOsFaceMain {
+  grid-area: main;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--mo-space-1);
+}
+
+.mapaOsFaceFooter {
+  grid-area: footer;
+  border-top: 0.22mm solid transparent;
+}
+
+.showGuides .mapaOsFaceFooter {
+  border-top-color: var(--mo-color-hairline-default);
+}
+
+/* ---------- calendário semanal (Admin + Notas) ---------- */
+.mapaOsCalendarBar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: center;
+  height: 100%;
+  padding: 1.6mm 3mm;
+}
+
+.mapaOsCalendarDay {
+  display: grid;
+  grid-template-rows: 3mm 5mm 2mm;
+  place-items: center;
+  height: 11.5mm;
+  border-right: 0.18mm solid var(--mo-color-hairline-subtle);
+}
+
+.mapaOsCalendarDay:last-child {
+  border-right: 0;
+}
+
+.mapaOsCalendarDay span {
+  font: 600 calc(4.5pt * var(--mo-scale)) / 1 var(--mo-font-mono);
+  color: var(--mo-color-ink-muted);
+  letter-spacing: 0.08em;
+}
+
+.mapaOsCalendarDay strong {
+  display: grid;
+  place-items: center;
+  width: 5mm;
+  height: 5mm;
+  font: 600 calc(6pt * var(--mo-scale)) / 1 var(--mo-font-base);
+  border-radius: 50%;
+}
+
+.mapaOsCalendarDay i {
+  width: 1.2mm;
+  height: 1.2mm;
+  background: transparent;
+  border-radius: 50%;
+}
+
+.mapaOsCalendarDay.done i {
+  background: var(--mo-color-entregavel);
+}
+
+.mapaOsCalendarDay.current strong {
+  color: #fff;
+  background: var(--mo-color-acao);
+}
+
+.mapaOsCalendarDay.current i {
+  background: var(--mo-color-acao);
+}
+
+/* ---------- A1 · Admin ---------- */
+.mapaOsAdminActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mo-space-4);
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.mapaOsAdminAction {
+  display: flex;
+  flex-direction: column;
+  gap: 2mm;
+  align-items: center;
+  width: calc(26mm * var(--mo-scale));
+}
+
+.mapaOsActionSquare {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(26mm * var(--mo-scale));
+  height: calc(26mm * var(--mo-scale));
+  background: var(--mo-color-bg);
+  border: 0.22mm solid var(--mo-color-hairline-default);
+  border-radius: 3mm;
+}
+
+.mapaOsActionSquare > svg {
+  width: calc(20mm * var(--mo-scale));
+  height: calc(20mm * var(--mo-scale));
+}
+
+.mapaOsActionBadge {
+  position: absolute;
+  top: 1.2mm;
+  left: 1.2mm;
+  display: grid;
+  place-items: center;
+  width: 5mm;
+  height: 5mm;
+  overflow: hidden;
+  background: var(--mo-color-surface);
+  border-radius: 50%;
+  box-shadow: 0 0 0 0.3mm var(--mo-color-hairline-default);
+}
+
+.mapaOsActionBadge svg {
+  width: 3mm;
+  height: 3mm;
+}
+
+.mapaOsAdminAction > span {
+  font-family: var(--mo-font-base);
+  font-size: calc(6pt * var(--mo-scale));
+  font-weight: 500;
+}
+
+/* ---------- A2 · Ciclo ---------- */
+.mapaOsRoutineBar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  height: 100%;
+  padding: 1.6mm 2.5mm 1mm;
+}
+
+.mapaOsRoutineStep {
+  position: relative;
+  display: grid;
+  grid-template-rows: 5.2mm 2.6mm 2.5mm 2.4mm;
+  place-items: center;
+  min-width: 0;
+}
+
+.mapaOsRoutineNode {
+  display: grid;
+  place-items: center;
+  width: 5.4mm;
+  height: 5.4mm;
+  font: 700 5.5pt / 1 var(--mo-font-base);
+  color: #fff;
+  background: #fff;
+  border: 0.6mm solid var(--mo-color-hairline-strong);
+  border-radius: 50%;
+}
+
+.mapaOsRoutineStep.done .mapaOsRoutineNode {
+  background: var(--mo-color-entregavel);
+  border-color: var(--mo-color-entregavel);
+}
+
+.mapaOsRoutineStep.current .mapaOsRoutineNode {
+  background: var(--mo-color-acao);
+  border: 1.1mm solid var(--mo-color-acao);
+  box-shadow: inset 0 0 0 0.8mm #fff;
+}
+
+.mapaOsRoutineStep.next .mapaOsRoutineNode {
+  border-color: var(--mo-color-ink);
+}
+
+.mapaOsRoutineStep strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--mo-font-base);
+  font-size: calc(4.2pt * var(--mo-scale));
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mapaOsRoutineStep span {
+  font: 400 calc(3.6pt * var(--mo-scale)) / 1 var(--mo-font-mono);
+  color: var(--mo-color-ink-muted);
+  white-space: nowrap;
+}
+
+.mapaOsRoutineStep small {
+  font-size: calc(3.5pt * var(--mo-scale));
+  font-weight: 500;
+  color: var(--mo-color-hairline-strong);
+  white-space: nowrap;
+}
+
+.mapaOsRoutineStep.done small {
+  color: var(--mo-color-entregavel);
+}
+
+.mapaOsRoutineStep.current small {
+  color: var(--mo-color-acao);
+}
+
+.mapaOsRoadmapGrid {
+  display: grid;
+  gap: var(--mo-space-2);
+  height: 100%;
+}
+
+.mapaOsSheet.prisma .mapaOsRoadmapGrid {
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mapaOsSheet.tripe .mapaOsRoadmapGrid {
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mapaOsDayCard {
+  display: grid;
+  grid-template-rows: 5.5mm 9mm 1fr;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--mo-color-surface);
+  border: 0.22mm solid var(--mo-color-hairline-strong);
+  border-radius: 1.5mm;
+}
+
+.mapaOsDayCard.placeholder {
+  border-style: dashed;
+  opacity: 0.55;
+}
+
+.mapaOsDayMeta {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  padding: 0 1.8mm;
+  font: 500 calc(4.2pt * var(--mo-scale)) / 1 var(--mo-font-mono);
+  color: var(--mo-color-ink-muted);
+  letter-spacing: 0.03em;
+  border-bottom: 0.18mm solid var(--mo-color-hairline-subtle);
+}
+
+.mapaOsDayMeta span {
+  text-align: center;
+}
+
+.mapaOsDayMeta time {
+  text-align: right;
+}
+
+.mapaOsDayMeta strong {
+  font-weight: 600;
+  color: var(--mo-color-ink);
+}
+
+.mapaOsDayCard h3 {
+  display: flex;
+  align-items: center;
+  padding: 1.4mm 1.8mm;
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--mo-font-base);
+  font-size: calc(6.2pt * var(--mo-scale));
+  font-weight: 600;
+  line-height: 1.18;
+  border-bottom: 0.18mm solid var(--mo-color-hairline-subtle);
+}
+
+.mapaOsDayCard h3.placeholder {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--mo-color-ink-muted);
+}
+
+.mapaOsWorkflowGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-height: 0;
+}
+
+.mapaOsWorkflowCard {
+  display: flex;
+  flex-direction: column;
+  gap: 1mm;
+  min-width: 0;
+  padding: 1.2mm 1.1mm 1mm;
+  overflow: hidden;
+  border-right: 0.18mm solid var(--mo-color-hairline-subtle);
+}
+
+.mapaOsWorkflowCard:last-child {
+  border-right: 0;
+}
+
+.mapaOsWorkflowMeta {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mapaOsWorkflowMeta span {
+  display: grid;
+  place-items: center;
+  width: 3.6mm;
+  height: 3.6mm;
+  font: 500 calc(4pt * var(--mo-scale)) / 1 var(--mo-font-mono);
+  color: var(--mo-color-ink-muted);
+  border: 0.18mm solid var(--mo-color-hairline-strong);
+  border-radius: 50%;
+}
+
+.mapaOsWorkflowCard p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  margin: 0;
+  overflow: hidden;
+  -webkit-line-clamp: 3;
+  font-family: var(--mo-font-base);
+  font-size: calc(5pt * var(--mo-scale));
+  font-weight: 500;
+  line-height: 1.22;
+}
+
+.mapaOsWorkflowCard.placeholder p {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--mo-color-ink-muted);
+}
+
+/* ---------- A3 · Notas ---------- */
+.mapaOsNotesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  height: 100%;
+}
+
+.mapaOsNotesLane {
+  display: grid;
+  grid-template-rows: 5mm 1fr 1.4mm;
+  min-width: 0;
+  padding: 3mm 3mm 2.5mm;
+  border-right: 0.22mm solid var(--mo-color-hairline-default);
+}
+
+.mapaOsNotesLane:last-child {
+  border-right: 0;
+}
+
+.mapaOsNotesLane h3 {
+  margin: 0;
+  font: 600 calc(5.5pt * var(--mo-scale)) / 1 var(--mo-font-mono);
+  color: var(--mo-color-ink-muted);
+  letter-spacing: 0.08em;
+}
+
+.mapaOsNotesLane i {
+  display: block;
+  width: 100%;
+  height: 1.4mm;
+  border-radius: 0.7mm;
+}
+
+.mapaOsNotesLane.agora i {
+  background: var(--mo-notes-agora);
+}
+
+.mapaOsNotesLane.proximo i {
+  background: var(--mo-notes-proximo);
+}
+
+.mapaOsNotesLane.depois i {
+  background: var(--mo-notes-depois);
+}
+
+/* ---------- impressão ---------- */
+@media print {
+  html,
+  body {
+    background: #fff;
+  }
+
+  .mapaOsShell {
+    min-height: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  .mapaOsPrintControls {
+    display: none;
+  }
+
+  .mapaOsStage {
+    padding: 0;
+    overflow: visible;
+  }
+
+  .mapaOsSheet {
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .mapaOsCutGuide,
+  .showGuides .mapaOsCutGuide {
+    display: none !important;
+  }
+
+  .mapaOsFold span,
+  .showGuides .mapaOsFold span {
+    display: none !important;
+  }
+
+  .mapaOsFace,
+  .showGuides .mapaOsFace {
+    border-color: transparent !important;
+  }
+
+  .mapaOsFaceFooter,
+  .showGuides .mapaOsFaceFooter {
+    border-top-color: transparent !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .mapaOsShell {
+    padding: 16px 10px;
+  }
+
+  .mapaOsPrintControls {
+    position: static;
+  }
+
+  .mapaOsStage {
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .mapaOsSheet {
+    margin-left: 0;
+  }
+}
