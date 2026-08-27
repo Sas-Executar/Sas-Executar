@@ -1767,7 +1767,21 @@ export function ExecutarOperacional({
   );
   const [loaded, setLoaded] = useState(false);
   const [remoteReady, setRemoteReady] = useState(false);
-  const [view, setView] = useState<View>(() => viewInicialDaUrl(searchParams));
+  const [view, setView] = useState<View>("home");
+  const deepLinkAplicado = useRef(false);
+
+  // Aplica `?view=` (ex.: vindo do Seletor do Scanner) uma única vez, no
+  // primeiro render — ajuste de estado durante a renderização em vez de um
+  // efeito, para preservar "home" como o valor inicial literal de `view`.
+  if (!deepLinkAplicado.current) {
+    deepLinkAplicado.current = true;
+    const viewSolicitada = viewInicialDaUrl(searchParams);
+
+    if (viewSolicitada !== "home") {
+      setView(viewSolicitada);
+    }
+  }
+
   const [taskFace, setTaskFace] = useState<TaskFace>("principal");
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [note, setNote] = useState("");
