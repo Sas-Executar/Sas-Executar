@@ -1,3 +1,17 @@
+/* --line/--muted/--blue2/--shadow eram custom properties nunca
+   definidas neste build (só existiam no protótipo legado em
+   public/legado/sprint-operacional/app.css) — todo elemento que as
+   usava renderizava com cor inválida. Corrigido aliasando pra
+   fundação compartilhada (exec-tokens.css) em vez de recriar valores
+   soltos, e mantendo os nomes --line/--muted/--blue2/--shadow porque
+   são usados dezenas de vezes no resto deste arquivo. */
+:root {
+  --line: var(--exec-color-stroke-default);
+  --muted: var(--exec-color-foreground-secondary);
+  --blue2: var(--exec-color-acao-secundaria);
+  --shadow: var(--exec-elevation-3);
+}
+
 .executarResumo {
   margin-top: 12px;
 }
@@ -5,7 +19,7 @@
   text-align: left;
 }
 .executarAcao small {
-  color: #858b93;
+  color: var(--exec-color-foreground-secondary);
 }
 .executarProgresso {
   margin-top: 15px;
@@ -59,7 +73,11 @@
   border-radius: 14px;
 }
 .executarPathNode.hot {
-  background: #f8fbff;
+  background: color-mix(
+    in srgb,
+    var(--exec-color-acao-secundaria) 6%,
+    var(--exec-color-surface)
+  );
   border: 2px solid var(--blue2);
 }
 .executarPathNode b {
@@ -79,7 +97,7 @@
   width: min(440px, calc(100vw - 28px));
   height: min(680px, calc(100vh - 40px));
   overflow: hidden;
-  background: white;
+  background: var(--exec-color-surface);
   border: 1px solid var(--line);
   border-radius: 24px;
   box-shadow: var(--shadow);
@@ -110,8 +128,8 @@
   padding: 0 11px;
   font-size: 11px;
   font-weight: 750;
-  color: #35383d;
-  background: #f1f2f4;
+  color: var(--exec-color-foreground);
+  background: var(--exec-color-surface-subtle);
   border: 0;
   border-radius: 999px;
 }
@@ -140,13 +158,13 @@
   align-self: flex-start;
   max-width: 100%;
   padding-left: 0;
-  color: #24272c;
+  color: var(--exec-color-foreground);
   background: transparent;
 }
 .executarMensagem.pessoa {
   align-self: flex-end;
-  color: #202226;
-  background: #eff0f2;
+  color: var(--exec-color-foreground);
+  background: var(--exec-color-surface-subtle);
 }
 .executarMensagem p {
   margin: 0;
@@ -167,10 +185,11 @@
   min-height: 62px;
   padding: 8px;
   margin: 0 12px 12px;
-  background: white;
-  border: 1px solid #e7e7e7;
+  background: var(--exec-color-surface);
+  border: 1px solid var(--exec-color-surface-subtle);
   border-radius: 26px;
-  box-shadow: 0 14px 35px rgba(25, 28, 33, 0.1);
+  box-shadow: 0 14px 35px
+    color-mix(in srgb, var(--exec-color-foreground) 10%, transparent);
 }
 .executarChatForm input,
 .executarChatForm textarea {
@@ -185,7 +204,7 @@
   border: 0;
 }
 .executarChatForm textarea::placeholder {
-  color: #92969d;
+  color: var(--exec-color-foreground-secondary);
 }
 .executarChatUtilityButton,
 .executarChatSubmit {
@@ -198,12 +217,12 @@
   border-radius: 50%;
 }
 .executarChatUtilityButton {
-  color: #292c31;
+  color: var(--exec-color-foreground);
   background: transparent;
 }
 .executarChatSubmit {
-  color: white;
-  background: #0a84ff;
+  color: var(--exec-color-surface);
+  background: var(--exec-color-acao-secundaria);
 }
 .executarChatUtilityButton svg,
 .executarChatSubmit svg {
@@ -211,14 +230,15 @@
   height: 24px;
 }
 .executarChatSubmit:disabled {
-  color: #8b9097;
-  background: #eceef1;
+  color: var(--exec-color-foreground-secondary);
+  background: var(--exec-color-surface-subtle);
 }
 .executarChatLoader {
   width: 17px;
   height: 17px;
-  border: 2px solid rgba(255, 255, 255, 0.45);
-  border-top-color: white;
+  border: 2px solid
+    color-mix(in srgb, var(--exec-color-surface) 45%, transparent);
+  border-top-color: var(--exec-color-surface);
   border-radius: 50%;
   animation: executar-spin 0.8s linear infinite;
 }
@@ -232,7 +252,7 @@
   gap: 10px;
   padding: 12px;
   margin: 0 12px 10px;
-  background: #f6f7f8;
+  background: var(--exec-color-surface-subtle);
   border-radius: 16px;
 }
 .executarMobileHeader,
@@ -253,7 +273,7 @@
   width: 100%;
   height: 100%;
   padding: 0;
-  background: rgba(18, 20, 24, 0.28);
+  background: color-mix(in srgb, var(--exec-color-foreground) 28%, transparent);
   border: 0;
 }
 .executarModelSelector {
@@ -261,10 +281,11 @@
   z-index: 1;
   width: min(420px, calc(100vw - 28px));
   padding: 18px;
-  background: #fff;
-  border: 1px solid #eceef0;
+  background: var(--exec-color-surface);
+  border: 1px solid var(--exec-color-surface-subtle);
   border-radius: 24px;
-  box-shadow: 0 30px 90px rgba(20, 23, 29, 0.2);
+  box-shadow: 0 30px 90px
+    color-mix(in srgb, var(--exec-color-foreground) 20%, transparent);
 }
 .executarModelSelectorHead {
   display: flex;
@@ -276,7 +297,7 @@
 .executarModelSelectorHead small {
   font-size: 10px;
   font-weight: 800;
-  color: #8b9098;
+  color: var(--exec-color-foreground-secondary);
   letter-spacing: 0.1em;
 }
 .executarModelSelectorHead h2 {
@@ -290,8 +311,8 @@
   place-items: center;
   width: 38px;
   height: 38px;
-  color: #3c4046;
-  background: #f2f3f4;
+  color: var(--exec-color-foreground);
+  background: var(--exec-color-surface-subtle);
   border: 0;
   border-radius: 50%;
 }
@@ -316,13 +337,13 @@
   padding: 11px;
   text-align: left;
   cursor: pointer;
-  background: #fff;
-  border: 1px solid #e6e8eb;
+  background: var(--exec-color-surface);
+  border: 1px solid var(--exec-color-surface-subtle);
   border-radius: 16px;
 }
 .executarModelOptions > label:has(input:checked) {
-  background: #f5f7f9;
-  border-color: #b9c0c9;
+  background: var(--exec-color-surface-subtle);
+  border-color: var(--exec-color-stroke-strong);
 }
 .executarModelOptions input {
   position: absolute;
@@ -337,8 +358,8 @@
   width: 44px;
   height: 44px;
   font-weight: 850;
-  color: white;
-  background: #17191d;
+  color: var(--exec-color-surface);
+  background: var(--exec-color-foreground);
   border-radius: 14px;
 }
 .executarModelOptionIcon svg {
@@ -356,7 +377,7 @@
   margin-top: 3px;
   font-size: 10px;
   line-height: 1.4;
-  color: #777d85;
+  color: var(--exec-color-foreground-secondary);
 }
 .executarModelOptions > label > svg {
   width: 18px;
@@ -366,7 +387,7 @@
   margin: 13px 2px 0;
   font-size: 10px;
   line-height: 1.45;
-  color: #737982;
+  color: var(--exec-color-foreground-secondary);
 }
 .executarEvidenceBackdrop {
   position: fixed;
@@ -374,11 +395,11 @@
   z-index: 80;
   display: grid;
   place-items: center;
-  background: rgba(10, 13, 18, 0.45);
+  background: color-mix(in srgb, var(--exec-color-foreground) 45%, transparent);
 }
 .executarEvidenceDialog {
   width: min(520px, calc(100vw - 28px));
-  background: white;
+  background: var(--exec-color-surface);
   border-radius: 22px;
 }
 .executarVerificacao {
@@ -392,7 +413,7 @@
 }
 .executarErro {
   font-size: 12px;
-  color: #b42318;
+  color: var(--exec-color-erro);
 }
 .primaryBtn:disabled {
   cursor: not-allowed;
@@ -412,8 +433,13 @@
   display: grid;
   gap: 8px;
   padding: 12px;
-  background: #fffaf0;
-  border: 1px solid #e6c68a;
+  background: color-mix(
+    in srgb,
+    var(--exec-color-acao) 6%,
+    var(--exec-color-surface)
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--exec-color-acao) 40%, var(--exec-color-surface));
   border-radius: 14px;
 }
 .executarAprovacao strong {
@@ -422,7 +448,7 @@
 .executarAprovacao p {
   margin: 0;
   font-size: 11px;
-  color: #5d6470;
+  color: var(--exec-color-foreground-secondary);
 }
 .executarAprovacao .primaryBtn,
 .executarAprovacao .softBtn {
@@ -436,14 +462,14 @@
 }
 .executarAjudaCopiloto summary {
   font-size: 11px;
-  color: #59606a;
+  color: var(--exec-color-foreground-secondary);
   cursor: pointer;
 }
 .executarAjudaCopiloto small {
   display: block;
   margin-top: 5px;
   font-size: 10px;
-  color: #777d86;
+  color: var(--exec-color-foreground-secondary);
 }
 .executarEvidenceItem {
   display: grid;
@@ -479,7 +505,7 @@
   min-width: 0;
   padding: 10px;
   font-size: 12px;
-  background: white;
+  background: var(--exec-color-surface);
   border: 1px solid var(--line);
   border-radius: 11px;
 }
@@ -491,7 +517,7 @@
   max-height: calc(100vh - 48px);
   padding: 20px;
   overflow: auto;
-  background: white;
+  background: var(--exec-color-surface);
   border-radius: 22px;
 }
 .executarProjectHead {
@@ -572,13 +598,13 @@
 }
 .executarHistory small {
   padding: 7px;
-  color: #555d67;
-  background: #f6f7f9;
+  color: var(--exec-color-foreground-secondary);
+  background: var(--exec-color-surface-subtle);
   border-radius: 8px;
 }
 .executarNotice {
   font-size: 12px;
-  color: #2a8040;
+  color: var(--exec-color-entregue);
 }
 @media (max-width: 1120px) {
   .executarProjectSwitch {
@@ -660,8 +686,16 @@
   border-radius: 10px;
 }
 .executarAviso.novo {
-  background: #f7fbff;
-  border-color: #bfd5ee;
+  background: color-mix(
+    in srgb,
+    var(--exec-color-acao-secundaria) 6%,
+    var(--exec-color-surface)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--exec-color-acao-secundaria) 30%,
+    var(--exec-color-surface)
+  );
 }
 .executarAviso b,
 .executarComentario b {
@@ -692,7 +726,11 @@
   display: grid;
   gap: 5px;
   padding: 10px;
-  background: #eef6f0;
+  background: color-mix(
+    in srgb,
+    var(--exec-color-entregue) 8%,
+    var(--exec-color-surface)
+  );
   border-radius: 10px;
 }
 .executarOnboarding b {
@@ -701,8 +739,13 @@
 .executarSyncNotice {
   padding: 9px 11px;
   font-size: 11px;
-  background: #fffaf0;
-  border: 1px solid #e6c68a;
+  background: color-mix(
+    in srgb,
+    var(--exec-color-acao) 6%,
+    var(--exec-color-surface)
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--exec-color-acao) 40%, var(--exec-color-surface));
   border-radius: 10px;
 }
 
@@ -718,8 +761,8 @@
     gap: 10px;
     align-items: center;
     padding: calc(12px + env(safe-area-inset-top)) 14px 12px;
-    background: rgba(255, 255, 255, 0.96);
-    border-bottom: 1px solid rgba(228, 231, 235, 0.65);
+    background: color-mix(in srgb, var(--exec-color-surface) 96%, transparent);
+    border-bottom: 1px solid var(--exec-color-stroke-default);
     backdrop-filter: blur(18px);
   }
   .executarMobileCircleButton {
@@ -728,11 +771,12 @@
     width: 52px;
     height: 52px;
     padding: 0;
-    color: #1d2024;
-    background: white;
+    color: var(--exec-color-foreground);
+    background: var(--exec-color-surface);
     border: 0;
     border-radius: 50%;
-    box-shadow: 0 12px 32px rgba(27, 30, 36, 0.09);
+    box-shadow: 0 12px 32px
+      color-mix(in srgb, var(--exec-color-foreground) 09%, transparent);
   }
   .executarMobileCircleButton svg {
     width: 25px;
@@ -749,9 +793,10 @@
     gap: 3px;
     min-width: 0;
     padding: 5px;
-    background: white;
+    background: var(--exec-color-surface);
     border-radius: 999px;
-    box-shadow: 0 12px 35px rgba(27, 30, 36, 0.08);
+    box-shadow: 0 12px 35px
+      color-mix(in srgb, var(--exec-color-foreground) 08%, transparent);
   }
   .executarPrimaryNavigation button {
     min-width: 0;
@@ -760,15 +805,15 @@
     text-overflow: ellipsis;
     font-size: 11px;
     font-weight: 760;
-    color: #34373d;
+    color: var(--exec-color-foreground);
     white-space: nowrap;
     background: transparent;
     border: 0;
     border-radius: 999px;
   }
   .executarPrimaryNavigation button.active {
-    color: #111317;
-    background: #e9eaec;
+    color: var(--exec-color-foreground);
+    background: var(--exec-color-surface-subtle);
   }
   .main {
     padding-top: calc(96px + env(safe-area-inset-top));
@@ -788,7 +833,7 @@
     z-index: 60;
     width: auto;
     height: auto;
-    background: #fff;
+    background: var(--exec-color-surface);
     border: 0;
     border-radius: 0;
     box-shadow: none;
@@ -845,8 +890,9 @@
     width: min(340px, 88vw);
     padding: calc(20px + env(safe-area-inset-top)) 16px
       calc(18px + env(safe-area-inset-bottom));
-    background: #fff;
-    box-shadow: 24px 0 70px rgba(20, 23, 28, 0.18);
+    background: var(--exec-color-surface);
+    box-shadow: 24px 0 70px
+      color-mix(in srgb, var(--exec-color-foreground) 18%, transparent);
   }
   .executarDrawerHead,
   .executarDrawerBrand,
@@ -871,8 +917,8 @@
     width: 42px;
     height: 42px;
     font-weight: 850;
-    color: #fff;
-    background: #15171b;
+    color: var(--exec-color-surface);
+    background: var(--exec-color-foreground);
     border-radius: 14px;
   }
   .executarDrawerBrand b,
@@ -889,7 +935,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: 10px;
-    color: #7b818a;
+    color: var(--exec-color-foreground-secondary);
     white-space: nowrap;
   }
   .executarDrawerNav {
@@ -903,14 +949,14 @@
     align-items: center;
     width: 100%;
     padding: 10px;
-    color: #30333a;
+    color: var(--exec-color-foreground);
     text-align: left;
     background: transparent;
     border: 0;
     border-radius: 15px;
   }
   .executarDrawerNav > button[aria-current="page"] {
-    background: #f0f1f3;
+    background: var(--exec-color-surface-subtle);
   }
   .executarDrawerNav > button > svg {
     width: 21px;
@@ -927,22 +973,22 @@
   .executarDrawerNav small {
     margin-top: 3px;
     font-size: 10px;
-    color: #858b93;
+    color: var(--exec-color-foreground-secondary);
   }
   .executarDrawerNotifications {
     justify-content: space-between;
     padding: 13px 10px;
     margin-top: 16px;
     font-size: 11px;
-    color: #696f78;
-    border-top: 1px solid #eceef0;
+    color: var(--exec-color-foreground-secondary);
+    border-top: 1px solid var(--exec-color-surface-subtle);
   }
   .executarDrawerAccount {
     gap: 12px;
     justify-content: space-between;
     padding: 16px 8px 0;
     margin-top: auto;
-    border-top: 1px solid #eceef0;
+    border-top: 1px solid var(--exec-color-surface-subtle);
   }
   .executarModelLayer {
     align-items: end;

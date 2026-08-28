@@ -1,45 +1,56 @@
 /*
  * Scanner — tela viva do app (não impressa), câmera compacta por padrão
  * (PRD-006/UX-004: velocidade de captura antes de uma prévia grande).
- * Escopo próprio, mesmo padrão de mapa-os.css/handoff.css: não estende o
- * tema Tailwind/shadcn compartilhado.
+ *
+ * Superfície deliberadamente escura (contraste de câmera) — a fundação
+ * compartilhada (packages/design-system/styles/exec-tokens.css) é clara por
+ * padrão, então aliasamos o que bate (acento âmbar, canvas claro pro texto
+ * sobre fundo escuro) e nomeamos localmente só o que é mesmo exclusivo
+ * desta tela (neutros escuros, vermelho de erro com mais contraste sobre
+ * fundo escuro que o --exec-color-erro padrão).
  */
 .scannerShell {
+  --scanner-color-bg: #16161a;
+  --scanner-color-surface: #1f2027;
+  --scanner-color-border: #33343d;
+  --scanner-color-foreground: var(--exec-color-canvas);
+  --scanner-color-foreground-muted: #9a9ba3;
+  --scanner-color-accent: var(--exec-color-acao);
+  --scanner-color-erro: #ff6b6b;
+
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--exec-space-16);
   align-items: center;
   min-height: 100vh;
-  padding: 24px 16px 64px;
-  font-family: Arial, "Helvetica Neue", sans-serif;
-  color: #f4f6f5;
-  background: #16161a;
+  padding: var(--exec-space-24) var(--exec-space-16) var(--exec-space-64);
+  font-family: var(--exec-font-body);
+  color: var(--scanner-color-foreground);
+  background: var(--scanner-color-bg);
 }
 
 .scannerHeader {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--exec-space-4);
   align-items: center;
 }
 
 .scannerHeader span {
-  font:
-    500 11px / 1.2 ui-monospace,
-    monospace;
-  color: #9a9ba3;
+  font: 500 11px / 1.2 var(--exec-font-mono);
+  color: var(--scanner-color-foreground-muted);
   letter-spacing: 0.12em;
 }
 
 .scannerHeader strong {
-  font-size: 18px;
+  font-size: var(--exec-text-title-3);
   font-weight: 700;
 }
 
 .scannerCameraArea {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--exec-space-12);
   align-items: center;
   width: min(100%, 360px);
 }
@@ -50,8 +61,8 @@
   height: 320px;
   overflow: hidden;
   background: #000;
-  border: 1px solid #33343d;
-  border-radius: 16px;
+  border: 1px solid var(--scanner-color-border);
+  border-radius: var(--exec-radius-object);
 }
 
 .scannerVideo {
@@ -68,87 +79,91 @@
   position: absolute;
   inset: 25%;
   pointer-events: none;
-  border: 2px dashed rgb(232 163 23 / 70%);
-  border-radius: 12px;
+  border: 2px dashed
+    color-mix(in srgb, var(--scanner-color-accent) 70%, transparent);
+  border-radius: var(--exec-radius-control);
 }
 
 .scannerAviso {
-  font-size: 13px;
-  color: #e8a317;
+  font-size: var(--exec-text-caption);
+  color: var(--scanner-color-accent);
   text-align: center;
 }
 
 .scannerDica {
   max-width: 320px;
-  font-size: 12px;
+  font-size: var(--exec-text-caption);
   line-height: 1.4;
-  color: #9a9ba3;
+  color: var(--scanner-color-foreground-muted);
   text-align: center;
 }
 
 .scannerManualForm {
   display: flex;
-  gap: 8px;
+  gap: var(--exec-space-8);
   width: 100%;
 }
 
 .scannerManualForm input {
   flex: 1;
-  padding: 10px 12px;
-  color: #f4f6f5;
-  background: #1f2027;
-  border: 1px solid #33343d;
-  border-radius: 8px;
+  min-height: var(--exec-touch-min);
+  padding: var(--exec-space-8) var(--exec-space-12);
+  color: var(--scanner-color-foreground);
+  background: var(--scanner-color-surface);
+  border: 1px solid var(--scanner-color-border);
+  border-radius: var(--exec-radius-control);
 }
 
 .scannerManualForm button {
-  padding: 10px 16px;
+  min-height: var(--exec-touch-min);
+  padding: var(--exec-space-8) var(--exec-space-16);
   font-weight: 600;
-  color: #16161a;
+  color: var(--scanner-color-bg);
   cursor: pointer;
-  background: #e8a317;
+  background: var(--scanner-color-accent);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--exec-radius-control);
 }
 
 .scannerErro {
-  color: #ff6b6b;
+  color: var(--scanner-color-erro);
   text-align: center;
 }
 
 .scannerResultado {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--exec-space-16);
   align-items: center;
   width: min(100%, 360px);
-  padding: 24px;
+  padding: var(--exec-space-24);
   text-align: center;
   white-space: pre-line;
-  background: #1f2027;
-  border-radius: 16px;
+  background: var(--scanner-color-surface);
+  border-radius: var(--exec-radius-object);
 }
 
 .scannerAcoes {
   display: flex;
-  gap: 12px;
+  gap: var(--exec-space-12);
 }
 
 .scannerAcoes button,
 .scannerSeletorLista button,
 .scannerResultado > button {
-  padding: 10px 16px;
+  min-height: var(--exec-touch-min);
+  padding: var(--exec-space-8) var(--exec-space-16);
   font-weight: 600;
-  color: #f4f6f5;
+  color: var(--scanner-color-foreground);
   cursor: pointer;
-  background: #33343d;
+  background: var(--scanner-color-border);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--exec-radius-control);
 }
 
 .scannerSeletorLista {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--exec-space-8);
   width: 100%;
 }

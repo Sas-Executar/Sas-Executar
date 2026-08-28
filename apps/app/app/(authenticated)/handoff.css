@@ -1,17 +1,28 @@
 /* biome-ignore-all lint/style/noDescendingSpecificity: Each product surface owns a scoped selector group. */
+/* Cor vem da fundação compartilhada (exec-tokens.css). Este bloco
+   aliasa os nomes --executar-* já usados no resto do arquivo pros
+   papéis --exec-* correspondentes, em vez de reinventar uma quarta
+   paleta aqui — era o que causava a "identidade mista" (ver
+   docs/design-system/identidade-executar/README.md). --executar-action
+   era lima (#baff33) isolado desta tela; hoje é o mesmo âmbar de
+   ação/estado-atual do resto do produto. --executar-action-strong e
+   --executar-orange nunca foram consumidos (verificado por grep) e
+   foram removidos. */
 :root {
-  --executar-action: #baff33;
-  --executar-action-strong: #9bea16;
-  --executar-orange: #ff6500;
-  --executar-brand-dark: #141b33;
-  --executar-brand-gray: #a8a8a8;
-  --executar-canvas: #e4e5e7;
-  --executar-surface: #ffffff;
-  --executar-surface-subtle: #f1f2f4;
-  --executar-text: #141b33;
-  --executar-text-muted: #686e7b;
-  --executar-border: #dfe1e5;
-  --executar-card-shadow: 0 24px 64px rgba(20, 27, 51, 0.09);
+  --executar-action: var(--exec-color-acao);
+  /* Acento categórico só do cabeçalho do cartão Copiloto — decorativo
+     (distingue o card visualmente), não é um estado "ação/CTA", por
+     isso não vira --exec-color-acao como o resto do arquivo. */
+  --executar-category-copilot: #baff33;
+  --executar-brand-dark: var(--exec-color-foreground);
+  --executar-brand-gray: var(--exec-color-foreground-secondary);
+  --executar-canvas: var(--exec-color-canvas);
+  --executar-surface: var(--exec-color-surface);
+  --executar-surface-subtle: var(--exec-color-surface-subtle);
+  --executar-text: var(--exec-color-foreground);
+  --executar-text-muted: var(--exec-color-foreground-secondary);
+  --executar-border: var(--exec-color-stroke-default);
+  --executar-card-shadow: var(--exec-elevation-2);
 }
 
 .executarBrand {
@@ -108,7 +119,7 @@
   justify-content: space-between;
   min-height: 84px;
   padding: 20px 24px;
-  color: #fff;
+  color: var(--exec-color-surface);
 }
 
 .executarContextCard > header > span {
@@ -141,6 +152,11 @@
   font-size: 16px;
 }
 
+/* Os 4 gradientes abaixo são acentos categóricos (distinguem os
+ * cartões Projetos/Documentos/Copiloto/Scanner entre si), não papéis
+ * de estado — por isso ficam como cor local em vez de virar
+ * --exec-color-acao/entregue/erro, que têm significado fixo no resto
+ * do produto (ver docs/design-system/identidade-executar/README.md). */
 .executarContextCard.projects > header {
   background: linear-gradient(115deg, #5e48f4, #6656ee);
 }
@@ -150,8 +166,12 @@
 }
 
 .executarContextCard.copilot > header {
-  color: #10130e;
-  background: linear-gradient(115deg, #42bd1a, var(--executar-action));
+  color: var(--exec-color-foreground);
+  background: linear-gradient(
+    115deg,
+    #42bd1a,
+    var(--executar-category-copilot)
+  );
 }
 
 .executarContextCard.scanner > header {
@@ -163,7 +183,7 @@
   width: min(280px, 80%);
   height: 10px;
   overflow: hidden;
-  background: #eef0f2;
+  background: var(--exec-color-surface-subtle);
   border-radius: 99px;
 }
 
@@ -190,8 +210,8 @@
 .executarDocumentChips small,
 .executarCopilotPrompt {
   padding: 10px 13px;
-  color: #656b76;
-  background: #f4f5f7;
+  color: var(--exec-color-foreground-secondary);
+  background: var(--exec-color-surface-subtle);
   border-radius: 999px;
 }
 
@@ -220,10 +240,11 @@
   min-height: 92px;
   padding: 18px 22px;
   margin: 0 auto 16px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(232, 233, 235, 0.9);
+  background: color-mix(in srgb, var(--exec-color-surface) 94%, transparent);
+  border: 1px solid var(--exec-color-stroke-default);
   border-radius: 24px;
-  box-shadow: 0 16px 45px rgba(25, 28, 34, 0.08);
+  box-shadow: 0 16px 45px
+    color-mix(in srgb, var(--exec-color-foreground) 08%, transparent);
   backdrop-filter: blur(18px);
 }
 
@@ -242,12 +263,12 @@
 
 .executarSprintSegments span {
   min-width: 3px;
-  background: #e2e3e5;
+  background: var(--exec-color-stroke-default);
   border-radius: 3px;
 }
 
 .executarSprintSegments span.done {
-  background: #202328;
+  background: var(--exec-color-entregue); /* done — era quase-preto */
 }
 
 .executarSprint > div:last-child {
@@ -316,7 +337,7 @@
   left: 12px;
   width: 2px;
   content: "";
-  background: #d6d8dc;
+  background: var(--exec-color-stroke-default);
 }
 
 .executarTimelinePoint {
@@ -327,8 +348,8 @@
   width: 26px;
   height: 26px;
   margin-top: 28px;
-  color: #9398a0;
-  background: #f5f3ef;
+  color: var(--exec-color-foreground-secondary);
+  background: var(--exec-color-surface-subtle);
   border-radius: 50%;
 }
 
@@ -338,12 +359,14 @@
 }
 
 .executarTimeline article.active .executarTimelinePoint {
-  color: #77b900;
-  outline: 3px solid rgba(155, 234, 22, 0.35);
+  color: var(
+    --exec-color-acao
+  ); /* current — era verde-lima, colidia com o verde=concluído */
+  outline: 3px solid color-mix(in srgb, var(--exec-color-acao) 35%, transparent);
 }
 
 .executarTimeline article.done .executarTimelinePoint {
-  color: #1f2329;
+  color: var(--exec-color-entregue); /* done — era quase-preto */
 }
 
 .executarTimeline article > button {
@@ -356,15 +379,21 @@
   padding: 16px 20px;
   margin-bottom: 16px;
   text-align: left;
-  background: #fff;
+  background: var(--exec-color-surface);
   border: 0;
   border-radius: 24px;
-  box-shadow: 0 12px 34px rgba(25, 28, 33, 0.06);
+  box-shadow: 0 12px 34px
+    color-mix(in srgb, var(--exec-color-foreground) 6%, transparent);
 }
 
 .executarTimeline article.active > button {
-  background: linear-gradient(120deg, #dcff9e, #c8ff74);
-  box-shadow: 0 18px 42px rgba(123, 185, 20, 0.15);
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--exec-color-acao) 30%, var(--exec-color-surface)),
+    color-mix(in srgb, var(--exec-color-acao) 45%, var(--exec-color-surface))
+  );
+  box-shadow: 0 18px 42px
+    color-mix(in srgb, var(--exec-color-acao) 15%, transparent);
 }
 
 .executarTimeline article.done > button {
@@ -384,7 +413,7 @@
   place-items: center;
   width: 48px;
   height: 48px;
-  background: rgba(255, 255, 255, 0.78);
+  background: color-mix(in srgb, var(--exec-color-surface) 78%, transparent);
   border-radius: 15px;
 }
 
@@ -428,8 +457,10 @@
 .executarExecutionHero,
 .executarStorySection {
   background: var(--executar-surface);
-  border: 1px solid rgba(20, 27, 51, 0.08);
-  box-shadow: 0 24px 64px rgba(20, 27, 51, 0.09);
+  border: 1px solid
+    color-mix(in srgb, var(--exec-color-foreground) 08%, transparent);
+  box-shadow: 0 24px 64px
+    color-mix(in srgb, var(--exec-color-foreground) 09%, transparent);
 }
 
 .executarExecutionHero {
@@ -508,18 +539,22 @@
 
 .executarExecutionArc path {
   fill: none;
-  stroke: #dfe2e7;
+  stroke: var(--exec-color-stroke-strong);
   stroke-width: 22;
   stroke-linecap: butt;
   transition: stroke 240ms ease;
 }
 
 .executarExecutionArc path.done {
-  stroke: #315cf5;
+  stroke: var(
+    --exec-color-entregue
+  ); /* done — era azul, alinhado ao verde canônico */
 }
 
 .executarExecutionArc path.current {
-  stroke: #32b8e7;
+  stroke: var(
+    --exec-color-acao
+  ); /* current — era ciano, alinhado ao âmbar canônico */
 }
 
 .executarExecutionDone {
@@ -531,18 +566,20 @@
   height: 72px;
   padding: 0;
   margin-bottom: 17px;
-  color: #fff;
-  background: #141b33;
+  color: var(--exec-color-surface);
+  background: var(--exec-color-foreground);
   border: 0;
   border-radius: 24px;
-  box-shadow: 0 16px 34px rgba(20, 27, 51, 0.22);
+  box-shadow: 0 16px 34px
+    color-mix(in srgb, var(--exec-color-foreground) 22%, transparent);
   transition:
     transform 160ms ease,
     box-shadow 160ms ease;
 }
 
 .executarExecutionDone:hover {
-  box-shadow: 0 20px 42px rgba(20, 27, 51, 0.28);
+  box-shadow: 0 20px 42px
+    color-mix(in srgb, var(--exec-color-foreground) 28%, transparent);
   transform: translateY(-2px);
 }
 
@@ -564,7 +601,7 @@
 
 .executarExecutionCurrent small {
   font-weight: 780;
-  color: #315cf5;
+  color: var(--exec-color-acao); /* current — era o mesmo azul do bug acima */
   letter-spacing: 0.12em;
 }
 
@@ -587,7 +624,7 @@
   height: 48px;
   padding: 0;
   color: var(--executar-text);
-  background: #f0f1f3;
+  background: var(--exec-color-surface-subtle);
   border: 0;
   border-radius: 16px;
 }
@@ -622,14 +659,14 @@
   width: 48px;
   height: 48px;
   font-weight: 820;
-  color: #fff;
-  background: #141b33;
+  color: var(--exec-color-surface);
+  background: var(--exec-color-foreground);
   border-radius: 15px;
 }
 
 .executarStorySection > header small {
   font-weight: 780;
-  color: #315cf5;
+  color: var(--exec-color-acao);
   letter-spacing: 0.12em;
 }
 
@@ -658,7 +695,7 @@
   gap: 3px;
   min-height: 84px;
   padding: 16px;
-  background: #f1f2f4;
+  background: var(--exec-color-surface-subtle);
   border-radius: 18px;
 }
 
@@ -681,7 +718,11 @@
   align-items: flex-start;
   padding: 17px 18px;
   margin: 0;
-  background: #edf8fc;
+  background: color-mix(
+    in srgb,
+    var(--exec-color-acao-secundaria) 8%,
+    var(--exec-color-surface)
+  );
   border-radius: 18px;
 }
 
@@ -689,7 +730,7 @@
   flex: 0 0 auto;
   width: 24px;
   height: 24px;
-  color: #187ca1;
+  color: var(--exec-color-acao-secundaria);
 }
 
 .executarStoryDefinition span {
@@ -716,15 +757,19 @@
   width: 58px;
   height: 58px;
   padding: 0;
-  color: #141b33;
-  background: #f1f2f4;
+  color: var(--exec-color-foreground);
+  background: var(--exec-color-surface-subtle);
   border: 1px solid transparent;
   border-radius: 18px;
 }
 
 .executarIconActions button:hover,
 .executarExecutionScrollCue:hover {
-  background: #e6f5fb;
+  background: color-mix(
+    in srgb,
+    var(--exec-color-acao-secundaria) 8%,
+    var(--exec-color-surface)
+  );
 }
 
 .executarIconActions button svg {
@@ -749,14 +794,22 @@
   padding: 14px 16px;
   color: var(--executar-text);
   text-align: left;
-  background: #f4f5f6;
+  background: var(--exec-color-surface-subtle);
   border: 1px solid transparent;
   border-radius: 20px;
 }
 
 .executarReadableTasks > button:hover {
-  background: #edf8fc;
-  border-color: #afdff0;
+  background: color-mix(
+    in srgb,
+    var(--exec-color-acao-secundaria) 8%,
+    var(--exec-color-surface)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--exec-color-acao-secundaria) 30%,
+    var(--exec-color-surface)
+  );
 }
 
 .executarReadableTaskIcon {
@@ -764,8 +817,8 @@
   place-items: center;
   width: 48px;
   height: 48px;
-  color: #141b33;
-  background: #fff;
+  color: var(--exec-color-foreground);
+  background: var(--exec-color-surface);
   border-radius: 15px;
 }
 
@@ -790,10 +843,13 @@
 
 .executarBlockedTasks > article {
   grid-template-columns: 30px minmax(0, 1fr);
-  background: #f5f2ef;
+  background: var(--exec-color-surface-subtle);
 }
 
 .executarBlockedTasks > article > svg {
+  /* Acento de "bloqueado" — não é o mesmo papel de --exec-color-erro
+   * (bloqueio por dependência não é uma falha real), então não usa o
+   * vermelho semântico; fica como cor local. */
   color: #8e684d;
 }
 
@@ -801,7 +857,7 @@
   padding: 18px;
   margin: 0;
   color: var(--executar-text-muted);
-  background: #f4f5f6;
+  background: var(--exec-color-surface-subtle);
   border-radius: 18px;
 }
 
@@ -819,7 +875,7 @@
   align-items: center;
   min-height: 92px;
   padding: 16px;
-  background: #f4f5f6;
+  background: var(--exec-color-surface-subtle);
   border-radius: 18px;
 }
 
@@ -840,12 +896,13 @@
 }
 
 .executarStorySection .executarEvidenceStack article {
-  background: #f4f5f6;
+  background: var(--exec-color-surface-subtle);
 }
 
 .executarExecutionSurface button:focus-visible,
 .executarExecutionSurface select:focus-visible {
-  outline: 3px solid rgba(49, 92, 245, 0.35);
+  outline: 3px solid
+    color-mix(in srgb, var(--exec-color-acao-secundaria) 35%, transparent);
   outline-offset: 3px;
 }
 
@@ -965,10 +1022,11 @@
   padding: 16px 18px;
   color: var(--executar-text);
   text-align: left;
-  background: #fff;
+  background: var(--exec-color-surface);
   border: 0;
   border-radius: 22px;
-  box-shadow: 0 12px 34px rgba(25, 28, 33, 0.06);
+  box-shadow: 0 12px 34px
+    color-mix(in srgb, var(--exec-color-foreground) 6%, transparent);
 }
 
 .executarDoneSurface article > svg,
@@ -1031,7 +1089,7 @@
   place-items: center;
   width: 50px;
   height: 50px;
-  background: #fff;
+  background: var(--exec-color-surface);
   border: 1px solid var(--executar-border);
   border-radius: 16px;
 }
@@ -1042,7 +1100,7 @@
   align-items: center;
   min-height: 58px;
   padding: 0 18px;
-  background: #fff;
+  background: var(--exec-color-surface);
   border: 1px solid var(--executar-border);
   border-radius: 22px;
 }
@@ -1067,7 +1125,7 @@
   gap: 4px;
   padding: 5px;
   margin: 14px 0 22px;
-  background: #f0f1f3;
+  background: var(--exec-color-surface-subtle);
   border-radius: 20px;
 }
 
@@ -1084,8 +1142,12 @@
 }
 
 .executarDocumentTabs button[aria-selected="true"] {
-  color: #1f5500;
-  background: linear-gradient(120deg, #e6ffc1, #cfff7c);
+  color: color-mix(in srgb, var(--exec-color-acao) 70%, black);
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--exec-color-acao) 25%, var(--exec-color-surface)),
+    color-mix(in srgb, var(--exec-color-acao) 40%, var(--exec-color-surface))
+  );
 }
 
 .executarDocumentTabs svg {
@@ -1097,7 +1159,7 @@
   position: relative;
   min-height: 130px;
   overflow: hidden;
-  color: #fff;
+  color: var(--exec-color-surface);
   background: linear-gradient(130deg, #644ff2, #3429de);
 }
 
@@ -1111,12 +1173,12 @@
   left: 0;
   width: 38%;
   height: 17px;
-  background: rgba(255, 255, 255, 0.2);
+  background: color-mix(in srgb, var(--exec-color-surface) 20%, transparent);
   border-radius: 0 0 16px;
 }
 
 .executarDocumentsStack > button small {
-  color: rgba(255, 255, 255, 0.78);
+  color: color-mix(in srgb, var(--exec-color-surface) 78%, transparent);
 }
 
 .executarDocumentsStack > button > svg {
@@ -1129,7 +1191,7 @@
   min-height: 250px;
   padding: 36px;
   text-align: center;
-  background: #fff;
+  background: var(--exec-color-surface);
   border-radius: 24px;
 }
 
@@ -1137,7 +1199,7 @@
   width: 36px;
   height: 36px;
   margin-bottom: 13px;
-  color: #9ba0a8;
+  color: var(--exec-color-foreground-secondary);
 }
 
 .executarEmptySurface p {
@@ -1189,8 +1251,8 @@
     align-items: center;
     min-height: calc(76px + env(safe-area-inset-top));
     padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
-    background: rgba(245, 243, 239, 0.92);
-    border-bottom: 1px solid rgba(225, 226, 228, 0.72);
+    background: color-mix(in srgb, var(--exec-color-surface) 92%, transparent);
+    border-bottom: 1px solid var(--exec-color-stroke-default);
     backdrop-filter: blur(18px);
   }
 
@@ -1200,11 +1262,12 @@
     width: 50px;
     height: 50px;
     padding: 0;
-    color: #1d2024;
-    background: #fff;
+    color: var(--exec-color-foreground);
+    background: var(--exec-color-surface);
     border: 0;
     border-radius: 50%;
-    box-shadow: 0 12px 30px rgba(27, 30, 36, 0.08);
+    box-shadow: 0 12px 30px
+      color-mix(in srgb, var(--exec-color-foreground) 8%, transparent);
   }
 
   .executarHeaderCircle svg {
@@ -1231,10 +1294,11 @@
     gap: 3px;
     min-height: 78px;
     padding: 7px;
-    background: rgba(255, 255, 255, 0.96);
-    border: 1px solid rgba(226, 228, 231, 0.8);
+    background: color-mix(in srgb, var(--exec-color-surface) 96%, transparent);
+    border: 1px solid var(--exec-color-stroke-default);
     border-radius: 27px;
-    box-shadow: 0 22px 55px rgba(25, 28, 34, 0.14);
+    box-shadow: 0 22px 55px
+      color-mix(in srgb, var(--exec-color-foreground) 14%, transparent);
     backdrop-filter: blur(18px);
   }
 
@@ -1244,7 +1308,7 @@
     place-items: center;
     min-width: 0;
     padding: 4px 2px;
-    color: #747983;
+    color: var(--exec-color-foreground-secondary);
     background: transparent;
     border: 0;
     border-radius: 19px;
@@ -1272,23 +1336,29 @@
   }
 
   .executarOperationalNav button.active {
-    color: #111318;
+    color: var(--exec-color-foreground);
   }
 
   .executarOperationalNav button.active:not(.now) > span {
-    color: #fff;
-    background: #111318;
+    color: var(--exec-color-surface);
+    background: var(--exec-color-foreground);
   }
 
   .executarOperationalNav button.now > span {
     width: 54px;
-    color: #111318;
-    background: linear-gradient(125deg, #d8ff90, var(--executar-action));
-    box-shadow: 0 10px 22px rgba(138, 208, 20, 0.22);
+    color: var(--exec-color-foreground);
+    background: linear-gradient(
+      125deg,
+      color-mix(in srgb, var(--exec-color-acao) 35%, var(--exec-color-surface)),
+      var(--executar-action)
+    );
+    box-shadow: 0 10px 22px
+      color-mix(in srgb, var(--exec-color-acao) 22%, transparent);
   }
 
   .executarOperationalNav button.now.active > span {
-    outline: 3px solid rgba(114, 174, 17, 0.25);
+    outline: 3px solid
+      color-mix(in srgb, var(--exec-color-acao) 25%, transparent);
   }
 
   .main {

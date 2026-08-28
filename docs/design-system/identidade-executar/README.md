@@ -1,7 +1,18 @@
 # Identidade EXECUTAR — fundação de tokens
 
-Status: **fundação v1** — define o vocabulário; a migração tela por tela para
-consumi-lo é o passo seguinte, feita incrementalmente, não neste commit.
+Status: **fundação v1 + migração das telas de produto concluída** —
+`executar.css`, `handoff.css`, `mapa-os.css`, `scanner.css` e
+`web-surface.css` já consomem `var(--exec-*)` em vez de hexadecimais
+soltos. Ao migrar, dois bugs semânticos reais foram corrigidos (não só
+renomeados): `--line`/`--muted`/`--blue2`/`--shadow` em `executar.css`
+eram custom properties nunca definidas neste build (herdadas do
+protótipo legado) — todo elemento que as usava renderizava com cor
+inválida; e o "arco de execução"/indicadores de "atual" em
+`handoff.css` usavam azul/ciano/lima-verde, colidindo com o verde
+reservado para "concluído" — alinhados ao âmbar de ação. Os 4
+gradientes decorativos dos cartões de contexto (Projetos/Documentos/
+Copiloto/Scanner) e o acento "bloqueado" ficaram como cor local
+documentada — são categóricos, não papéis de estado.
 
 Implementação: `packages/design-system/styles/exec-tokens.css` (importado por
 `packages/design-system/styles/globals.css`, disponível em qualquer app que
@@ -128,8 +139,12 @@ de tela) — nunca uma animação de entrada só para "dar vida" à tela.
 
 ## Próximos passos (fora do escopo desta fundação)
 
-1. Migrar `executar.css`, `handoff.css`, `mapa-os.css`, `scanner.css` para
-   consumir `var(--exec-*)` em vez de valores próprios — arquivo por arquivo.
+1. ~~Migrar `executar.css`, `handoff.css`, `mapa-os.css`, `scanner.css` para
+   consumir `var(--exec-*)`~~ — feito (ver Status acima). Elevação de cards em
+   repouso segue com sombra em telas legadas (`handoff.css`) — a regra
+   "elevação 0 por padrão" desta fundação vale para componentes novos; migrar
+   as telas legadas pra zero-sombra é uma decisão visual própria, não incluída
+   aqui.
 2. Portar a mesma tabela de papéis de cor + régua de espaçamento para
    `apps/mobile/tamagui.config.ts`, para que web e nativo parem de divergir.
 3. Auditoria de rotas/botões (reduzir `/scanner` para sheet/modal em vez de

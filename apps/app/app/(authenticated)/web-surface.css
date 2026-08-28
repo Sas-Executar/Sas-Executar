@@ -1,15 +1,23 @@
 /* biome-ignore-all lint/style/noDescendingSpecificity: This isolated web shell intentionally overrides the existing component hierarchy. */
 /* Web-first projection of the iPhone-first EXECUTAR surface.
-   This file intentionally changes presentation only: domain, auth and APIs stay untouched. */
+   This file intentionally changes presentation only: domain, auth and APIs stay untouched.
 
+   Cor vem da fundação compartilhada (exec-tokens.css) — este bloco só
+   aliasa pros nomes --executar-web-* já usados no resto do arquivo, pra
+   não expandir o diff pro arquivo inteiro. Raio e espaçamento GRANDES
+   (28-32px, cantos de cartão/sheet) ficam como estão de propósito: essa
+   escala mais suave é a linguagem "iOS" deste shell especificamente, não
+   o vocabulário objeto/chrome de 8-12px usado no resto do produto — bate
+   melhor com Apple HIG pra um shell mobile-first do que forçar a régua
+   genérica aqui. */
 :root {
-  --executar-web-canvas: #e7e7e5;
-  --executar-web-surface: #ffffff;
-  --executar-web-ink: #161616;
-  --executar-web-muted: #727272;
-  --executar-web-line: rgba(22, 22, 22, 0.1);
-  --executar-web-purple: #6656ee;
-  --executar-web-orange: #ff6500;
+  --executar-web-canvas: var(--exec-color-surface-subtle);
+  --executar-web-surface: var(--exec-color-surface);
+  --executar-web-ink: var(--exec-color-foreground);
+  --executar-web-muted: var(--exec-color-foreground-secondary);
+  --executar-web-line: var(--exec-color-stroke-default);
+  --executar-web-purple: var(--exec-color-acao-secundaria);
+  --executar-web-orange: var(--exec-color-acao);
 }
 
 html,
@@ -53,10 +61,12 @@ body {
   width: min(calc(100% - 28px), 720px);
   min-height: 60px;
   padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: color-mix(in srgb, var(--exec-color-surface) 88%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--exec-color-surface) 72%, transparent);
   border-radius: 999px;
-  box-shadow: 0 10px 36px rgba(20, 20, 20, 0.08);
+  box-shadow: 0 10px 36px
+    color-mix(in srgb, var(--exec-color-foreground) 8%, transparent);
   backdrop-filter: blur(20px) saturate(1.2);
   transform: translateX(-50%);
 }
@@ -65,8 +75,8 @@ body {
 .executarHeaderBrand {
   display: grid;
   place-items: center;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: var(--exec-touch-min);
+  min-height: var(--exec-touch-min);
   padding: 0;
   color: var(--executar-web-ink);
   background: transparent;
@@ -76,7 +86,7 @@ body {
 
 .executarHeaderCircle:hover,
 .executarHeaderBrand:hover {
-  background: rgba(22, 22, 22, 0.05);
+  background: color-mix(in srgb, var(--exec-color-foreground) 5%, transparent);
 }
 
 .executarHeaderCircle svg {
@@ -97,10 +107,12 @@ body {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   width: min(calc(100% - 28px), 560px);
   padding: 8px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.78);
+  background: color-mix(in srgb, var(--exec-color-surface) 92%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--exec-color-surface) 78%, transparent);
   border-radius: 28px;
-  box-shadow: 0 14px 42px rgba(20, 20, 20, 0.12);
+  box-shadow: 0 14px 42px
+    color-mix(in srgb, var(--exec-color-foreground) 12%, transparent);
   backdrop-filter: blur(22px) saturate(1.2);
   transform: translateX(-50%);
 }
@@ -140,12 +152,16 @@ body {
 
 .executarOperationalNav > button.active {
   color: var(--executar-web-ink);
-  background: #f1f1ef;
+  background: color-mix(
+    in srgb,
+    var(--exec-color-foreground) 6%,
+    var(--exec-color-surface)
+  );
 }
 
 .executarOperationalNav > button.now.active,
 .executarOperationalNav > button.now:hover {
-  color: #fff;
+  color: var(--exec-color-surface);
   background: var(--executar-web-ink);
 }
 
@@ -179,16 +195,23 @@ body {
 
 .executarContextCard.documents > header {
   color: var(--executar-web-ink) !important;
-  background: #f0f0ee !important;
+  background: color-mix(
+    in srgb,
+    var(--exec-color-foreground) 7%,
+    var(--exec-color-surface)
+  ) !important;
 }
 
 .executarContextCard.copilot > header {
-  color: #fff !important;
+  color: var(--exec-color-surface) !important;
   background: var(--executar-web-ink) !important;
 }
 
 .executarExecutionArc path.done {
-  stroke: var(--executar-web-purple) !important;
+  /* Verde = concluído em todo o resto do produto (Scanner, Mapa-OS) — não
+   * o acento de marca genérico. Corrige uma inconsistência que existia
+   * aqui antes desta migração. */
+  stroke: var(--exec-color-entregue) !important;
 }
 
 .executarExecutionArc path.current {
@@ -199,7 +222,7 @@ body {
   width: 86px !important;
   height: 56px !important;
   margin-bottom: 18px !important;
-  color: #fff !important;
+  color: var(--exec-color-surface) !important;
   background: var(--executar-web-ink) !important;
   border-radius: 999px !important;
   box-shadow: none !important;
@@ -217,7 +240,9 @@ body {
 }
 
 .executarExecutionCurrent small {
-  color: var(--executar-web-purple) !important;
+  /* Mesmo acento do arco "current" logo abaixo — âmbar, não o azul de
+   * categoria usado no header de Projetos. */
+  color: var(--executar-web-orange) !important;
 }
 
 .executarExecutionHero {
@@ -230,7 +255,11 @@ body {
 }
 
 .executarExecutionHeader select {
-  background: #f5f5f3 !important;
+  background: color-mix(
+    in srgb,
+    var(--exec-color-foreground) 4%,
+    var(--exec-color-surface)
+  ) !important;
   border-color: var(--executar-web-line) !important;
 }
 
