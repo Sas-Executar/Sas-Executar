@@ -59,15 +59,31 @@
   /* Hierarquia de traço em 4 pesos — nunca uma borda única pra tudo.
      Derivados da cor de texto em opacidade crescente: qualquer troca
      de acento futura recalcula a hierarquia sozinha, sem novo hex. */
-  --exec-color-stroke-subtle: color-mix(in srgb, var(--exec-raw-ink) 8%, transparent);
-  --exec-color-stroke-default: color-mix(in srgb, var(--exec-raw-ink) 16%, transparent);
-  --exec-color-stroke-strong: color-mix(in srgb, var(--exec-raw-ink) 28%, transparent);
+  --exec-color-stroke-subtle: color-mix(
+    in srgb,
+    var(--exec-raw-ink) 8%,
+    transparent
+  );
+  --exec-color-stroke-default: color-mix(
+    in srgb,
+    var(--exec-raw-ink) 16%,
+    transparent
+  );
+  --exec-color-stroke-strong: color-mix(
+    in srgb,
+    var(--exec-raw-ink) 28%,
+    transparent
+  );
   --exec-color-stroke-selected: var(--exec-raw-amber-50);
 
   /* Papéis de cor — presentacionais, nunca estruturais (trocar o
      hex não pode mudar hierarquia/layout/dado, só a leitura visual). */
-  --exec-color-entregue: var(--exec-raw-green-50); /* concluído — nunca trocar por azul sem decisão explícita, ver cabeçalho */
-  --exec-color-acao: var(--exec-raw-amber-50); /* CTA primário, estado "current" */
+  --exec-color-entregue: var(
+    --exec-raw-green-50
+  ); /* concluído — nunca trocar por azul sem decisão explícita, ver cabeçalho */
+  --exec-color-acao: var(
+    --exec-raw-amber-50
+  ); /* CTA primário, estado "current" */
   --exec-color-acao-secundaria: var(--exec-raw-blue-50);
   --exec-color-erro: var(--exec-raw-red-50); /* só quando existe erro real */
 
@@ -92,9 +108,12 @@
      níveis 1-3 existem só para overlays reais (sheet/modal/menu),
      nunca para decorar um card em repouso. ---------- */
   --exec-elevation-0: none;
-  --exec-elevation-1: 0 1px 2px color-mix(in srgb, var(--exec-raw-ink) 6%, transparent);
-  --exec-elevation-2: 0 4px 12px color-mix(in srgb, var(--exec-raw-ink) 10%, transparent);
-  --exec-elevation-3: 0 12px 32px color-mix(in srgb, var(--exec-raw-ink) 16%, transparent);
+  --exec-elevation-1: 0 1px 2px
+    color-mix(in srgb, var(--exec-raw-ink) 6%, transparent);
+  --exec-elevation-2: 0 4px 12px
+    color-mix(in srgb, var(--exec-raw-ink) 10%, transparent);
+  --exec-elevation-3: 0 12px 32px
+    color-mix(in srgb, var(--exec-raw-ink) 16%, transparent);
 
   /* ---------- motion — rápido e funcional, nunca decorativo ---------- */
   --exec-motion-fast: 100ms;
@@ -103,8 +122,10 @@
   --exec-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /* ---------- tipografia — escala fechada, métrica 4px ---------- */
-  --exec-font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-  --exec-font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --exec-font-body:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --exec-font-mono:
+    "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --exec-text-display: 40px; /* peso 600, entrega principal/hero */
   --exec-text-title-1: 32px; /* peso 600 */
   --exec-text-title-2: 24px; /* peso 600 — título do objeto atual */
