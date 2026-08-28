@@ -2,22 +2,20 @@
  * Scanner — resolução de payload físico (QR impresso no Mapa-OS) para ações
  * reais do domínio EXECUTAR. Segue a regra da Scanner PRD/FRD (secao 32):
  * "reutilizar estado existente, comandos-gatilho finos, nunca um estado
- * paralelo do scanner". Toda mutação passa por `executarFerramenta` — este
+ * paralelo do scanner". Toda mutação passa por `executarFerramenta` ou por
+ * um atalho explícito do próprio domínio (`concluirPorGestoHumano`) — este
  * arquivo nunca escreve estado por conta própria.
  *
- * Reconciliações deliberadas (decisão do usuário, 27/08/2026):
- * - Feito conclui a entrega inteira (`concluir_entrega`), não só avança um
- *   passo. Isso normalmente exige aprovação humana E evidência verificada
- *   (`PoliticaConclusao.requireHumanApproval/requireEvidence/
- *   requireVerification`); o Scanner define `approved: true` e registra uma
- *   evidência verificada própria ("Concluído via Scanner") antes de concluir
- *   — o próprio gesto físico de escanear é tratado como a aprovação humana
- *   E a comprovação. Essa regra vale só para o caminho do Scanner: o
- *   Copiloto/UI manual continuam exigindo aprovação e evidência reais, sem
- *   mudança na política do domínio para os outros chamadores. DoD
- *   (`requireDod`), quando exigido pelo projeto, não é fabricado — se a
- *   entrega não tiver DoD definido, a conclusão falha e o chamador deve
- *   completá-la pela UI normal primeiro.
+ * Reconciliações deliberadas (decisão do usuário, 27/08/2026, revista em
+ * 28/08/2026):
+ * - Feito conclui a entrega inteira (`concluirPorGestoHumano`), não só
+ *   avança um passo, e NUNCA pede evidência/DoD/aprovação — o próprio gesto
+ *   físico de escanear É a confirmação (mesma regra usada pelo botão
+ *   "Concluir" do app — ver `concluirPorGestoHumano` em `domain.ts` para o
+ *   raciocínio completo). Essa regra vale só para os dois gestos humanos
+ *   diretos (scan, clique no app): o Copiloto via `executarFerramenta`
+ *   continua exigindo a política de conclusão real, sem mudança para esse
+ *   chamador.
  * - Saída roda 100% automática (sem diálogo de confirmação). O domínio hoje
  *   não tem uma mutação de "fechar o dia" separada — `/fechardia`
  *   (`executarCopiloto`) já é somente leitura (gera uma narrativa; a
@@ -31,6 +29,7 @@
 
 import {
   calendarioProjeto,
+  concluirPorGestoHumano,
   type Entrega,
   type EstadoOperacional,
   executarCopiloto,
@@ -93,8 +92,9 @@ export function executarAcaoEntrada(
 }
 
 /**
- * Feito: conclui a entrega em foco imediatamente, sem diálogo de aprovação
- * (decisão do usuário — ver cabeçalho do arquivo). Sem foco ativo, lança
+ * Feito: conclui a entrega em foco imediatamente, sem pedir evidência, DoD
+ * ou aprovação (decisão do usuário — ver cabeçalho do arquivo e
+ * `concluirPorGestoHumano` em `domain.ts`). Sem foco ativo, lança
  * `ScannerConfirmacaoNecessariaError` (FR-FEITO-005): o chamador deve pedir
  * confirmação e, se confirmado, invocar de novo passando `confirmado: true`.
  */
@@ -117,28 +117,12 @@ export function executarAcaoFeito(
     );
   }
 
-  // O scan É a evidência: registra uma comprovação verificada antes de
-  // concluir, para satisfazer requireEvidence/requireVerification sem exigir
-  // que o usuário anexe nada manualmente.
-  const comEvidencia = executarFerramenta(tasks, state, {
-    name: "registrar_evidencia",
-    organizationId: state.organizationId,
-    projectId: state.activeProjectId,
-    expectedRevision: state.revision,
-    taskId: foco.id,
-    note: "Concluído via Scanner (Feito).",
-    verified: true,
-  });
-
-  const stateResultante = executarFerramenta(tasks, comEvidencia, {
-    name: "concluir_entrega",
-    organizationId: comEvidencia.organizationId,
-    projectId: comEvidencia.activeProjectId,
-    expectedRevision: comEvidencia.revision,
-    taskId: foco.id,
-    // Decisão do usuário: o scan físico É o gesto de aprovação humana.
-    approved: true,
-  });
+  const stateResultante = concluirPorGestoHumano(
+    tasks,
+    state,
+    foco.id,
+    "Concluído via Scanner (Feito)."
+  );
 
   return {
     stateAnterior: state,

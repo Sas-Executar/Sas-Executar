@@ -414,6 +414,7 @@ export function TimelineSurface({
 interface FocusSurfaceProperties {
   readonly face: TaskFace;
   readonly focus: Entrega | null;
+  readonly onConcluir: () => void;
   readonly onFaceChange: (face: TaskFace) => void;
   readonly onFocus: (taskId: string) => void;
   readonly onOpenEvidence: () => void;
@@ -436,6 +437,7 @@ const EXECUTION_CONTEXT_LABELS: Record<ExecutionContext, string> = {
 export function FocusSurface({
   face,
   focus,
+  onConcluir,
   onFaceChange,
   onFocus,
   onOpenEvidence,
@@ -562,10 +564,10 @@ export function FocusSurface({
             })}
           </svg>
           <button
-            aria-label={`Concluir e comprovar: ${focus.title}`}
+            aria-label={`Concluir: ${focus.title}`}
             className="executarExecutionDone"
-            onClick={onOpenEvidence}
-            title="Concluir e comprovar tarefa"
+            onClick={onConcluir}
+            title="Concluir tarefa"
             type="button"
           >
             <Check aria-hidden="true" />
