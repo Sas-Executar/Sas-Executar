@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Entrega, EstadoOperacional } from "@/lib/executar/domain";
-import { novoEstado } from "@/lib/executar/domain";
+import { novoEstado, POLITICA_CONCLUSAO_PADRAO } from "@/lib/executar/domain";
 import {
   executarAcaoEntrada,
   executarAcaoFeito,
@@ -26,6 +26,22 @@ function tarefa(overrides: Partial<Entrega> & { id: string }): Entrega {
 
 function estadoCom(tasks: readonly Entrega[]): EstadoOperacional {
   return novoEstado(ORG_ID, tasks);
+}
+
+/** Estado com a política de conclusão mais estrita (DoD + evidência +
+ * verificação + aprovação todos exigidos) — usado para provar que o
+ * Scanner ignora a política, não só que funciona quando ela já é frouxa. */
+function estadoComPoliticaEstrita(
+  tasks: readonly Entrega[]
+): EstadoOperacional {
+  const base = novoEstado(ORG_ID, tasks);
+  return {
+    ...base,
+    projects: base.projects.map((project) => ({
+      ...project,
+      completionPolicy: POLITICA_CONCLUSAO_PADRAO,
+    })),
+  };
 }
 
 describe("resolverPayloadScanner", () => {
@@ -101,6 +117,16 @@ describe("executarAcaoFeito", () => {
     expect(() => executarAcaoFeito(tasks, state)).toThrow(
       ScannerConfirmacaoNecessariaError
     );
+  });
+
+  it("conclui sem pedir DoD/evidência mesmo sob a política mais estrita do projeto", () => {
+    const tasks = [tarefa({ id: "t1", title: "Sem DoD nem evidência" })];
+    let state = estadoComPoliticaEstrita(tasks);
+    state = executarAcaoEntrada(tasks, state).stateResultante;
+
+    const resultado = executarAcaoFeito(tasks, state);
+
+    expect(resultado.stateResultante.done).toContain("t1");
   });
 });
 

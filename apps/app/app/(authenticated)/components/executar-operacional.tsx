@@ -42,6 +42,7 @@ import {
   chaveOrganizacao,
   ciclosProjeto,
   concluirEntrega,
+  concluirPorGestoHumano,
   criarProjeto,
   dependenciasPendentes,
   type Entrega,
@@ -1609,6 +1610,7 @@ interface ProductSurfaceProperties {
   readonly activeProject: ReturnType<typeof projetoAtivo>;
   readonly firstName: string;
   readonly focus: Entrega | null;
+  readonly onConcluir: () => void;
   readonly onOpenCopilot: () => void;
   readonly onOpenEvidence: () => void;
   readonly onOpenProjects: () => void;
@@ -1625,6 +1627,7 @@ function ProductSurface({
   activeProject,
   firstName,
   focus,
+  onConcluir,
   onOpenCopilot,
   onOpenEvidence,
   onOpenProjects,
@@ -1694,6 +1697,7 @@ function ProductSurface({
         <FocusSurface
           face={taskFace}
           focus={focus}
+          onConcluir={onConcluir}
           onFaceChange={onTaskFaceChange}
           onFocus={selectTask}
           onOpenEvidence={onOpenEvidence}
@@ -2153,6 +2157,34 @@ export function ExecutarOperacional({
     }
   }
 
+  /**
+   * Botão "Concluir" do app: como um checklist comum, clicar já conclui —
+   * sem abrir o formulário de evidência. O próprio clique é o gesto humano
+   * que confirma (decisão do usuário, 28/08/2026 — ver
+   * `concluirPorGestoHumano` em domain.ts). Se algo impedir a conclusão
+   * (ex.: a tarefa saiu de foco por outra aba/dispositivo), cai de volta
+   * pro formulário de evidência em vez de falhar em silêncio.
+   */
+  function concluirRapido() {
+    if (!focus) {
+      return;
+    }
+
+    try {
+      setState(
+        concluirPorGestoHumano(tasks, state, focus.id, "Concluído no app.")
+      );
+      setError("");
+    } catch (problem) {
+      setError(
+        problem instanceof Error
+          ? problem.message
+          : "Não foi possível concluir."
+      );
+      setEvidenceOpen(true);
+    }
+  }
+
   function executarCopilotoLocal(question: string) {
     try {
       const answer = executarAcaoCopiloto(state, question);
@@ -2558,6 +2590,7 @@ export function ExecutarOperacional({
             activeProject={activeProject}
             firstName={firstName}
             focus={focus}
+            onConcluir={concluirRapido}
             onOpenCopilot={openCopilot}
             onOpenEvidence={() => setEvidenceOpen(true)}
             onOpenProjects={() => setProjectManagerOpen(true)}

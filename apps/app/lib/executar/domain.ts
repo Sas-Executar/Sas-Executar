@@ -1459,6 +1459,61 @@ export function concluirEntrega(
   return next ? { ...completed, focus: next.id } : completed;
 }
 
+/**
+ * Conclui a entrega em foco sem passar pela política de conclusão do
+ * projeto (DoD/evidência/verificação/aprovação humana) — decisão do
+ * usuário, 28/08/2026: "quero que concluir uma tarefa nunca peça
+ * evidência/aprovação, nem escaneando nem clicando no app... como um
+ * aplicativo padrão: clicou, sumiu, ou escaneou, sumiu". O próprio gesto
+ * humano que chama esta função (um clique no botão "Concluir" do app, um
+ * scan físico do símbolo "Feito") É tratado como a confirmação — não há
+ * segunda confirmação a pedir.
+ *
+ * Ainda assim registra uma evidência automática (nota informada pelo
+ * chamador + `verified: true`) para manter `state.evidence` coerente com o
+ * resto do domínio e auditável (quem/quando concluiu por qual via), mesmo
+ * a política do projeto não exigindo evidência.
+ *
+ * `concluirEntrega` (com a política real) continua existindo e é o
+ * caminho usado por qualquer outro chamador que ainda deva respeitar DoD/
+ * evidência/verificação/aprovação — hoje isso é só o Copiloto via
+ * `executarFerramenta`. Este atalho é usado apenas pelos dois gestos
+ * humanos diretos (clique no app, scan físico), nunca por um agente.
+ */
+export function concluirPorGestoHumano(
+  tasks: readonly Entrega[],
+  state: EstadoOperacional,
+  taskId: string,
+  nota: string
+): EstadoOperacional {
+  const task = focoAtual(tasks, state);
+
+  if (!task || task.id !== taskId) {
+    throw new Error("A entrega não está liberada para conclusão.");
+  }
+
+  const evidence: Evidencia = {
+    taskId,
+    note: nota,
+    url: "",
+    verified: true,
+    createdAt: new Date().toISOString(),
+  };
+
+  const comEvidencia = registrar(state, "evidencia.registrada", taskId, {
+    focus: taskId,
+    evidence: [...state.evidence, evidence],
+  });
+
+  const completed = registrar(comEvidencia, "entrega.concluida", taskId, {
+    done: [...comEvidencia.done, taskId],
+    focus: null,
+  });
+  const next = filaPronta(tasks, completed)[0];
+
+  return next ? { ...completed, focus: next.id } : completed;
+}
+
 export function progresso(
   tasks: readonly Entrega[],
   state: EstadoOperacional
