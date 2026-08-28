@@ -153,7 +153,7 @@ describe("projetarMapaOS", () => {
     ).toHaveLength(1);
   });
 
-  it("expõe as 5 ações administrativas do Scanner com payload executar://scan/*", () => {
+  it("expõe as 5 ações administrativas do Scanner, sem QR (reconhecimento por símbolo)", () => {
     const projecao = projetarMapaOS(
       estadoCom([]),
       REFERENCIA.toISOString(),
@@ -168,7 +168,8 @@ describe("projetarMapaOS", () => {
       "saida",
     ]);
     for (const acao of projecao.admin.actions) {
-      expect(acao.qrPayload).toBe(`executar://scan/${acao.id}`);
+      expect(acao).not.toHaveProperty("qrPayload");
+      expect(typeof acao.label).toBe("string");
     }
   });
 

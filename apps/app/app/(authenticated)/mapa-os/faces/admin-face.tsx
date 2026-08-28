@@ -5,11 +5,11 @@ import {
   LogOut,
   SlidersHorizontal,
 } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
 import type {
   AcaoScannerId,
   MapaOSProjecao,
 } from "@/lib/executar/mapa-os-projection";
+import { ESPESSURA_TRACO_ICONE } from "@/lib/executar/symbol-recognizer";
 import { CalendarBar } from "./calendar-bar";
 import { FaceHeader } from "./face-header";
 
@@ -26,11 +26,16 @@ interface AdminFaceProperties {
 }
 
 /**
- * A1 · ADMIN/ATALHO — calendário semanal + 5 ações do Scanner. Cada ação é
- * seu próprio alvo escaneável (`executar://scan/{id}`): a estratégia de
- * reconhecimento por símbolo isolado ficou como questão aberta no FRD do
- * Scanner ("terceiracte"), então usamos o primitivo já disponível e
- * confiável — um QR por ação — em vez de inventar reconhecimento visual.
+ * A1 · ADMIN/ATALHO — calendário semanal + 5 ações do Scanner.
+ *
+ * As 5 ações NÃO carregam QR (decisão do usuário, 28/08/2026): o Scanner as
+ * reconhece pelo próprio desenho do ícone (o mesmo `lucide-react` usado aqui
+ * na tela é a referência do reconhecedor — ver
+ * `lib/executar/symbol-recognizer.ts`), não por um código decodificado. O
+ * papel fica limpo — só o ícone, sem elemento de máquina sobreposto — e o
+ * reconhecimento é tão instantâneo quanto ler um QR. QR continua existindo
+ * no Mapa-OS só para os destinos que não têm forma fixa própria (day card →
+ * tarefa, nota → documentos, header → jump) — ver `FaceHeader`.
  */
 export function AdminFace({ admin }: AdminFaceProperties) {
   return (
@@ -46,15 +51,10 @@ export function AdminFace({ admin }: AdminFaceProperties) {
             return (
               <div className="mapaOsAdminAction" key={acao.id}>
                 <div className="mapaOsActionSquare">
-                  <QRCodeSVG
-                    level="M"
-                    marginSize={0}
-                    size={20}
-                    value={acao.qrPayload}
+                  <Icone
+                    aria-hidden="true"
+                    strokeWidth={ESPESSURA_TRACO_ICONE}
                   />
-                  <i aria-hidden="true" className="mapaOsActionBadge">
-                    <Icone aria-hidden="true" />
-                  </i>
                 </div>
                 <span>{acao.label}</span>
               </div>

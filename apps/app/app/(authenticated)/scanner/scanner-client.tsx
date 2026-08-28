@@ -19,6 +19,7 @@ import {
   ScannerConfirmacaoNecessariaError,
 } from "@/lib/executar/scanner";
 import { useEstadoOperacionalLocal } from "@/lib/executar/use-estado-local";
+import { useSymbolScanner } from "@/lib/executar/use-symbol-scanner";
 import "./scanner.css";
 
 const JANELA_UNDO_MS = 8000;
@@ -193,6 +194,16 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
     };
   }, [loaded, fase]);
 
+  // Reconhecimento dos 5 símbolos administrativos (Entrada/Copiloto/
+  // Seletor/Feito/Saída) — roda em paralelo ao decode de QR acima, lendo o
+  // mesmo <video> por um <canvas> independente. Sem QR nesses 5 símbolos
+  // (decisão do usuário, 28/08/2026) — ver lib/executar/symbol-recognizer.ts.
+  useSymbolScanner({
+    ativo: loaded && fase === "camera" && !cameraIndisponivel,
+    onReconhecido: (id) => processarPayloadRef.current(`executar://scan/${id}`),
+    videoRef,
+  });
+
   useEffect(() => {
     if (!undoDisponivel) {
       return;
@@ -235,7 +246,12 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
           <div className="scannerCameraFrame">
             {/** biome-ignore lint/a11y/useMediaCaption: vídeo é a prévia ao vivo da câmera, sem trilha de áudio/legenda aplicável. */}
             <video className="scannerVideo" ref={videoRef} />
+            <div aria-hidden="true" className="scannerSymbolGuide" />
           </div>
+          <p className="scannerDica">
+            QR de tarefa/documento: qualquer posição. Símbolo de ação
+            (Entrada/Copiloto/Seletor/Feito/Saída): centralize no quadro.
+          </p>
           {cameraIndisponivel && (
             <p className="scannerAviso">
               Câmera indisponível neste navegador/aparelho. Digite o conteúdo do

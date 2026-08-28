@@ -404,27 +404,9 @@
 }
 
 .mapaOsActionSquare > svg {
-  width: calc(20mm * var(--mo-scale));
-  height: calc(20mm * var(--mo-scale));
-}
-
-.mapaOsActionBadge {
-  position: absolute;
-  top: 1.2mm;
-  left: 1.2mm;
-  display: grid;
-  place-items: center;
-  width: 5mm;
-  height: 5mm;
-  overflow: hidden;
-  background: var(--mo-color-surface);
-  border-radius: 50%;
-  box-shadow: 0 0 0 0.3mm var(--mo-color-hairline-default);
-}
-
-.mapaOsActionBadge svg {
-  width: 3mm;
-  height: 3mm;
+  width: calc(16mm * var(--mo-scale));
+  height: calc(16mm * var(--mo-scale));
+  color: var(--mo-color-ink);
 }
 
 .mapaOsAdminAction > span {

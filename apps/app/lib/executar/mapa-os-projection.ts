@@ -54,7 +54,6 @@ export type NotasLaneId = "agora" | "depois" | "proximo";
 export interface AcaoAdminProjetada {
   readonly id: AcaoScannerId;
   readonly label: string;
-  readonly qrPayload: string;
 }
 
 export interface DiaSemanaProjetado {
@@ -198,7 +197,6 @@ function projetarAcoesAdmin(): readonly AcaoAdminProjetada[] {
   return OPERACOES_ADMIN.map((acao) => ({
     id: acao.id,
     label: acao.label,
-    qrPayload: `executar://scan/${acao.id}`,
   }));
 }
 
