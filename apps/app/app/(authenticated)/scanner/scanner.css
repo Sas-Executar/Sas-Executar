@@ -45,6 +45,7 @@
 }
 
 .scannerCameraFrame {
+  position: relative;
   width: 320px;
   height: 320px;
   overflow: hidden;
@@ -59,9 +60,29 @@
   object-fit: cover;
 }
 
+/* Guia visual da ROI de reconhecimento de símbolo (metade do menor lado do
+ * vídeo — ver FRACAO_ROI_DO_VIDEO em use-symbol-scanner.ts). O QR continua
+ * sendo lido em qualquer posição do quadro (qr-scanner cobre o frame todo);
+ * este guia é só para os 5 símbolos administrativos. */
+.scannerSymbolGuide {
+  position: absolute;
+  inset: 25%;
+  pointer-events: none;
+  border: 2px dashed rgb(232 163 23 / 70%);
+  border-radius: 12px;
+}
+
 .scannerAviso {
   font-size: 13px;
   color: #e8a317;
+  text-align: center;
+}
+
+.scannerDica {
+  max-width: 320px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #9a9ba3;
   text-align: center;
 }
 
