@@ -12,52 +12,49 @@
 }
 
 /*
- * Mapa-OS · Prisma/Tripé — folha isolada, própria de tokens.
- *
- * Não estende o tema Tailwind/shadcn/Geist do resto do app (mesmo padrão de
- * executar.css/handoff.css): este é um artefato de impressão com sistema
- * visual próprio, definido em Onboarding.md + Regras_desing.md, não a UI
- * viva do dashboard.
- *
- * Camada raw -> alias semântica (production-standards.md secao 3): os
- * tokens --mo-raw-... não são referenciados fora deste bloco; os
- * componentes consomem só os aliases --mo-color-..., --mo-space-...,
- * --mo-font-....
+ * Mapa-OS · Prisma/Tripé — folha de impressão, geometria física própria
+ * (mm), mas cor/espaçamento/tipografia vêm da fundação compartilhada
+ * (packages/design-system/styles/exec-tokens.css, disponível globalmente
+ * via globals.css) — os nomes --mo-* abaixo são só alias local, não uma
+ * segunda paleta. Ver docs/design-system/identidade-executar/README.md.
  */
 .mapaOsShell {
-  --mo-raw-amarelo: #e8a317; /* confirmado pelo usuário em 27/08/2026 — amarelo de ação do Onboarding.md */
-  --mo-raw-verde: #1ba957;
-  --mo-raw-azul: #167efe;
-  --mo-raw-ink: #39393b;
-  --mo-raw-bg: #f4f6f5;
-  --mo-raw-bg-frio: #e1e2e6;
+  /* Alias pra fundação compartilhada (packages/design-system/styles/
+   * exec-tokens.css) — os valores brutos vivem só lá agora; este bloco só
+   * empresta os nomes --mo-* já usados no resto do arquivo, pra não expandir
+   * o diff de migração pro arquivo inteiro sem necessidade. */
+  --mo-color-surface: var(--exec-color-surface);
+  --mo-color-bg: var(--exec-color-canvas);
+  --mo-color-bg-frio: var(--exec-color-surface-subtle);
+  --mo-color-ink: var(--exec-color-foreground);
+  --mo-color-ink-muted: color-mix(
+    in srgb,
+    var(--exec-color-foreground) 62%,
+    white
+  );
+  --mo-color-entregavel: var(--exec-color-entregue);
+  --mo-color-acao: var(
+    --exec-color-acao
+  ); /* confirmado pelo usuário em 27/08/2026 */
+  --mo-color-acao-secundaria: var(--exec-color-acao-secundaria);
+  --mo-color-hairline-subtle: var(--exec-color-stroke-subtle);
+  --mo-color-hairline-default: var(--exec-color-stroke-default);
+  --mo-color-hairline-strong: var(--exec-color-stroke-strong);
 
-  --mo-color-surface: #ffffff;
-  --mo-color-bg: var(--mo-raw-bg);
-  --mo-color-bg-frio: var(--mo-raw-bg-frio);
-  --mo-color-ink: var(--mo-raw-ink);
-  --mo-color-ink-muted: color-mix(in srgb, var(--mo-raw-ink) 62%, white);
-  --mo-color-entregavel: var(--mo-raw-verde);
-  --mo-color-acao: var(--mo-raw-amarelo);
-  --mo-color-acao-secundaria: var(--mo-raw-azul);
-  --mo-color-hairline-subtle: color-mix(in srgb, var(--mo-raw-ink) 10%, white);
-  --mo-color-hairline-default: color-mix(in srgb, var(--mo-raw-ink) 18%, white);
-  --mo-color-hairline-strong: color-mix(in srgb, var(--mo-raw-ink) 32%, white);
+  --mo-notes-agora: var(--exec-color-erro);
+  --mo-notes-proximo: var(--exec-color-acao);
+  --mo-notes-depois: var(--exec-color-entregue);
 
-  --mo-notes-agora: #d94b4b;
-  --mo-notes-proximo: #e5b62f;
-  --mo-notes-depois: #4b9b62;
+  /* rampa de espaçamento — mesma da fundação compartilhada */
+  --mo-space-1: var(--exec-space-4);
+  --mo-space-2: var(--exec-space-8);
+  --mo-space-3: var(--exec-space-12);
+  --mo-space-4: var(--exec-space-16);
+  --mo-space-5: var(--exec-space-20);
+  --mo-space-6: var(--exec-space-24);
 
-  /* rampa de espaçamento — Regras_desing.md §2.1 (base 4px) */
-  --mo-space-1: 4px;
-  --mo-space-2: 8px;
-  --mo-space-3: 12px;
-  --mo-space-4: 16px;
-  --mo-space-5: 20px;
-  --mo-space-6: 24px;
-
-  --mo-font-base: Arial, "Helvetica Neue", sans-serif;
-  --mo-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+  --mo-font-base: var(--exec-font-body);
+  --mo-font-mono: var(--exec-font-mono);
   --mo-font-support: "Courier New", Courier, monospace;
 
   /* geometria física — Prisma A4 retrato (padrão) */
@@ -91,18 +88,20 @@
 /* ---------- controles de prévia (nunca aparecem no papel) ---------- */
 .mapaOsPrintControls {
   position: sticky;
-  top: 16px;
+  top: var(--mo-space-4);
   z-index: 10;
   display: flex;
   flex-wrap: wrap;
   gap: var(--mo-space-2);
   align-items: center;
   width: min(100%, 960px);
-  padding: 10px 12px 10px 18px;
-  margin: 0 auto 20px;
-  background: rgba(255, 255, 255, 0.94);
+  min-height: var(--exec-touch-min);
+  padding: var(--mo-space-3) var(--mo-space-3) var(--mo-space-3)
+    var(--mo-space-4);
+  margin: 0 auto var(--mo-space-5);
+  background: color-mix(in srgb, var(--mo-color-surface) 94%, transparent);
   border: 1px solid var(--mo-color-hairline-default);
-  border-radius: 16px;
+  border-radius: var(--exec-radius-control);
 }
 
 .mapaOsBrand {
@@ -138,14 +137,15 @@
   margin: 0;
   overflow: hidden;
   border: 1px solid var(--mo-color-hairline-strong);
-  border-radius: 10px;
+  border-radius: var(--exec-radius-control);
 }
 
 .mapaOsFormatSwitch button {
-  padding: 8px 12px;
+  min-height: var(--exec-touch-min);
+  padding: var(--mo-space-2) var(--mo-space-3);
   font-size: 12px;
   cursor: pointer;
-  background: #fff;
+  background: var(--mo-color-surface);
   border: none;
 }
 
@@ -154,32 +154,32 @@
 }
 
 .mapaOsFormatSwitch button[aria-pressed="true"] {
-  color: #fff;
+  color: var(--mo-color-surface);
   background: var(--mo-color-ink);
 }
 
 .mapaOsPrintControls > button {
   display: inline-flex;
-  gap: 7px;
+  gap: var(--mo-space-2);
   align-items: center;
-  min-height: 36px;
-  padding: 0 13px;
+  min-height: var(--exec-touch-min);
+  padding: 0 var(--mo-space-3);
   color: var(--mo-color-ink);
   cursor: pointer;
-  background: #fff;
+  background: var(--mo-color-surface);
   border: 1px solid var(--mo-color-hairline-strong);
-  border-radius: 10px;
+  border-radius: var(--exec-radius-control);
 }
 
 .mapaOsPrintControls > button.primary {
-  color: #fff;
+  color: var(--mo-color-surface);
   background: var(--mo-color-ink);
   border-color: var(--mo-color-ink);
 }
 
 .mapaOsStage {
   width: 100%;
-  padding: 8px 0 64px;
+  padding: var(--mo-space-2) 0 var(--exec-space-64);
   overflow: auto;
 }
 
@@ -365,7 +365,7 @@
 }
 
 .mapaOsCalendarDay.current strong {
-  color: #fff;
+  color: var(--mo-color-surface);
   background: var(--mo-color-acao);
 }
 
@@ -437,8 +437,8 @@
   width: 5.4mm;
   height: 5.4mm;
   font: 700 5.5pt / 1 var(--mo-font-base);
-  color: #fff;
-  background: #fff;
+  color: var(--mo-color-surface);
+  background: var(--mo-color-surface);
   border: 0.6mm solid var(--mo-color-hairline-strong);
   border-radius: 50%;
 }
@@ -451,7 +451,7 @@
 .mapaOsRoutineStep.current .mapaOsRoutineNode {
   background: var(--mo-color-acao);
   border: 1.1mm solid var(--mo-color-acao);
-  box-shadow: inset 0 0 0 0.8mm #fff;
+  box-shadow: inset 0 0 0 0.8mm var(--mo-color-surface);
 }
 
 .mapaOsRoutineStep.next .mapaOsRoutineNode {
@@ -667,13 +667,13 @@
 @media print {
   html,
   body {
-    background: #fff;
+    background: var(--mo-color-surface);
   }
 
   .mapaOsShell {
     min-height: 0;
     padding: 0;
-    background: #fff;
+    background: var(--mo-color-surface);
   }
 
   .mapaOsPrintControls {

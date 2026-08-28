@@ -562,7 +562,11 @@ test("handoff final aplica home, navegação, sprint, três faces e documentos m
 
   assert.match(surfaces, /function SprintProgress/);
   assert.match(styles, /\.executarOperationalNav/);
-  assert.match(styles, /--executar-action: #baff33/);
+  // --executar-action era um lima isolado (#baff33) só desta tela; a
+  // migração pra fundação compartilhada (exec-tokens.css) fez esse nome
+  // aliasar pro âmbar de ação/estado-atual usado no resto do produto —
+  // ver docs/design-system/identidade-executar/README.md.
+  assert.match(styles, /--executar-action: var\(--exec-color-acao\)/);
   assert.match(styles, /@media \(max-width: 820px\)/);
 });
 
