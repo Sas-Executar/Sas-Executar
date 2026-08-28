@@ -1,0 +1,124 @@
+/* ============================================================
+   exec.* tokens — Identidade EXECUTAR v1 (fundação)
+
+   Fonte única de verdade para cor, espaçamento, tipografia, raio,
+   elevação, movimento e alvo de toque das superfícies de produto
+   (dashboard, Scanner, Mapa-OS) — em cima da mesma disciplina
+   raw → alias já usada no restante do ecossistema (ver o kit
+   Fractal Fluent da skill executar-design).
+
+   Isto é a FUNDAÇÃO (dependência): define o vocabulário. A migração
+   de cada tela para consumir estes tokens em vez de valores soltos
+   é o próximo passo, feito arquivo por arquivo — não faz parte
+   deste commit.
+
+   Por que os valores abaixo, não outros:
+   - Cor: mantém a paleta já em produção (Regras_desing.md/
+     Onboarding.md, confirmada com o usuário em 27-28/08/2026) —
+     entregável/concluído = VERDE, ação = ÂMBAR (#E8A317, aprovado
+     pelo usuário), ação secundária = AZUL. Isto diverge de propósito
+     do kit "Fractal Fluent" da skill executar-design (que usa azul
+     também para "concluído" e proíbe verde) — aquele é um sistema
+     alternativo já registrado no ecossistema; escolhemos preservar o
+     que já está no ar (Mapa-OS/Scanner, PRs #74–#76) em vez de
+     re-colorir uma feature recém-lançada sem pedido explícito. Se a
+     direção for adotar o azul-só-Fluent no futuro, é uma troca só
+     destas 3 variáveis de cor semântica, não uma reescrita.
+   - Espaçamento: ramp de 4px (Fluent 2 e o quadro de tokens enviado
+     pelo usuário em 28/08/2026 concordam, e já era a regra documentada
+     em Regras_desing.md — só nunca foi seguida à risca no CSS real).
+   - Raio: dois vocabulários (objeto vs. chrome), regra do Fluent 2 e
+     de production-standards.md da skill executar-design.
+   - Alvo de toque mínimo 44×44: Fluent 2 e Apple HIG concordam no
+     mesmo número — sem ambiguidade aqui.
+   - Tipografia: mantém JetBrains Mono para dado/rótulo e fonte de
+     sistema para corpo (Onboarding.md) — perto o bastante da métrica
+     San Francisco (Apple) e Segoe (Fluent) para não precisar de uma
+     terceira família.
+   ============================================================ */
+
+:root {
+  /* ---------- raw / global (não referenciar direto em componente) ---------- */
+  --exec-raw-bg: #f4f6f5;
+  --exec-raw-bg-frio: #e1e2e6;
+  --exec-raw-white: #ffffff;
+  --exec-raw-ink: #39393b;
+  --exec-raw-ink-secundaria: #73736d;
+  --exec-raw-green-50: #1ba957;
+  --exec-raw-blue-50: #167efe;
+  --exec-raw-amber-50: #e8a317;
+  --exec-raw-red-50: #d13438;
+
+  /* ---------- alias semântico exec.* — o que os componentes consomem ---------- */
+  --exec-color-canvas: var(--exec-raw-bg);
+  --exec-color-surface: var(--exec-raw-white);
+  --exec-color-surface-subtle: var(--exec-raw-bg-frio);
+  --exec-color-foreground: var(--exec-raw-ink);
+  --exec-color-foreground-secondary: var(--exec-raw-ink-secundaria);
+
+  /* Hierarquia de traço em 4 pesos — nunca uma borda única pra tudo.
+     Derivados da cor de texto em opacidade crescente: qualquer troca
+     de acento futura recalcula a hierarquia sozinha, sem novo hex. */
+  --exec-color-stroke-subtle: color-mix(in srgb, var(--exec-raw-ink) 8%, transparent);
+  --exec-color-stroke-default: color-mix(in srgb, var(--exec-raw-ink) 16%, transparent);
+  --exec-color-stroke-strong: color-mix(in srgb, var(--exec-raw-ink) 28%, transparent);
+  --exec-color-stroke-selected: var(--exec-raw-amber-50);
+
+  /* Papéis de cor — presentacionais, nunca estruturais (trocar o
+     hex não pode mudar hierarquia/layout/dado, só a leitura visual). */
+  --exec-color-entregue: var(--exec-raw-green-50); /* concluído — nunca trocar por azul sem decisão explícita, ver cabeçalho */
+  --exec-color-acao: var(--exec-raw-amber-50); /* CTA primário, estado "current" */
+  --exec-color-acao-secundaria: var(--exec-raw-blue-50);
+  --exec-color-erro: var(--exec-raw-red-50); /* só quando existe erro real */
+
+  /* ---------- spacing — base 4px (Fluent 2 + quadro de tokens do usuário) ---------- */
+  --exec-space-4: 4px;
+  --exec-space-8: 8px;
+  --exec-space-12: 12px;
+  --exec-space-16: 16px;
+  --exec-space-20: 20px;
+  --exec-space-24: 24px;
+  --exec-space-32: 32px;
+  --exec-space-40: 40px;
+  --exec-space-48: 48px;
+  --exec-space-64: 64px;
+
+  /* ---------- radius — dois vocabulários deliberadamente distintos ---------- */
+  --exec-radius-object: 12px; /* Project/Cycle/Day/Task/Action, day cards — identidade geométrica */
+  --exec-radius-control: 8px; /* botão/input/segmented/menu — chrome de interação */
+  --exec-radius-pill: 999px; /* chips/badges/avatares */
+
+  /* ---------- elevation — nível 0 por padrão (Regras_desing.md §2.6);
+     níveis 1-3 existem só para overlays reais (sheet/modal/menu),
+     nunca para decorar um card em repouso. ---------- */
+  --exec-elevation-0: none;
+  --exec-elevation-1: 0 1px 2px color-mix(in srgb, var(--exec-raw-ink) 6%, transparent);
+  --exec-elevation-2: 0 4px 12px color-mix(in srgb, var(--exec-raw-ink) 10%, transparent);
+  --exec-elevation-3: 0 12px 32px color-mix(in srgb, var(--exec-raw-ink) 16%, transparent);
+
+  /* ---------- motion — rápido e funcional, nunca decorativo ---------- */
+  --exec-motion-fast: 100ms;
+  --exec-motion-standard: 200ms;
+  --exec-motion-cascade: 260ms;
+  --exec-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* ---------- tipografia — escala fechada, métrica 4px ---------- */
+  --exec-font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --exec-font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --exec-text-display: 40px; /* peso 600, entrega principal/hero */
+  --exec-text-title-1: 32px; /* peso 600 */
+  --exec-text-title-2: 24px; /* peso 600 — título do objeto atual */
+  --exec-text-title-3: 20px; /* peso 600 */
+  --exec-text-body: 16px; /* peso 400 — conteúdo operacional */
+  --exec-text-caption: 12px; /* peso 400 — metadata/percentuais */
+  --exec-text-label: 11px; /* peso 500 — rótulos técnicos, uppercase */
+
+  /* ---------- interação — Fluent 2 e Apple HIG concordam no mesmo mínimo ---------- */
+  --exec-touch-min: 44px;
+
+  /* ---------- safe-area (mobile web — notch/home indicator) ---------- */
+  --exec-safe-top: env(safe-area-inset-top, 0px);
+  --exec-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --exec-safe-left: env(safe-area-inset-left, 0px);
+  --exec-safe-right: env(safe-area-inset-right, 0px);
+}
