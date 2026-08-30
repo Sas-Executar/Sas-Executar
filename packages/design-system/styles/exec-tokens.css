@@ -1,91 +1,107 @@
 /* ============================================================
-   exec.* tokens — Identidade EXECUTAR v1 (fundação)
+   exec.* tokens — Identidade EXECUTAR v2 (Fluent como Source of Truth)
 
    Fonte única de verdade para cor, espaçamento, tipografia, raio,
    elevação, movimento e alvo de toque das superfícies de produto
-   (dashboard, Scanner, Mapa-OS) — em cima da mesma disciplina
-   raw → alias já usada no restante do ecossistema (ver o kit
-   Fractal Fluent da skill executar-design).
+   (dashboard, Scanner, Mapa-OS).
 
-   Isto é a FUNDAÇÃO (dependência): define o vocabulário. A migração
-   de cada tela para consumir estes tokens em vez de valores soltos
-   é o próximo passo, feito arquivo por arquivo — não faz parte
-   deste commit.
+   v2 — o que mudou e por quê (decisão do usuário, 30/08/2026):
+   O kit "Fractal Fluent" da skill executar-design (raw-grey/raw-blue,
+   radius quase reto, azul de marca) passa a ser o Source of Truth real
+   do app — inclusive onde isso diverge do que estava em produção desde
+   a v1 desta fundação (PR #77). Duas exceções explícitas, confirmadas
+   com o usuário:
+   1. Verde continua sendo "concluído" (o kit Fluent usa azul+check;
+      descartamos só esse ponto específico do kit).
+   2. Superfícies de projeção (Mapa-OS) continuam somente-leitura — não
+      viram documento editável.
+   Fora essas duas exceções, o kit vale integralmente: cinza neutro de
+   verdade (não mais o cinza puxado pra verde/quente da v1), azul como
+   cor de marca/CTA (não mais âmbar), raio quase reto (raio de objeto
+   2px, controle 6px — não mais 12/8px).
+
+   --exec-color-acao e --exec-color-acao-secundaria continuam existindo
+   como ALIAS pros nomes novos --exec-color-brand/brand-hover — os ~10
+   arquivos que já consomem esses nomes (executar.css, handoff.css,
+   mapa-os.css, scanner.css, web-surface.css) não precisam ser reescritos
+   nesta mesma migração só por causa do valor ter mudado de âmbar pra
+   azul; ganham o novo valor automaticamente. Onde um desses arquivos
+   usava --exec-color-acao pra um papel de AVISO/PENDÊNCIA (não CTA —
+   ex. .executarAprovacao, --mo-notes-proximo), foi trocado
+   pontualmente pro novo --exec-color-warning, que preserva o âmbar
+   só pra esse papel mais estreito.
 
    Por que os valores abaixo, não outros:
-   - Cor: mantém a paleta já em produção (Regras_desing.md/
-     Onboarding.md, confirmada com o usuário em 27-28/08/2026) —
-     entregável/concluído = VERDE, ação = ÂMBAR (#E8A317, aprovado
-     pelo usuário), ação secundária = AZUL. Isto diverge de propósito
-     do kit "Fractal Fluent" da skill executar-design (que usa azul
-     também para "concluído" e proíbe verde) — aquele é um sistema
-     alternativo já registrado no ecossistema; escolhemos preservar o
-     que já está no ar (Mapa-OS/Scanner, PRs #74–#76) em vez de
-     re-colorir uma feature recém-lançada sem pedido explícito. Se a
-     direção for adotar o azul-só-Fluent no futuro, é uma troca só
-     destas 3 variáveis de cor semântica, não uma reescrita.
+   - Cor: --exec-color-entregue (verde) nunca muda sem decisão explícita
+     — é a única cor de estado que sobrevive da v1. Todo o resto da
+     escala neutra e o azul de marca vêm direto do kit Fluent.
    - Espaçamento: ramp de 4px (Fluent 2 e o quadro de tokens enviado
-     pelo usuário em 28/08/2026 concordam, e já era a regra documentada
-     em Regras_desing.md — só nunca foi seguida à risca no CSS real).
-   - Raio: dois vocabulários (objeto vs. chrome), regra do Fluent 2 e
-     de production-standards.md da skill executar-design.
+     pelo usuário em 28/08/2026 concordam) — inalterado da v1.
+   - Raio: dois vocabulários (objeto vs. chrome), valores do kit Fluent
+     (2px/6px) — mais retos que a v1 (12px/8px), de propósito.
    - Alvo de toque mínimo 44×44: Fluent 2 e Apple HIG concordam no
-     mesmo número — sem ambiguidade aqui.
-   - Tipografia: mantém JetBrains Mono para dado/rótulo e fonte de
-     sistema para corpo (Onboarding.md) — perto o bastante da métrica
-     San Francisco (Apple) e Segoe (Fluent) para não precisar de uma
-     terceira família.
+     mesmo número — inalterado.
+   - Tipografia: inalterada da v1 (JetBrains Mono + fonte de sistema).
    ============================================================ */
 
 :root {
-  /* ---------- raw / global (não referenciar direto em componente) ---------- */
-  --exec-raw-bg: #f4f6f5;
-  --exec-raw-bg-frio: #e1e2e6;
+  /* ---------- raw / global (não referenciar direto em componente) ----------
+     Escala de cinza neutra de verdade (kit Fractal Fluent) — v1 usava um
+     cinza puxado pro quente/verde (#F4F6F5/#E1E2E6/#39393B); trocado por
+     completo, não é mais um ponto de referência válido. */
   --exec-raw-white: #ffffff;
-  --exec-raw-ink: #39393b;
-  --exec-raw-ink-secundaria: #73736d;
-  --exec-raw-green-50: #1ba957;
-  --exec-raw-blue-50: #167efe;
-  --exec-raw-amber-50: #e8a317;
+  --exec-raw-grey-98: #fafafa;
+  --exec-raw-grey-96: #f5f5f5;
+  --exec-raw-grey-92: #ededed;
+  --exec-raw-grey-88: #e0e0e0;
+  --exec-raw-grey-82: #d1d1d1;
+  --exec-raw-grey-62: #767676;
+  --exec-raw-grey-38: #616161;
+  --exec-raw-grey-14: #242424;
+  --exec-raw-blue-90: #ebf3fc;
+  --exec-raw-blue-50: #0f6cbd;
+  --exec-raw-blue-40: #115ea3;
+  --exec-raw-green-50: #1ba957; /* entregue/concluído — exceção ao kit Fluent, ver cabeçalho */
+  --exec-raw-amber-50: #e8a317; /* só para o papel estreito de aviso/pendência, não CTA */
   --exec-raw-red-50: #d13438;
 
   /* ---------- alias semântico exec.* — o que os componentes consomem ---------- */
-  --exec-color-canvas: var(--exec-raw-bg);
+  --exec-color-canvas: var(--exec-raw-white);
   --exec-color-surface: var(--exec-raw-white);
-  --exec-color-surface-subtle: var(--exec-raw-bg-frio);
-  --exec-color-foreground: var(--exec-raw-ink);
-  --exec-color-foreground-secondary: var(--exec-raw-ink-secundaria);
+  --exec-color-surface-subtle: var(--exec-raw-grey-98);
+  --exec-color-foreground: var(--exec-raw-grey-14);
+  --exec-color-foreground-secondary: var(--exec-raw-grey-38);
 
   /* Hierarquia de traço em 4 pesos — nunca uma borda única pra tudo.
-     Derivados da cor de texto em opacidade crescente: qualquer troca
-     de acento futura recalcula a hierarquia sozinha, sem novo hex. */
-  --exec-color-stroke-subtle: color-mix(
-    in srgb,
-    var(--exec-raw-ink) 8%,
-    transparent
-  );
-  --exec-color-stroke-default: color-mix(
-    in srgb,
-    var(--exec-raw-ink) 16%,
-    transparent
-  );
-  --exec-color-stroke-strong: color-mix(
-    in srgb,
-    var(--exec-raw-ink) 28%,
-    transparent
-  );
-  --exec-color-stroke-selected: var(--exec-raw-amber-50);
+     Escala discreta de cinza (não color-mix sobre a tinta) — fiel ao
+     kit Fluent, que usa paradas de cinza fixas, não derivação. */
+  --exec-color-stroke-subtle: var(--exec-raw-grey-96);
+  --exec-color-stroke-default: var(--exec-raw-grey-92);
+  --exec-color-stroke-strong: var(--exec-raw-grey-82);
+  --exec-color-stroke-selected: var(--exec-raw-blue-50);
 
   /* Papéis de cor — presentacionais, nunca estruturais (trocar o
      hex não pode mudar hierarquia/layout/dado, só a leitura visual). */
   --exec-color-entregue: var(
     --exec-raw-green-50
-  ); /* concluído — nunca trocar por azul sem decisão explícita, ver cabeçalho */
-  --exec-color-acao: var(
+  ); /* concluído — nunca trocar sem decisão explícita */
+  --exec-color-brand: var(
+    --exec-raw-blue-50
+  ); /* CTA primário, marca, estado "current" */
+  --exec-color-brand-hover: var(--exec-raw-blue-40);
+  --exec-color-brand-tint: var(--exec-raw-blue-90);
+  --exec-color-warning: var(
     --exec-raw-amber-50
-  ); /* CTA primário, estado "current" */
-  --exec-color-acao-secundaria: var(--exec-raw-blue-50);
+  ); /* só aviso/pendência — nunca CTA */
   --exec-color-erro: var(--exec-raw-red-50); /* só quando existe erro real */
+
+  /* Alias de compatibilidade — nomes antigos (v1) que os arquivos de
+     tela já consomem; apontam pro papel novo, evitando reescrever
+     executar.css/handoff.css/mapa-os.css/scanner.css/web-surface.css só
+     por causa da troca âmbar→azul. Migrar essas telas pros nomes novos
+     diretamente (--exec-color-brand/brand-hover) fica como próximo passo. */
+  --exec-color-acao: var(--exec-color-brand);
+  --exec-color-acao-secundaria: var(--exec-color-brand-hover);
 
   /* ---------- spacing — base 4px (Fluent 2 + quadro de tokens do usuário) ---------- */
   --exec-space-4: 4px;
@@ -99,9 +115,11 @@
   --exec-space-48: 48px;
   --exec-space-64: 64px;
 
-  /* ---------- radius — dois vocabulários deliberadamente distintos ---------- */
-  --exec-radius-object: 12px; /* Project/Cycle/Day/Task/Action, day cards — identidade geométrica */
-  --exec-radius-control: 8px; /* botão/input/segmented/menu — chrome de interação */
+  /* ---------- radius — dois vocabulários deliberadamente distintos.
+     Valores do kit Fluent — mais retos que a v1 (era 12px/8px). ---------- */
+  --exec-radius-object: 2px; /* Project/Cycle/Day/Task/Action, day cards — identidade geométrica */
+  --exec-radius-control: 6px; /* botão/input/segmented/menu — chrome de interação */
+  --exec-radius-overlay: 8px; /* sheet/modal/menu flutuante — raio distinto de controle */
   --exec-radius-pill: 999px; /* chips/badges/avatares */
 
   /* ---------- elevation — nível 0 por padrão (Regras_desing.md §2.6);
@@ -109,11 +127,11 @@
      nunca para decorar um card em repouso. ---------- */
   --exec-elevation-0: none;
   --exec-elevation-1: 0 1px 2px
-    color-mix(in srgb, var(--exec-raw-ink) 6%, transparent);
+    color-mix(in srgb, var(--exec-raw-grey-14) 6%, transparent);
   --exec-elevation-2: 0 4px 12px
-    color-mix(in srgb, var(--exec-raw-ink) 10%, transparent);
+    color-mix(in srgb, var(--exec-raw-grey-14) 10%, transparent);
   --exec-elevation-3: 0 12px 32px
-    color-mix(in srgb, var(--exec-raw-ink) 16%, transparent);
+    color-mix(in srgb, var(--exec-raw-grey-14) 16%, transparent);
 
   /* ---------- motion — rápido e funcional, nunca decorativo ---------- */
   --exec-motion-fast: 100ms;

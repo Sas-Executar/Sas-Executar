@@ -1,0 +1,95 @@
+/* ============================================================
+   exec.* componentes de UI compartilhados — botão único
+
+   Achado ao implementar a fundação Fluent (v2, 30/08/2026):
+   .primaryBtn/.softBtn/.iconBtn/.topActions são usados em ~25 pontos de
+   apps/app/app/(authenticated)/components/executar-operacional.tsx, mas
+   NUNCA tiveram estilo base neste build — só existiam definidos no
+   protótipo legado (apps/app/public/legado/sprint-operacional/app.css,
+   que não é carregado pelo app real). Ou seja, os botões principais do
+   dashboard renderizavam como <button> nativo do navegador, sem nenhum
+   estilo — provável causa real por trás de "o front-end tá
+   desregularizado". Este arquivo é o "botão único": três variantes
+   (primária/suave/ícone) mais o container de agrupamento, todas
+   derivadas só de var(--exec-*), consumidas via className simples (o
+   padrão que o código já usa — não exige trocar JSX por um componente
+   React novo).
+   ============================================================ */
+
+.primaryBtn,
+.softBtn,
+.iconBtn {
+  display: inline-flex;
+  gap: var(--exec-space-8);
+  align-items: center;
+  justify-content: center;
+  min-height: var(--exec-touch-min);
+  font-family: var(--exec-font-body);
+  font-size: var(--exec-text-caption);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: var(--exec-radius-control);
+  transition:
+    background-color var(--exec-motion-fast) var(--exec-ease-standard),
+    border-color var(--exec-motion-fast) var(--exec-ease-standard),
+    color var(--exec-motion-fast) var(--exec-ease-standard);
+}
+
+.primaryBtn {
+  padding: 0 var(--exec-space-16);
+  color: var(--exec-color-surface);
+  background: var(--exec-color-brand);
+}
+
+.primaryBtn:hover:not(:disabled) {
+  background: var(--exec-color-brand-hover);
+}
+
+.primaryBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.softBtn {
+  padding: 0 var(--exec-space-16);
+  color: var(--exec-color-foreground);
+  background: var(--exec-color-surface-subtle);
+  border-color: var(--exec-color-stroke-default);
+}
+
+.softBtn:hover:not(:disabled) {
+  background: var(--exec-color-stroke-subtle);
+}
+
+.softBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.iconBtn {
+  width: var(--exec-touch-min);
+  height: var(--exec-touch-min);
+  padding: 0;
+  color: var(--exec-color-foreground);
+  background: var(--exec-color-surface);
+  border-color: var(--exec-color-stroke-default);
+  border-radius: var(--exec-radius-pill);
+}
+
+.iconBtn:hover:not(:disabled) {
+  background: var(--exec-color-surface-subtle);
+}
+
+.iconBtn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Container de agrupamento de ações — só layout, sem cor/borda própria. */
+.topActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--exec-space-8);
+  align-items: center;
+}

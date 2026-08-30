@@ -4,10 +4,10 @@
  *
  * Superfície deliberadamente escura (contraste de câmera) — a fundação
  * compartilhada (packages/design-system/styles/exec-tokens.css) é clara por
- * padrão, então aliasamos o que bate (acento âmbar, canvas claro pro texto
- * sobre fundo escuro) e nomeamos localmente só o que é mesmo exclusivo
- * desta tela (neutros escuros, vermelho de erro com mais contraste sobre
- * fundo escuro que o --exec-color-erro padrão).
+ * padrão, então aliasamos o que bate (acento de marca, canvas claro pro
+ * texto sobre fundo escuro) e nomeamos localmente só o que é mesmo
+ * exclusivo desta tela (neutros escuros, vermelho de erro com mais
+ * contraste sobre fundo escuro que o --exec-color-erro padrão).
  */
 .scannerShell {
   --scanner-color-bg: #16161a;
@@ -16,6 +16,9 @@
   --scanner-color-foreground: var(--exec-color-canvas);
   --scanner-color-foreground-muted: #9a9ba3;
   --scanner-color-accent: var(--exec-color-acao);
+  /* Aviso real (câmera indisponível) — usa --exec-color-warning, não o
+     azul de marca de --scanner-color-accent. */
+  --scanner-color-aviso: var(--exec-color-warning);
   --scanner-color-erro: #ff6b6b;
 
   display: flex;
@@ -112,7 +115,7 @@
 
 .scannerAviso {
   font-size: var(--exec-text-caption);
-  color: var(--scanner-color-accent);
+  color: var(--scanner-color-aviso);
   text-align: center;
 }
 

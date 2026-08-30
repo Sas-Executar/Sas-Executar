@@ -41,8 +41,11 @@
   --mo-color-hairline-default: var(--exec-color-stroke-default);
   --mo-color-hairline-strong: var(--exec-color-stroke-strong);
 
+  /* Semáforo categórico (urgente/próximo/depois) — --mo-notes-proximo usa
+     --exec-color-warning (âmbar), não --exec-color-acao (agora azul de
+     marca): aqui o meio do semáforo, não um CTA. */
   --mo-notes-agora: var(--exec-color-erro);
-  --mo-notes-proximo: var(--exec-color-acao);
+  --mo-notes-proximo: var(--exec-color-warning);
   --mo-notes-depois: var(--exec-color-entregue);
 
   /* rampa de espaçamento — mesma da fundação compartilhada */
