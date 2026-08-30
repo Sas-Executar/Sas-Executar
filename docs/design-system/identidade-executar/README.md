@@ -1,18 +1,40 @@
 # Identidade EXECUTAR — fundação de tokens
 
-Status: **fundação v1 + migração das telas de produto concluída** —
-`executar.css`, `handoff.css`, `mapa-os.css`, `scanner.css` e
-`web-surface.css` já consomem `var(--exec-*)` em vez de hexadecimais
-soltos. Ao migrar, dois bugs semânticos reais foram corrigidos (não só
-renomeados): `--line`/`--muted`/`--blue2`/`--shadow` em `executar.css`
-eram custom properties nunca definidas neste build (herdadas do
-protótipo legado) — todo elemento que as usava renderizava com cor
-inválida; e o "arco de execução"/indicadores de "atual" em
-`handoff.css` usavam azul/ciano/lima-verde, colidindo com o verde
-reservado para "concluído" — alinhados ao âmbar de ação. Os 4
-gradientes decorativos dos cartões de contexto (Projetos/Documentos/
-Copiloto/Scanner) e o acento "bloqueado" ficaram como cor local
-documentada — são categóricos, não papéis de estado.
+Status: **fundação v2 — kit Fluent como Source of Truth**. Decisão do
+usuário em 30/08/2026: o kit "Fractal Fluent" da skill `executar-design`
+(cinza neutro de verdade, azul como cor de marca/CTA, raio quase reto)
+passa a valer integralmente, inclusive onde diverge do que já estava em
+produção desde a v1 (PR #77) — com duas exceções explícitas: **verde
+continua sendo "concluído"** (o kit usa azul+check; descartamos só esse
+ponto) e **Mapa-OS continua sendo projeção somente-leitura** (não vira
+documento editável). Ver o header de `exec-tokens.css` para o detalhe
+completo raw → alias da v2.
+
+`--exec-color-acao`/`--exec-color-acao-secundaria` (nomes da v1)
+continuam existindo como **alias** pros nomes novos
+`--exec-color-brand`/`--exec-color-brand-hover` — os arquivos de tela que
+já consomem esses nomes (`executar.css`, `handoff.css`, `mapa-os.css`,
+`scanner.css`, `web-surface.css`) recebem o azul automaticamente, sem
+precisar ser reescritos só por causa da troca de valor. Onde um desses
+arquivos usava `--exec-color-acao` pra um papel de aviso/pendência (não
+CTA — `.executarAprovacao`/`.executarSyncNotice` em `executar.css`,
+`--mo-notes-proximo`/semáforo em `mapa-os.css`, `.scannerAviso` de câmera
+indisponível em `scanner.css`), foi trocado pontualmente pro novo
+`--exec-color-warning`, que preserva o âmbar só nesse papel mais estreito.
+
+Migração de telas (v1, ainda válida): `executar.css`, `handoff.css`,
+`mapa-os.css`, `scanner.css` e `web-surface.css` consomem `var(--exec-*)`
+em vez de hexadecimais soltos. Dois bugs semânticos reais foram
+corrigidos nessa migração (não só renomeados): `--line`/`--muted`/
+`--blue2`/`--shadow` em `executar.css` eram custom properties nunca
+definidas neste build (herdadas do protótipo legado) — todo elemento que
+as usava renderizava com cor inválida; e o "arco de execução"/indicadores
+de "atual" em `handoff.css` usavam azul/ciano/lima-verde, colidindo com o
+verde reservado para "concluído" — alinhados ao acento de ação (âmbar na
+v1, azul na v2, via o mesmo token). Os 4 gradientes decorativos dos
+cartões de contexto (Projetos/Documentos/Copiloto/Scanner) e o acento
+"bloqueado" ficaram como cor local documentada — são categóricos, não
+papéis de estado.
 
 Implementação: `packages/design-system/styles/exec-tokens.css` (importado por
 `packages/design-system/styles/globals.css`, disponível em qualquer app que
@@ -36,18 +58,15 @@ os dois vocabulários (objeto vs. chrome) que tanto Fluent 2 quanto a Apple HIG
 recomendam. Esta fundação resolve a causa, não o sintoma: um vocabulário só,
 que os três lugares acima passam a importar em vez de reinventar.
 
-## Outros sistemas de design já registrados neste ecossistema (não usados aqui)
-
-Duas explorações anteriores existem e **não foram adotadas** nesta fundação —
-registradas aqui para não serem redescobertas por acidente:
+## Outros sistemas de design já registrados neste ecossistema
 
 - **Fractal Fluent** (`~/.claude/skills/.../executar-design/references/
-  fluent-ui-kit.md` + `assets/exec-tokens.css`) — um redesign alternativo
-  inteiro em azul, com a regra explícita "nunca verde para concluído". É uma
-  proposta ("primeira proposta", nas palavras do próprio arquivo), não algo
-  em produção. Diverge da paleta já confirmada com o usuário (verde =
-  entregável, âmbar = ação). Se a direção for migrar pra essa linguagem no
-  futuro, é uma troca de 3 variáveis de cor nesta fundação, não uma reescrita.
+  fluent-ui-kit.md` + `assets/exec-tokens.css`) — **adotado como Source of
+  Truth a partir da v2** (30/08/2026), com a única exceção documentada
+  acima (verde continua "concluído"; o kit original propunha azul+check
+  pra esse papel também). Antes disso era registrado aqui como "não
+  adotado" — histórico preservado pra quem consultar versões antigas
+  deste README.
 - **3PN + Good Path** (`docs/design-system/3pn-good-path/`) — um componente
   específico (cartão Problema/Progresso/Próximo-passo + seletor de workflows
   reutilizáveis), com handoff próprio marcado **"CANONICAL / NO VISUAL
@@ -68,26 +87,31 @@ layout ou dado — só a leitura visual de superfície. Por isso cor vive em uma
 camada `raw` (não referenciar direto) e uma camada `alias` semântica (o que o
 componente realmente usa: `--exec-color-entregue`, não `--exec-raw-green-50`).
 
-### Papéis de cor fixos (mantidos do que já está em produção)
+### Papéis de cor fixos
 
 | Papel | Token | Valor | Uso |
 |---|---|---|---|
-| Fundo | `--exec-color-canvas` | `#F4F6F5` | fundo de tela |
+| Fundo | `--exec-color-canvas` | `#FFFFFF` | fundo de tela |
 | Superfície | `--exec-color-surface` | `#FFFFFF` | cards, painéis |
-| Superfície fria | `--exec-color-surface-subtle` | `#E1E2E6` | zonas secundárias |
-| Texto | `--exec-color-foreground` | `#39393B` | texto primário |
-| Texto secundário | `--exec-color-foreground-secondary` | `#73736D` | meta, legendas |
-| **Entregue/concluído** | `--exec-color-entregue` | `#1BA957` (verde) | **nunca trocar sem decisão explícita** |
-| Ação | `--exec-color-acao` | `#E8A317` (âmbar) | CTA primário, estado atual — confirmado com o usuário em 27/08/2026 |
-| Ação secundária | `--exec-color-acao-secundaria` | `#167EFE` (azul) | ações de apoio |
+| Superfície fria | `--exec-color-surface-subtle` | `#FAFAFA` | zonas secundárias |
+| Texto | `--exec-color-foreground` | `#242424` | texto primário |
+| Texto secundário | `--exec-color-foreground-secondary` | `#616161` | meta, legendas |
+| **Entregue/concluído** | `--exec-color-entregue` | `#1BA957` (verde) | **nunca trocar sem decisão explícita** — única exceção ao kit Fluent |
+| Marca/ação | `--exec-color-brand` | `#0F6CBD` (azul) | CTA primário, estado atual — kit Fluent, decisão do usuário em 30/08/2026 |
+| Marca — hover/apoio | `--exec-color-brand-hover` | `#115EA3` (azul) | hover de CTA, ações de apoio |
+| Aviso/pendência | `--exec-color-warning` | `#E8A317` (âmbar) | só aviso/pendência real — nunca CTA |
 | Erro | `--exec-color-erro` | `#D13438` | só quando existe erro real |
+
+`--exec-color-acao`/`--exec-color-acao-secundaria` (nomes da v1) seguem
+existindo como alias de compatibilidade pra `--exec-color-brand`/
+`--exec-color-brand-hover` — ver nota de fundação v2 no topo deste
+documento.
 
 ### Hierarquia de traço — 4 pesos, nunca um só
 
-`stroke-subtle` (8% de opacidade sobre o texto) → `stroke-default` (16%) →
-`stroke-strong` (28%) → `stroke-selected` (cor de ação). Derivados da cor de
-texto por `color-mix`, não hexadecimais soltos — uma troca de acento recalcula
-a hierarquia inteira sozinha.
+`stroke-subtle` (`#F5F5F5`) → `stroke-default` (`#EDEDED`) → `stroke-strong`
+(`#D1D1D1`) → `stroke-selected` (azul de marca). Escala discreta de cinza
+(kit Fluent), não mais derivada por `color-mix` sobre a tinta como na v1.
 
 ### Espaçamento — régua fechada de 4px
 
@@ -97,9 +121,13 @@ Mesma régua do Fluent 2 e do quadro de tokens enviado pelo usuário em
 
 ### Dois vocabulários de raio
 
-- `--exec-radius-object` (12px) — cartões, objetos com identidade própria do
-  produto (Project/Cycle/Day/Task/Action).
-- `--exec-radius-control` (8px) — chrome de interação: botão, input, menu.
+- `--exec-radius-object` (2px) — cartões, objetos com identidade própria do
+  produto (Project/Cycle/Day/Task/Action). Mais reto que a v1 (era 12px) —
+  valor do kit Fluent.
+- `--exec-radius-control` (6px) — chrome de interação: botão, input, menu.
+  Era 8px na v1.
+- `--exec-radius-overlay` (8px) — sheet, modal, menu flutuante — raio
+  distinto de controle.
 - `--exec-radius-pill` (999px) — chips, badges, avatares.
 
 Nunca a mesma decisão de raio para objeto e para chrome — é a mesma regra do

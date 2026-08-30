@@ -433,13 +433,14 @@
   display: grid;
   gap: 8px;
   padding: 12px;
+  /* Aviso/pendência, não CTA — usa --exec-color-warning, não o azul de marca. */
   background: color-mix(
     in srgb,
-    var(--exec-color-acao) 6%,
+    var(--exec-color-warning) 6%,
     var(--exec-color-surface)
   );
   border: 1px solid
-    color-mix(in srgb, var(--exec-color-acao) 40%, var(--exec-color-surface));
+    color-mix(in srgb, var(--exec-color-warning) 40%, var(--exec-color-surface));
   border-radius: 14px;
 }
 .executarAprovacao strong {
@@ -739,13 +740,14 @@
 .executarSyncNotice {
   padding: 9px 11px;
   font-size: 11px;
+  /* Aviso/pendência, não CTA — usa --exec-color-warning, não o azul de marca. */
   background: color-mix(
     in srgb,
-    var(--exec-color-acao) 6%,
+    var(--exec-color-warning) 6%,
     var(--exec-color-surface)
   );
   border: 1px solid
-    color-mix(in srgb, var(--exec-color-acao) 40%, var(--exec-color-surface));
+    color-mix(in srgb, var(--exec-color-warning) 40%, var(--exec-color-surface));
   border-radius: 10px;
 }
 
