@@ -6,6 +6,11 @@ import type { Theme } from "@clerk/types";
 import { useTheme } from "next-themes";
 import type { ComponentProps } from "react";
 
+// privacyUrl/termsUrl/helpUrl ficam aceitos por compatibilidade de assinatura,
+// mas não são mais repassados: a versão atual de @clerk/react removeu
+// `layout` de Appearance<Theme> (e não expõe um substituto em nenhum lugar
+// que este pacote consiga localizar no momento) — ver histórico do PR para
+// a investigação. Revisitar quando o mapeamento correto for confirmado.
 type AuthProviderProperties = ComponentProps<typeof ClerkProvider> & {
   privacyUrl?: string;
   termsUrl?: string;
@@ -13,14 +18,13 @@ type AuthProviderProperties = ComponentProps<typeof ClerkProvider> & {
 };
 
 export const AuthProvider = ({
-  privacyUrl,
-  termsUrl,
-  helpUrl,
+  privacyUrl: _privacyUrl,
+  termsUrl: _termsUrl,
+  helpUrl: _helpUrl,
   ...properties
 }: AuthProviderProperties) => {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
-  const baseTheme = isDark ? dark : undefined;
 
   const variables: Theme["variables"] = {
     fontFamily: "var(--font-sans)",
@@ -43,16 +47,10 @@ export const AuthProvider = ({
     organizationPreviewAvatarContainer: "shrink-0",
   };
 
-  const layout: Theme["layout"] = {
-    privacyPageUrl: privacyUrl,
-    termsPageUrl: termsUrl,
-    helpPageUrl: helpUrl,
-  };
-
   return (
     <ClerkProvider
       {...properties}
-      appearance={{ layout, baseTheme, elements, variables }}
+      appearance={{ ...(isDark ? dark : {}), elements, variables }}
     />
   );
 };

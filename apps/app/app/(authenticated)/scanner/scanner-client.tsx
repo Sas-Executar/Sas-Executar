@@ -237,8 +237,31 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
   return (
     <main className="scannerShell">
       <header className="scannerHeader">
-        <span>EXECUTAR</span>
-        <strong>Scanner</strong>
+        <button
+          aria-label="Voltar para o EXECUTAR"
+          className="scannerBackButton"
+          onClick={() => {
+            window.location.href = "/";
+          }}
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <div className="scannerHeaderTitle">
+          <span>EXECUTAR</span>
+          <strong>Scanner</strong>
+        </div>
       </header>
 
       {fase === "camera" && (

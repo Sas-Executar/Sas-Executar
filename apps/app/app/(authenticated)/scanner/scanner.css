@@ -31,18 +31,44 @@
 
 .scannerHeader {
   display: flex;
-  flex-direction: column;
-  gap: var(--exec-space-4);
+  gap: var(--exec-space-12);
   align-items: center;
+  width: 100%;
+  max-width: 360px;
 }
 
-.scannerHeader span {
+.scannerBackButton {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: var(--exec-touch-min);
+  height: var(--exec-touch-min);
+  padding: 0;
+  color: var(--scanner-color-foreground);
+  cursor: pointer;
+  background: var(--scanner-color-surface);
+  border: 1px solid var(--scanner-color-border);
+  border-radius: var(--exec-radius-control);
+}
+
+.scannerBackButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.scannerHeaderTitle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--exec-space-4);
+}
+
+.scannerHeaderTitle span {
   font: 500 11px / 1.2 var(--exec-font-mono);
   color: var(--scanner-color-foreground-muted);
   letter-spacing: 0.12em;
 }
 
-.scannerHeader strong {
+.scannerHeaderTitle strong {
   font-size: var(--exec-text-title-3);
   font-weight: 700;
 }
