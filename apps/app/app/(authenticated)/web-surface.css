@@ -318,7 +318,6 @@ body {
   }
 }
 
-
 /* Workspace único — inspirado na hierarquia Fluent mobile do Outlook:
    uma lista persistente, funções secundárias no drawer e três ações fixas. */
 #app > .main {
@@ -368,11 +367,11 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--exec-text-caption);
-  opacity: 0.82;
   white-space: nowrap;
+  opacity: 0.82;
 }
 
-.executarWorkspaceHeader > span {
+.executarWorkspaceHeader > output {
   display: flex;
   align-items: baseline;
   min-width: var(--exec-touch-min);
