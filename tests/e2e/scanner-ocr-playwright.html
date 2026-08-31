@@ -40,7 +40,7 @@
       createWorker,
       OEM,
       PSM,
-    } from "https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.esm.min.js";
+    } from "/node_modules/tesseract.js/dist/tesseract.esm.min.js";
 
     const words = ["ENTRADA", "COPILOTO", "SELETOR", "FEITO", "SAIDA"];
     const samples = document.querySelector("#samples");
@@ -60,7 +60,11 @@
       return canvas;
     });
 
-    const worker = await createWorker("eng", OEM.LSTM_ONLY);
+    const worker = await createWorker("eng", OEM.LSTM_ONLY, {
+      corePath: "/node_modules/tesseract.js-core",
+      langPath: "/node_modules/@tesseract.js-data/eng/4.0.0",
+      workerPath: "/node_modules/tesseract.js/dist/worker.min.js",
+    });
     await worker.setParameters({
       tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
       tessedit_pageseg_mode: PSM.SINGLE_WORD,
