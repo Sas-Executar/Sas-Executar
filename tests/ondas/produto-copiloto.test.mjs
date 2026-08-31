@@ -554,6 +554,38 @@ test("handoff simplificado remove Home e mantém três ações persistentes", as
   assert.match(styles, /repeat\(3, minmax\(0, 1fr\)\)/);
 });
 
+test("Scanner prioritário combina OCR, forma, vibração e impressão do Mapa-OS", async () => {
+  const scanner = await readFile(
+    new URL(
+      "../../apps/app/app/(authenticated)/scanner/scanner-client.tsx",
+      import.meta.url
+    ),
+    "utf8"
+  );
+  const documents = await readFile(
+    new URL(
+      "../../apps/app/app/(authenticated)/components/executar-handoff.tsx",
+      import.meta.url
+    ),
+    "utf8"
+  );
+  const ocr = await readFile(
+    new URL(
+      "../../apps/app/lib/executar/use-tesseract-symbol-scanner.ts",
+      import.meta.url
+    ),
+    "utf8"
+  );
+
+  assert.match(scanner, /useTesseractSymbolScanner/);
+  assert.match(scanner, /navigator\.vibrate/);
+  assert.match(scanner, /JANELA_RECONHECIMENTO_DUPLICADO_MS/);
+  assert.match(ocr, /createWorker\("eng"/);
+  assert.match(ocr, /CONFIANCA_MINIMA/);
+  assert.match(documents, /Mapa-OS do projeto/);
+  assert.match(documents, /Visualizar e imprimir em Prisma ou Tripé A4/);
+});
+
 test("provisionamento exige AWS privada e gates separados", async () => {
   const checklist = await readFile(
     new URL("../../docs/runner/INTEGRACAO_FINAL.md", import.meta.url),
