@@ -472,7 +472,7 @@ test("a página principal usa Clerk e não bloqueia esperando banco", async () =
   assert.doesNotMatch(page, /database\.page\.findMany/);
 });
 
-test("produto preserva as faces, prioriza Hoje Agora Copiloto e usa o mesmo estado", async () => {
+test("produto mantém estado único com lista, drawer e Copiloto", async () => {
   const component = await readFile(
     new URL(
       "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
@@ -480,20 +480,28 @@ test("produto preserva as faces, prioriza Hoje Agora Copiloto e usa o mesmo esta
     ),
     "utf8"
   );
+  const workspace = await readFile(
+    new URL(
+      "../../apps/app/app/(authenticated)/components/executar-workspace.tsx",
+      import.meta.url
+    ),
+    "utf8"
+  );
 
   for (const label of [
-    "Visão geral",
-    "Foco",
+    "Tarefas",
+    "Projetos",
+    "Documentos",
     "Calendário",
     "Caminho",
-    "Ainda não pode",
-    "Hoje",
-    "Agora",
     "Copiloto",
     "Automático",
     "Operacional local",
   ]) {
-    assert.ok(component.includes(label), `Ausente: ${label}`);
+    assert.ok(
+      component.includes(label) || workspace.includes(label),
+      `Ausente: ${label}`
+    );
   }
 
   assert.match(component, /executarAcaoCopiloto\(state, question\)/);
@@ -501,25 +509,16 @@ test("produto preserva as faces, prioriza Hoje Agora Copiloto e usa o mesmo esta
   assert.match(component, /chaveOrganizacao\(organizationId\)/);
   assert.match(component, /function MobileDrawer/);
   assert.match(component, /function CopilotModelSelector/);
-  assert.match(component, /copilotMode === "local"/);
+  assert.match(component, /useState<View>\("workspace"\)/);
+  assert.doesNotMatch(component, /<OperationalNavigation/);
+  assert.match(workspace, /function WorkspaceSurface/);
+  assert.match(workspace, /function WorkspaceActions/);
+  assert.match(workspace, /Scanner/);
+  assert.match(workspace, />IA</);
   assert.match(component, /<AiMessage/);
-
-  const styles = await readFile(
-    new URL("../../apps/app/app/(authenticated)/executar.css", import.meta.url),
-    "utf8"
-  );
-
-  for (const className of [
-    ".executarMobileHeader",
-    ".executarPrimaryNavigation",
-    ".executarMobileDrawer",
-    ".executarChatForm",
-  ]) {
-    assert.ok(styles.includes(className), `Ausente: ${className}`);
-  }
 });
 
-test("handoff final aplica home, navegação, sprint, três faces e documentos mobile-first", async () => {
+test("handoff simplificado remove Home e mantém três ações persistentes", async () => {
   const component = await readFile(
     new URL(
       "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
@@ -527,47 +526,39 @@ test("handoff final aplica home, navegação, sprint, três faces e documentos m
     ),
     "utf8"
   );
-  const surfaces = await readFile(
+  const workspace = await readFile(
     new URL(
-      "../../apps/app/app/(authenticated)/components/executar-handoff.tsx",
+      "../../apps/app/app/(authenticated)/components/executar-workspace.tsx",
       import.meta.url
     ),
     "utf8"
   );
   const styles = await readFile(
-    new URL("../../apps/app/app/(authenticated)/handoff.css", import.meta.url),
+    new URL(
+      "../../apps/app/app/(authenticated)/web-surface.css",
+      import.meta.url
+    ),
     "utf8"
   );
 
-  assert.match(component, /useState<View>\("home"\)/);
-  assert.match(surfaces, /\/brand\/executar-mark\.png/);
+  assert.doesNotMatch(component, /selectProductView\("home"\)/);
+  assert.doesNotMatch(component, /<HomeSurface/);
+  assert.doesNotMatch(component, /<TimelineSurface/);
+  assert.match(component, /<WorkspaceHeader/);
+  assert.match(component, /<WorkspaceActions/);
+  assert.match(component, /<WorkspaceSurface/);
 
-  for (const label of [
-    "Projetos",
-    "Documentos",
-    "Copiloto Chat",
-    "Hoje",
-    "Amanhã",
-    "Agora",
-    "Feito",
-    "Re-Plan",
-    "principal",
-    "contexto",
-    "evidencia",
-    "MODO FOCO",
-    "Buscar documentos, projetos, listas...",
+  for (const className of [
+    ".executarWorkspaceHeader",
+    ".executarWorkspaceSurface",
+    ".executarWorkspaceTask",
+    ".executarWorkspaceActions",
+    ".executarWorkspaceTaskSheet",
   ]) {
-    assert.ok(surfaces.includes(label), `Ausente no handoff final: ${label}`);
+    assert.ok(styles.includes(className), `Ausente: ${className}`);
   }
 
-  assert.match(surfaces, /function SprintProgress/);
-  assert.match(styles, /\.executarOperationalNav/);
-  // --executar-action era um lima isolado (#baff33) só desta tela; a
-  // migração pra fundação compartilhada (exec-tokens.css) fez esse nome
-  // aliasar pro âmbar de ação/estado-atual usado no resto do produto —
-  // ver docs/design-system/identidade-executar/README.md.
-  assert.match(styles, /--executar-action: var\(--exec-color-acao\)/);
-  assert.match(styles, /@media \(max-width: 820px\)/);
+  assert.match(workspace, /repeat\(3, minmax\(0, 1fr\)\)/);
 });
 
 test("provisionamento exige AWS privada e gates separados", async () => {
