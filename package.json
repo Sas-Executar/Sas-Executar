@@ -21,6 +21,7 @@
     "check": "ultracite check",
     "fix": "ultracite fix",
     "test": "turbo test",
+    "test:scanner-ocr": "playwright test tests/e2e/scanner-ocr.spec.ts",
     "analyze": "turbo analyze",
     "translate": "turbo translate",
     "boundaries": "turbo boundaries",
@@ -33,6 +34,7 @@
     "release": "npm publish"
   },
   "devDependencies": {
+    "@playwright/test": "1.55.1",
     "@auto-it/first-time-contributor": "^11.3.6",
     "@biomejs/biome": "2.4.6",
     "@repo/typescript-config": "workspace:*",
