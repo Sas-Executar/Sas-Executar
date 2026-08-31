@@ -526,13 +526,6 @@ test("handoff simplificado remove Home e mantém três ações persistentes", as
     ),
     "utf8"
   );
-  const workspace = await readFile(
-    new URL(
-      "../../apps/app/app/(authenticated)/components/executar-workspace.tsx",
-      import.meta.url
-    ),
-    "utf8"
-  );
   const styles = await readFile(
     new URL(
       "../../apps/app/app/(authenticated)/web-surface.css",
