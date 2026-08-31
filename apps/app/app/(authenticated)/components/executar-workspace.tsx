@@ -63,6 +63,13 @@ export function WorkspaceHeader({
   );
 }
 
+interface WorkspaceSurfaceProperties {
+  readonly focusId: string | null;
+  readonly onFocus: (taskId: string) => void;
+  readonly state: EstadoOperacional;
+  readonly tasks: readonly Entrega[];
+}
+
 function WorkspaceStatusIcon({
   blocked,
   done,
@@ -79,13 +86,6 @@ function WorkspaceStatusIcon({
   }
 
   return <Circle />;
-}
-
-interface WorkspaceSurfaceProperties {
-  readonly focusId: string | null;
-  readonly onFocus: (taskId: string) => void;
-  readonly state: EstadoOperacional;
-  readonly tasks: readonly Entrega[];
 }
 
 export function WorkspaceSurface({
