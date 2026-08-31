@@ -16,7 +16,7 @@ export default function manifest(): MetadataRoute.Manifest {
         src: "/brand/executar-mark.png",
         sizes: "any",
         type: "image/png",
-        purpose: "any maskable",
+        purpose: "any",
       },
     ],
   };
