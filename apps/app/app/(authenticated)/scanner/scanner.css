@@ -27,12 +27,11 @@
   align-items: center;
   width: 100%;
   min-height: 100dvh;
-  overflow-x: clip;
-  padding:
-    calc(var(--exec-space-24) + env(safe-area-inset-top))
+  padding: calc(var(--exec-space-24) + env(safe-area-inset-top))
     calc(var(--exec-space-16) + env(safe-area-inset-right))
     calc(var(--exec-space-64) + env(safe-area-inset-bottom))
     calc(var(--exec-space-16) + env(safe-area-inset-left));
+  overflow-x: clip;
   font-family: var(--exec-font-body);
   color: var(--scanner-color-foreground);
   background: var(--scanner-color-bg);
