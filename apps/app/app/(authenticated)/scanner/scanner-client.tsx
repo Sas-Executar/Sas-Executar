@@ -20,21 +20,37 @@ import {
 } from "@/lib/executar/scanner";
 import { useEstadoOperacionalLocal } from "@/lib/executar/use-estado-local";
 import { useSymbolScanner } from "@/lib/executar/use-symbol-scanner";
+import { useTesseractSymbolScanner } from "@/lib/executar/use-tesseract-symbol-scanner";
 import "./scanner.css";
 
 const JANELA_UNDO_MS = 8000;
+const JANELA_RECONHECIMENTO_DUPLICADO_MS = 3000;
 
 interface ScannerClientProperties {
   readonly organizationId: string;
 }
 
 type Fase = "camera" | "confirmar-feito" | "resultado" | "seletor";
+type MetodoReconhecimento = "forma" | "manual" | "ocr" | "qr";
+
+interface DiagnosticoReconhecimento {
+  readonly latencyMs: number;
+  readonly metodo: MetodoReconhecimento;
+}
+
+function vibrarMudancaEstado() {
+  navigator.vibrate?.(45);
+}
 
 export function ScannerClient({ organizationId }: ScannerClientProperties) {
   const { atualizarEstadoLocal, loaded, state } =
     useEstadoOperacionalLocal(organizationId);
   const videoRef = useRef<HTMLVideoElement>(null);
   const ultimosScans = useRef(new Map<string, number>());
+  const ultimoReconhecimento = useRef<{
+    readonly id: string;
+    readonly at: number;
+  } | null>(null);
   const [fase, setFase] = useState<Fase>("camera");
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
@@ -42,6 +58,8 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
   const [entradaManual, setEntradaManual] = useState("");
   const [undoDisponivel, setUndoDisponivel] =
     useState<EstadoOperacional | null>(null);
+  const [diagnostico, setDiagnostico] =
+    useState<DiagnosticoReconhecimento | null>(null);
 
   function scanDuplicado(acao: string, alvo: string): boolean {
     const chave = idempotencyKeyScanner(organizationId, acao, alvo, Date.now());
@@ -58,6 +76,7 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
     try {
       const resultado = executarAcaoFeito(tasks, estadoAtual, confirmado);
       atualizarEstadoLocal(resultado.stateResultante);
+      vibrarMudancaEstado();
       setUndoDisponivel(resultado.stateAnterior);
       setMensagem(resultado.mensagem);
       setFase("resultado");
@@ -82,6 +101,7 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
 
     const resultado = executarAcaoEntrada(tasks, atual);
     atualizarEstadoLocal(resultado.stateResultante);
+    vibrarMudancaEstado();
     setUndoDisponivel(resultado.stateAnterior);
     setMensagem(resultado.mensagem);
     setFase("resultado");
@@ -134,15 +154,23 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
         navegarParaDestino(acao);
         return;
       case "qr_jump":
+        window.location.href = "/?view=workspace";
+        return;
       case "tarefa":
-        window.location.href = "/?view=now";
+        window.location.href = `/?view=workspace&task=${encodeURIComponent(
+          acao.taskId
+        )}`;
         return;
       default:
         setErro("Ação reconhecida, mas ainda sem tratamento no Scanner.");
     }
   }
 
-  function processarPayload(payload: string) {
+  function processarPayload(
+    payload: string,
+    metodo: MetodoReconhecimento = "manual",
+    latencyMs = 0
+  ) {
     setErro("");
     const acao = resolverPayloadScanner(payload);
 
@@ -150,6 +178,21 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
       setErro("QR não reconhecido pelo EXECUTAR.");
       return;
     }
+
+    const agora = performance.now();
+    const reconhecimentoAnterior = ultimoReconhecimento.current;
+    const idReconhecimento =
+      acao.kind === "tarefa" ? `${acao.kind}:${acao.taskId}` : acao.kind;
+
+    if (
+      reconhecimentoAnterior?.id === idReconhecimento &&
+      agora - reconhecimentoAnterior.at < JANELA_RECONHECIMENTO_DUPLICADO_MS
+    ) {
+      return;
+    }
+
+    ultimoReconhecimento.current = { id: idReconhecimento, at: agora };
+    setDiagnostico({ latencyMs, metodo });
 
     try {
       despachar(acao);
@@ -175,7 +218,7 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
       videoRef.current,
       (result) => {
         if (ativo) {
-          processarPayloadRef.current(result.data);
+          processarPayloadRef.current(result.data, "qr", 0);
         }
       },
       {
@@ -200,7 +243,15 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
   // (decisão do usuário, 28/08/2026) — ver lib/executar/symbol-recognizer.ts.
   useSymbolScanner({
     ativo: loaded && fase === "camera" && !cameraIndisponivel,
-    onReconhecido: (id) => processarPayloadRef.current(`executar://scan/${id}`),
+    onReconhecido: (id, latencyMs) =>
+      processarPayloadRef.current(`executar://scan/${id}`, "forma", latencyMs),
+    videoRef,
+  });
+
+  const estadoTesseract = useTesseractSymbolScanner({
+    ativo: loaded && fase === "camera" && !cameraIndisponivel,
+    onReconhecido: ({ id, latencyMs }) =>
+      processarPayloadRef.current(`executar://scan/${id}`, "ocr", latencyMs),
     videoRef,
   });
 
@@ -219,6 +270,7 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
   function desfazer() {
     if (undoDisponivel) {
       atualizarEstadoLocal(undoDisponivel);
+      vibrarMudancaEstado();
       setUndoDisponivel(null);
       setMensagem("Ação desfeita.");
     }
@@ -273,7 +325,8 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
           </div>
           <p className="scannerDica">
             QR de tarefa/documento: qualquer posição. Símbolo de ação
-            (Entrada/Copiloto/Seletor/Feito/Saída): centralize no quadro.
+            (Entrada/Copiloto/Seletor/Feito/Saída): centralize o ícone e o nome
+            no quadro.
           </p>
           {cameraIndisponivel && (
             <p className="scannerAviso">
@@ -285,7 +338,7 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
             className="scannerManualForm"
             onSubmit={(event) => {
               event.preventDefault();
-              processarPayload(entradaManual);
+              processarPayload(entradaManual, "manual", 0);
               setEntradaManual("");
             }}
           >
@@ -297,6 +350,17 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
             <button type="submit">Processar</button>
           </form>
           {erro && <p className="scannerErro">{erro}</p>}
+          <p
+            aria-live="polite"
+            className="scannerDiagnostico"
+            data-latency-budget-ms="3000"
+            data-ocr-state={estadoTesseract}
+          >
+            OCR {estadoTesseract}
+            {diagnostico
+              ? ` · ${diagnostico.metodo} · ${diagnostico.latencyMs} ms`
+              : " · aguardando símbolo"}
+          </p>
         </section>
       )}
 
