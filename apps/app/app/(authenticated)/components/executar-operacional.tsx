@@ -10,7 +10,6 @@ import {
   FileText,
   FolderKanban,
   ListChecks,
-  MessageCircle,
   Plus,
   Route,
   Sparkles,
@@ -122,7 +121,6 @@ interface CopilotModeOption {
 }
 
 const DEPENDENCY_SEPARATOR_PATTERN = /[,;]+/;
-const WHITESPACE_PATTERN = /\s+/;
 function criarMensagemCopiloto(
   author: MensagemCopiloto["author"],
   text: string
@@ -2327,7 +2325,6 @@ export function ExecutarOperacional({
     setCollaborationOpen(false);
     setCopilotOpen(false);
     setView(nextView);
-
   }
 
   function openCopilot() {
@@ -2520,9 +2517,7 @@ export function ExecutarOperacional({
                 setWorkspaceTaskOpen(false);
                 selectProductView("calendar");
               }}
-              onStart={() =>
-                setState(registrarPasso(tasks, state, focus.id))
-              }
+              onStart={() => setState(registrarPasso(tasks, state, focus.id))}
               projectName={activeProject.name}
               state={state}
               tasks={tasks}
