@@ -639,7 +639,7 @@ function Overview({
   readonly state: EstadoOperacional;
   readonly tasks: readonly Entrega[];
   readonly focus: Entrega | null;
-  readonly changeView: (view: View) => void;
+  readonly changeView: () => void;
 }) {
   const current = progresso(tasks, state);
   const calendar = calendarioProjeto(state);
@@ -730,7 +730,7 @@ function Overview({
       <div className="three executarResumo">
         <button
           className="card actionCard executarAcao"
-          onClick={() => changeView("now")}
+          onClick={changeView}
           type="button"
         >
           <div className="actionTop">
@@ -1584,6 +1584,7 @@ function CollaborationPanel({
 
 interface ProductSurfaceProperties {
   readonly focus: Entrega | null;
+  readonly onOpenCurrentTask: () => void;
   readonly onOpenProjects: () => void;
   readonly onStateChange: (state: EstadoOperacional) => void;
   readonly state: EstadoOperacional;
@@ -1593,6 +1594,7 @@ interface ProductSurfaceProperties {
 
 function ProductSurface({
   focus,
+  onOpenCurrentTask,
   onOpenProjects,
   onStateChange,
   state,
@@ -1626,7 +1628,7 @@ function ProductSurface({
     case "overview":
       return (
         <Overview
-          changeView={() => undefined}
+          changeView={onOpenCurrentTask}
           focus={focus}
           state={state}
           tasks={tasks}
@@ -2465,6 +2467,7 @@ export function ExecutarOperacional({
           )}
           <ProductSurface
             focus={focus}
+            onOpenCurrentTask={() => setWorkspaceTaskOpen(true)}
             onOpenProjects={() => setProjectManagerOpen(true)}
             onStateChange={setState}
             state={state}
