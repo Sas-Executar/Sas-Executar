@@ -40,7 +40,7 @@
       createWorker,
       OEM,
       PSM,
-    } from "/node_modules/tesseract.js/dist/tesseract.esm.min.js";
+    } from "/tests/e2e/ocr-assets/tesseract.esm.min.js";
 
     async function run() {
       const words = ["ENTRADA", "COPILOTO", "SELETOR", "FEITO", "SAIDA"];
@@ -62,9 +62,9 @@
       });
 
       const worker = await createWorker("eng", OEM.LSTM_ONLY, {
-        corePath: "/node_modules/tesseract.js-core",
-        langPath: "/node_modules/@tesseract.js-data/eng/4.0.0",
-        workerPath: "/node_modules/tesseract.js/dist/worker.min.js",
+        corePath: "/tests/e2e/ocr-assets/core",
+        langPath: "/tests/e2e/ocr-assets/lang",
+        workerPath: "/tests/e2e/ocr-assets/worker.min.js",
       });
       await worker.setParameters({
         tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
