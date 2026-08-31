@@ -558,7 +558,7 @@ test("handoff simplificado remove Home e mantém três ações persistentes", as
     assert.ok(styles.includes(className), `Ausente: ${className}`);
   }
 
-  assert.match(workspace, /repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /repeat\(3, minmax\(0, 1fr\)\)/);
 });
 
 test("provisionamento exige AWS privada e gates separados", async () => {
