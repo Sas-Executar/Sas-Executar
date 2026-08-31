@@ -9,7 +9,7 @@ import {
   Check,
   FileText,
   FolderKanban,
-  Home,
+  ListChecks,
   MessageCircle,
   Plus,
   Route,
@@ -70,44 +70,35 @@ import { ENTREGAS_SPRINT } from "@/lib/executar/seed";
 import { CollaborationProvider } from "./collaboration-provider";
 import {
   DocumentsSurface,
-  DoneSurface,
   ExecutarBrand,
   FocusSurface,
-  HomeSurface,
-  MobileProductHeader,
-  OperationalNavigation,
-  type ProductView,
-  ReplanSurface,
-  SprintProgress,
   type TaskFace,
-  TimelineSurface,
 } from "./executar-handoff";
+import {
+  WorkspaceActions,
+  WorkspaceHeader,
+  WorkspaceSurface,
+} from "./executar-workspace";
 import "../executar.css";
 import "../handoff.css";
 
-type View = ProductView;
+type View = "workspace" | "overview" | "documents" | "calendar" | "path";
 type CopilotMode = "automatic" | "local";
 
-// Destinos válidos para deep link via `?view=` (ex.: vindo do Seletor do
-// Scanner) — mantido em sincronia manual com `ProductView` de executar-handoff.
-const VIEWS_VALIDAS = new Set<ProductView>([
-  "home",
-  "today",
-  "tomorrow",
-  "now",
-  "done",
-  "replan",
+const VIEWS_VALIDAS = new Set<View>([
+  "workspace",
   "overview",
+  "documents",
   "calendar",
   "path",
-  "documents",
 ]);
 
 function viewInicialDaUrl(searchParams: URLSearchParams | null): View {
   const solicitada = searchParams?.get("view");
-  return solicitada && VIEWS_VALIDAS.has(solicitada as ProductView)
+
+  return solicitada && VIEWS_VALIDAS.has(solicitada as View)
     ? (solicitada as View)
-    : "home";
+    : "workspace";
 }
 
 interface ExecutarOperacionalProperties {
@@ -148,25 +139,19 @@ function paraMensagemUi(message: MensagemCopiloto): UIMessage {
 }
 
 const VIEWS: ReadonlyArray<{ id: View; label: string; icon: string }> = [
-  { id: "home", label: "Início", icon: "⌂" },
-  { id: "overview", label: "Visão geral", icon: "▦" },
-  { id: "now", label: "Foco", icon: "▶" },
-  { id: "documents", label: "Documentos", icon: "≡" },
-  { id: "calendar", label: "Calendário", icon: "□" },
+  { id: "workspace", label: "Tarefas", icon: "≡" },
+  { id: "overview", label: "Projetos", icon: "▦" },
+  { id: "documents", label: "Documentos", icon: "□" },
+  { id: "calendar", label: "Calendário", icon: "◫" },
   { id: "path", label: "Caminho", icon: "↗" },
 ];
 
 const VIEW_TITLES: Readonly<Record<View, string>> = {
   calendar: "Calendário",
   documents: "Documentos",
-  done: "Feito",
-  home: "Início",
-  now: "Agora",
-  overview: "Visão geral",
+  overview: "Projetos",
   path: "Caminho do resultado",
-  replan: "Re-Plan",
-  today: "Hoje",
-  tomorrow: "Amanhã",
+  workspace: "Tarefas",
 };
 
 const COPILOT_MODES = [
@@ -189,7 +174,6 @@ interface MobileDrawerProperties {
   readonly externalNotificationsAvailable: boolean;
   readonly onClose: () => void;
   readonly onOpenCollaboration: () => void;
-  readonly onOpenCopilot: () => void;
   readonly onOpenProjects: () => void;
   readonly onSelectView: (view: View) => void;
   readonly open: boolean;
@@ -202,7 +186,6 @@ function MobileDrawer({
   externalNotificationsAvailable,
   onClose,
   onOpenCollaboration,
-  onOpenCopilot,
   onOpenProjects,
   onSelectView,
   open,
@@ -239,14 +222,14 @@ function MobileDrawer({
         </div>
         <nav aria-label="Funções secundárias" className="executarDrawerNav">
           <button
-            aria-current={currentView === "home" ? "page" : undefined}
-            onClick={() => onSelectView("home")}
+            aria-current={currentView === "workspace" ? "page" : undefined}
+            onClick={() => onSelectView("workspace")}
             type="button"
           >
-            <Home aria-hidden="true" />
+            <ListChecks aria-hidden="true" />
             <span>
-              <b>Início</b>
-              <small>Projetos, documentos e Copiloto</small>
+              <b>Tarefas</b>
+              <small>Lista única do projeto ativo</small>
             </span>
           </button>
           <button
@@ -269,13 +252,6 @@ function MobileDrawer({
             <span>
               <b>Documentos</b>
               <small>Projetos, listas e recentes</small>
-            </span>
-          </button>
-          <button onClick={onOpenCopilot} type="button">
-            <MessageCircle aria-hidden="true" />
-            <span>
-              <b>Copiloto Chat</b>
-              <small>Converse, planeje e resolva</small>
             </span>
           </button>
           <button
@@ -1607,126 +1583,34 @@ function CollaborationPanel({
 }
 
 interface ProductSurfaceProperties {
-  readonly activeProject: ReturnType<typeof projetoAtivo>;
-  readonly firstName: string;
   readonly focus: Entrega | null;
-  readonly onConcluir: () => void;
-  readonly onOpenCopilot: () => void;
-  readonly onOpenEvidence: () => void;
   readonly onOpenProjects: () => void;
-  readonly onSelectView: (view: View) => void;
   readonly onStateChange: (state: EstadoOperacional) => void;
-  readonly onTaskFaceChange: (face: TaskFace) => void;
   readonly state: EstadoOperacional;
-  readonly taskFace: TaskFace;
   readonly tasks: readonly Entrega[];
   readonly view: View;
 }
 
 function ProductSurface({
-  activeProject,
-  firstName,
   focus,
-  onConcluir,
-  onOpenCopilot,
-  onOpenEvidence,
   onOpenProjects,
-  onSelectView,
   onStateChange,
-  onTaskFaceChange,
   state,
-  taskFace,
   tasks,
   view,
 }: ProductSurfaceProperties) {
-  const operationalDays = calendarioProjeto(state);
-  const currentProgress = progresso(tasks, state);
-
   function selectTask(taskId: string) {
     onStateChange(assumirFoco(tasks, state, taskId));
-    onTaskFaceChange("principal");
-    onSelectView("now");
   }
 
   switch (view) {
-    case "home":
+    case "workspace":
       return (
-        <HomeSurface
-          documentCount={state.projects.length + state.evidence.length}
-          firstName={firstName}
-          onCopilot={onOpenCopilot}
-          onDocuments={() => onSelectView("documents")}
-          onProjects={() => onSelectView("overview")}
-          onScanner={() =>
-            window.open("/scanner", "_blank", "noopener,noreferrer")
-          }
-          progress={currentProgress.percentage}
-          projectCount={state.projects.length}
-        />
-      );
-    case "today":
-      return (
-        <>
-          <SprintProgress state={state} tasks={tasks} />
-          <TimelineSurface
-            day={operationalDays[0]}
-            emptyMessage="Nenhuma tarefa foi planejada para hoje."
-            focusId={focus?.id ?? null}
-            heading="Hoje"
-            onFocus={selectTask}
-            state={state}
-          />
-        </>
-      );
-    case "tomorrow":
-      return (
-        <>
-          <SprintProgress state={state} tasks={tasks} />
-          <TimelineSurface
-            day={operationalDays[1]}
-            emptyMessage="Nenhuma tarefa foi planejada para amanhã."
-            focusId={focus?.id ?? null}
-            heading="Amanhã"
-            onFocus={selectTask}
-            state={state}
-          />
-        </>
-      );
-    case "now":
-      return (
-        <FocusSurface
-          face={taskFace}
-          focus={focus}
-          onConcluir={onConcluir}
-          onFaceChange={onTaskFaceChange}
+        <WorkspaceSurface
+          focusId={focus?.id ?? null}
           onFocus={selectTask}
-          onOpenEvidence={onOpenEvidence}
-          onReplan={() => onSelectView("replan")}
-          onStart={() => {
-            if (focus) {
-              onStateChange(registrarPasso(tasks, state, focus.id));
-            }
-          }}
-          projectName={activeProject.name}
           state={state}
           tasks={tasks}
-        />
-      );
-    case "done":
-      return (
-        <>
-          <SprintProgress state={state} tasks={tasks} />
-          <DoneSurface state={state} tasks={tasks} />
-        </>
-      );
-    case "replan":
-      return (
-        <ReplanSurface
-          onCalendar={() => onSelectView("calendar")}
-          onPath={() => onSelectView("path")}
-          onProjects={onOpenProjects}
-          project={activeProject}
-          state={state}
         />
       );
     case "documents":
@@ -1742,7 +1626,7 @@ function ProductSurface({
     case "overview":
       return (
         <Overview
-          changeView={onSelectView}
+          changeView={() => undefined}
           focus={focus}
           state={state}
           tasks={tasks}
@@ -1771,7 +1655,7 @@ export function ExecutarOperacional({
   );
   const [loaded, setLoaded] = useState(false);
   const [remoteReady, setRemoteReady] = useState(false);
-  const [view, setView] = useState<View>("home");
+  const [view, setView] = useState<View>("workspace");
   const deepLinkAplicado = useRef(false);
 
   // Aplica `?view=` (ex.: vindo do Seletor do Scanner) uma única vez, no
@@ -1781,7 +1665,7 @@ export function ExecutarOperacional({
     deepLinkAplicado.current = true;
     const viewSolicitada = viewInicialDaUrl(searchParams);
 
-    if (viewSolicitada !== "home") {
+    if (viewSolicitada !== "workspace") {
       setView(viewSolicitada);
     }
   }
@@ -1797,6 +1681,7 @@ export function ExecutarOperacional({
   const [copilotMode, setCopilotMode] = useState<CopilotMode>("automatic");
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [workspaceTaskOpen, setWorkspaceTaskOpen] = useState(false);
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
   const [collaborationOpen, setCollaborationOpen] = useState(false);
   const [syncNotice, setSyncNotice] = useState("");
@@ -2088,10 +1973,6 @@ export function ExecutarOperacional({
     [actor, state]
   );
   const title = VIEW_TITLES[view];
-  const firstName =
-    user?.firstName ??
-    displayName.trim().split(WHITESPACE_PATTERN)[0] ??
-    "você";
 
   async function saveEvidence(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2445,9 +2326,6 @@ export function ExecutarOperacional({
     setCopilotOpen(false);
     setView(nextView);
 
-    if (nextView === "now") {
-      setTaskFace("principal");
-    }
   }
 
   function openCopilot() {
@@ -2481,16 +2359,15 @@ export function ExecutarOperacional({
   return (
     <>
       <div id="app">
-        <MobileProductHeader
-          activeModeLabel={activeCopilotMode.label}
+        <WorkspaceHeader
+          completedCount={state.done.length}
           menuOpen={mobileMenuOpen}
-          modelSelectorOpen={modelSelectorOpen}
-          onHome={() => selectProductView("home")}
           onMenuToggle={() => {
             setModelSelectorOpen(false);
             setMobileMenuOpen((open) => !open);
           }}
-          onModelToggle={toggleModelSelector}
+          projectName={activeProject.name}
+          totalCount={tasks.length}
         />
         <aside className="side">
           <div className="brand">
@@ -2587,37 +2464,75 @@ export function ExecutarOperacional({
             <output className="executarSyncNotice">{syncNotice}</output>
           )}
           <ProductSurface
-            activeProject={activeProject}
-            firstName={firstName}
             focus={focus}
-            onConcluir={concluirRapido}
-            onOpenCopilot={openCopilot}
-            onOpenEvidence={() => setEvidenceOpen(true)}
             onOpenProjects={() => setProjectManagerOpen(true)}
-            onSelectView={selectProductView}
             onStateChange={setState}
-            onTaskFaceChange={setTaskFace}
             state={state}
-            taskFace={taskFace}
             tasks={tasks}
             view={view}
           />
         </main>
       </div>
-      <OperationalNavigation
-        activeView={view}
+      <WorkspaceActions
         hidden={
-          copilotOpen || collaborationOpen || evidenceOpen || projectManagerOpen
+          copilotOpen ||
+          collaborationOpen ||
+          evidenceOpen ||
+          projectManagerOpen ||
+          workspaceTaskOpen
         }
-        onSelect={selectProductView}
+        onCopilot={openCopilot}
+        onRecentTask={() => setWorkspaceTaskOpen(true)}
+        onScanner={() => window.location.assign("/scanner")}
+        recentTaskLabel={focus?.id ?? "Tarefa"}
       />
+      {workspaceTaskOpen && focus && (
+        <div className="executarWorkspaceTaskLayer">
+          <button
+            aria-label="Fechar tarefa atual"
+            className="executarFloatingBackdrop"
+            onClick={() => setWorkspaceTaskOpen(false)}
+            type="button"
+          />
+          <section
+            aria-label="Tarefa atual"
+            className="executarWorkspaceTaskSheet"
+          >
+            <button
+              aria-label="Fechar tarefa atual"
+              className="executarWorkspaceTaskClose"
+              onClick={() => setWorkspaceTaskOpen(false)}
+              type="button"
+            >
+              <X aria-hidden="true" />
+            </button>
+            <FocusSurface
+              face={taskFace}
+              focus={focus}
+              onConcluir={concluirRapido}
+              onFaceChange={setTaskFace}
+              onFocus={(taskId) => setState(assumirFoco(tasks, state, taskId))}
+              onOpenEvidence={() => setEvidenceOpen(true)}
+              onReplan={() => {
+                setWorkspaceTaskOpen(false);
+                selectProductView("calendar");
+              }}
+              onStart={() =>
+                setState(registrarPasso(tasks, state, focus.id))
+              }
+              projectName={activeProject.name}
+              state={state}
+              tasks={tasks}
+            />
+          </section>
+        </div>
+      )}
       <MobileDrawer
         activeProjectName={activeProject.name}
         currentView={view}
         externalNotificationsAvailable={externalNotificationsAvailable}
         onClose={() => setMobileMenuOpen(false)}
         onOpenCollaboration={toggleCollaboration}
-        onOpenCopilot={openCopilot}
         onOpenProjects={() => {
           setMobileMenuOpen(false);
           setProjectManagerOpen(true);
