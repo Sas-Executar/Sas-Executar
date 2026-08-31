@@ -133,6 +133,25 @@
   text-align: center;
 }
 
+.scannerDiagnostico {
+  margin: 0;
+  font: 500 11px / 1.4 var(--exec-font-mono);
+  color: var(--scanner-color-foreground-muted);
+  text-align: center;
+}
+
+.scannerDiagnostico[data-ocr-state="pronto"] {
+  color: color-mix(
+    in srgb,
+    var(--exec-color-sucesso) 80%,
+    var(--scanner-color-foreground)
+  );
+}
+
+.scannerDiagnostico[data-ocr-state="indisponivel"] {
+  color: var(--scanner-color-aviso);
+}
+
 .scannerManualForm {
   display: flex;
   gap: var(--exec-space-8);
