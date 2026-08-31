@@ -21,7 +21,7 @@
     "check": "ultracite check",
     "fix": "ultracite fix",
     "test": "turbo test",
-    "test:scanner-ocr": "playwright test tests/e2e/scanner-ocr.spec.ts",
+    "test:scanner-ocr": "node tests/e2e/prepare-ocr-assets.mjs && playwright test tests/e2e/scanner-ocr.spec.ts",
     "analyze": "turbo analyze",
     "translate": "turbo translate",
     "boundaries": "turbo boundaries",
