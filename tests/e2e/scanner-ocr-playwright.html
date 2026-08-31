@@ -42,60 +42,72 @@
       PSM,
     } from "/node_modules/tesseract.js/dist/tesseract.esm.min.js";
 
-    const words = ["ENTRADA", "COPILOTO", "SELETOR", "FEITO", "SAIDA"];
-    const samples = document.querySelector("#samples");
-    const canvases = words.map((word) => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 480;
-      canvas.height = 320;
-      const context = canvas.getContext("2d");
-      context.fillStyle = "#fff";
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.fillStyle = "#000";
-      context.font = "700 68px Arial";
-      context.textAlign = "center";
-      context.textBaseline = "middle";
-      context.fillText(word, canvas.width / 2, canvas.height / 2);
-      samples.append(canvas);
-      return canvas;
-    });
-
-    const worker = await createWorker("eng", OEM.LSTM_ONLY, {
-      corePath: "/node_modules/tesseract.js-core",
-      langPath: "/node_modules/@tesseract.js-data/eng/4.0.0",
-      workerPath: "/node_modules/tesseract.js/dist/worker.min.js",
-    });
-    await worker.setParameters({
-      tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-      tessedit_pageseg_mode: PSM.SINGLE_WORD,
-      user_defined_dpi: "300",
-    });
-
-    const results = [];
-    for (let index = 0; index < canvases.length; index += 1) {
-      const startedAt = performance.now();
-      const recognition = await worker.recognize(canvases[index]);
-      const latencyMs = Math.round(performance.now() - startedAt);
-      const text = recognition.data.text.replace(/[^A-Z]/gi, "").toUpperCase();
-      results.push({
-        expected: words[index],
-        latencyMs,
-        passed: text.includes(words[index]) && latencyMs < 3000,
-        text,
+    async function run() {
+      const words = ["ENTRADA", "COPILOTO", "SELETOR", "FEITO", "SAIDA"];
+      const samples = document.querySelector("#samples");
+      const canvases = words.map((word) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 480;
+        canvas.height = 320;
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = "#000";
+        context.font = "700 68px Arial";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(word, canvas.width / 2, canvas.height / 2);
+        samples.append(canvas);
+        return canvas;
       });
-    }
-    await worker.terminate();
 
-    window.__scannerOcrResult = results;
-    document.querySelector("#result").textContent = JSON.stringify(
-      results,
-      null,
-      2
-    );
-    const passed = results.every((item) => item.passed);
-    const status = document.querySelector("#status");
-    status.textContent = passed ? "PASS · cinco leituras abaixo de 3s" : "FAIL";
-    status.dataset.result = passed ? "pass" : "fail";
+      const worker = await createWorker("eng", OEM.LSTM_ONLY, {
+        corePath: "/node_modules/tesseract.js-core",
+        langPath: "/node_modules/@tesseract.js-data/eng/4.0.0",
+        workerPath: "/node_modules/tesseract.js/dist/worker.min.js",
+      });
+      await worker.setParameters({
+        tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        tessedit_pageseg_mode: PSM.SINGLE_WORD,
+        user_defined_dpi: "300",
+      });
+
+      const results = [];
+      for (let index = 0; index < canvases.length; index += 1) {
+        const startedAt = performance.now();
+        const recognition = await worker.recognize(canvases[index]);
+        const latencyMs = Math.round(performance.now() - startedAt);
+        const text = recognition.data.text
+          .replace(/[^A-Z]/gi, "")
+          .toUpperCase();
+        results.push({
+          expected: words[index],
+          latencyMs,
+          passed: text.includes(words[index]) && latencyMs < 3000,
+          text,
+        });
+      }
+      await worker.terminate();
+
+      window.__scannerOcrResult = results;
+      document.querySelector("#result").textContent = JSON.stringify(
+        results,
+        null,
+        2
+      );
+      const passed = results.every((item) => item.passed);
+      const status = document.querySelector("#status");
+      status.textContent = passed
+        ? "PASS · cinco leituras abaixo de 3s"
+        : "FAIL";
+      status.dataset.result = passed ? "pass" : "fail";
+    }
+
+    run().catch((error) => {
+      const status = document.querySelector("#status");
+      status.textContent = `FAIL · ${error instanceof Error ? error.message : String(error)}`;
+      status.dataset.result = "fail";
+    });
     </script>
   </body>
 </html>
