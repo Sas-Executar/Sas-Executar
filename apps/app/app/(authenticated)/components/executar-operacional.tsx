@@ -11,6 +11,7 @@ import {
   FolderKanban,
   ListChecks,
   Plus,
+  Printer,
   Route,
   Sparkles,
   Users,
@@ -172,6 +173,7 @@ interface MobileDrawerProperties {
   readonly externalNotificationsAvailable: boolean;
   readonly onClose: () => void;
   readonly onOpenCollaboration: () => void;
+  readonly onOpenMapaOS: () => void;
   readonly onOpenProjects: () => void;
   readonly onSelectView: (view: View) => void;
   readonly open: boolean;
@@ -184,6 +186,7 @@ function MobileDrawer({
   externalNotificationsAvailable,
   onClose,
   onOpenCollaboration,
+  onOpenMapaOS,
   onOpenProjects,
   onSelectView,
   open,
@@ -250,6 +253,13 @@ function MobileDrawer({
             <span>
               <b>Documentos</b>
               <small>Projetos, listas e recentes</small>
+            </span>
+          </button>
+          <button onClick={onOpenMapaOS} type="button">
+            <Printer aria-hidden="true" />
+            <span>
+              <b>Mapa-OS</b>
+              <small>Visualizar e imprimir Prisma ou Tripé</small>
             </span>
           </button>
           <button
@@ -1583,6 +1593,7 @@ function CollaborationPanel({
 interface ProductSurfaceProperties {
   readonly focus: Entrega | null;
   readonly onOpenCurrentTask: () => void;
+  readonly onOpenMapaOS: () => void;
   readonly onOpenProjects: () => void;
   readonly onStateChange: (state: EstadoOperacional) => void;
   readonly state: EstadoOperacional;
@@ -1592,6 +1603,7 @@ interface ProductSurfaceProperties {
 
 function ProductSurface({
   focus,
+  onOpenMapaOS,
   onOpenCurrentTask,
   onOpenProjects,
   onStateChange,
@@ -1616,6 +1628,7 @@ function ProductSurface({
     case "documents":
       return (
         <DocumentsSurface
+          onOpenMapaOS={onOpenMapaOS}
           onOpenProjects={onOpenProjects}
           onSelectProject={(projectId) =>
             onStateChange(selecionarProjeto(state, projectId))
@@ -1657,6 +1670,8 @@ export function ExecutarOperacional({
   const [remoteReady, setRemoteReady] = useState(false);
   const [view, setView] = useState<View>("workspace");
   const deepLinkAplicado = useRef(false);
+  const deepLinkTaskAplicado = useRef(false);
+  const deepLinkTaskId = searchParams?.get("task") ?? null;
 
   // Aplica `?view=` (ex.: vindo do Seletor do Scanner) uma única vez, no
   // primeiro render — ajuste de estado durante a renderização em vez de um
@@ -1801,6 +1816,30 @@ export function ExecutarOperacional({
       active = false;
     };
   }, [organizationId, remotePersistenceAvailable, userId]);
+
+  useEffect(() => {
+    if (
+      deepLinkTaskAplicado.current ||
+      !deepLinkTaskId ||
+      !loaded ||
+      (remotePersistenceAvailable && !remoteReady)
+    ) {
+      return;
+    }
+
+    deepLinkTaskAplicado.current = true;
+    const tasks = entregasAtivas(state);
+    const task = tasks.find((item) => item.id === deepLinkTaskId);
+
+    const taskStatus = task ? estadoEntrega(task, state) : null;
+
+    if (!task || taskStatus === "BLOCKED" || taskStatus === "DONE") {
+      return;
+    }
+
+    setState(assumirFoco(tasks, state, task.id));
+    setWorkspaceTaskOpen(true);
+  }, [deepLinkTaskId, loaded, remotePersistenceAvailable, remoteReady, state]);
 
   useEffect(() => {
     if (loaded && state.organizationId === organizationId) {
@@ -2465,6 +2504,7 @@ export function ExecutarOperacional({
           <ProductSurface
             focus={focus}
             onOpenCurrentTask={() => setWorkspaceTaskOpen(true)}
+            onOpenMapaOS={() => window.location.assign("/mapa-os")}
             onOpenProjects={() => setProjectManagerOpen(true)}
             onStateChange={setState}
             state={state}
@@ -2531,6 +2571,7 @@ export function ExecutarOperacional({
         externalNotificationsAvailable={externalNotificationsAvailable}
         onClose={() => setMobileMenuOpen(false)}
         onOpenCollaboration={toggleCollaboration}
+        onOpenMapaOS={() => window.location.assign("/mapa-os")}
         onOpenProjects={() => {
           setMobileMenuOpen(false);
           setProjectManagerOpen(true);
