@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, Printer } from "lucide-react";
+import { ArrowLeft, LayoutGrid, Printer } from "lucide-react";
 import type { FormatoMapaOS } from "./mapa-os-sheet";
 
 interface MapaOSPrintControlsProperties {
@@ -18,6 +18,14 @@ export function MapaOSPrintControls({
 }: MapaOSPrintControlsProperties) {
   return (
     <nav aria-label="Controles de visualização" className="mapaOsPrintControls">
+      <button
+        aria-label="Voltar aos documentos"
+        onClick={() => window.location.assign("/?view=documents")}
+        type="button"
+      >
+        <ArrowLeft aria-hidden="true" size={17} />
+        Documentos
+      </button>
       <div className="mapaOsBrand">
         <span>EXECUTAR</span>
         <strong>Mapa-OS · Prisma / Tripé</strong>
