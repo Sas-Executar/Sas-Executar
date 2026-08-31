@@ -79,7 +79,7 @@ export function WorkspaceSurface({
   let previousDate = "";
 
   return (
-    <section className="executarWorkspaceSurface">
+    <section className="executarWorkspaceSurface" data-workspace="tasks">
       <div className="executarWorkspaceList">
         {tasks.map((task) => {
           const status = estadoEntrega(task, state);
