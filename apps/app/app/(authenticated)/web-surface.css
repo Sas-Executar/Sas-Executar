@@ -317,3 +317,298 @@ body {
     min-width: 132px;
   }
 }
+
+/* Workspace único — inspirado na hierarquia Fluent mobile do Outlook:
+   uma lista persistente, funções secundárias no drawer e três ações fixas. */
+#app > .main {
+  padding-top: calc(104px + env(safe-area-inset-top)) !important;
+  padding-bottom: calc(116px + env(safe-area-inset-bottom)) !important;
+}
+
+.executarWorkspaceHeader {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 70;
+  display: grid;
+  grid-template-columns: var(--exec-touch-min) minmax(0, 1fr) auto;
+  gap: var(--exec-space-12);
+  align-items: center;
+  width: min(100%, 720px);
+  min-height: 88px;
+  padding: calc(var(--exec-space-12) + env(safe-area-inset-top))
+    var(--exec-space-16) var(--exec-space-12);
+  color: var(--exec-color-surface);
+  background: var(--exec-color-brand);
+  box-shadow: 0 8px 24px
+    color-mix(in srgb, var(--exec-color-brand) 18%, transparent);
+  transform: translateX(-50%);
+}
+
+.executarWorkspaceHeader > div {
+  min-width: 0;
+}
+
+.executarWorkspaceHeader h1,
+.executarWorkspaceHeader small {
+  display: block;
+  margin: 0;
+}
+
+.executarWorkspaceHeader h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--exec-text-title-2);
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.executarWorkspaceHeader small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--exec-text-caption);
+  white-space: nowrap;
+  opacity: 0.82;
+}
+
+.executarWorkspaceHeader > output {
+  display: flex;
+  align-items: baseline;
+  min-width: var(--exec-touch-min);
+  font-family: var(--exec-font-mono);
+}
+
+.executarWorkspaceMenu {
+  display: grid;
+  place-items: center;
+  width: var(--exec-touch-min);
+  height: var(--exec-touch-min);
+  padding: 0;
+  color: inherit;
+  background: color-mix(in srgb, var(--exec-color-surface) 12%, transparent);
+  border: 0;
+  border-radius: var(--exec-radius-control);
+}
+
+.executarWorkspaceMenu svg {
+  width: 22px;
+  height: 22px;
+}
+
+.executarWorkspaceSurface {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  overflow: hidden;
+  background: var(--executar-web-surface);
+  border: 1px solid var(--executar-web-line);
+  border-radius: var(--exec-radius-overlay);
+}
+
+.executarWorkspaceList {
+  display: grid;
+}
+
+.executarWorkspaceDate {
+  padding: var(--exec-space-12) var(--exec-space-16) var(--exec-space-8);
+  font-size: var(--exec-text-caption);
+  font-weight: 700;
+  color: var(--executar-web-muted);
+  background: var(--exec-color-surface-subtle);
+  border-top: 1px solid var(--executar-web-line);
+}
+
+.executarWorkspaceDate:first-child {
+  border-top: 0;
+}
+
+.executarWorkspaceTask {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: var(--exec-space-12);
+  align-items: center;
+  width: 100%;
+  min-height: 72px;
+  padding: var(--exec-space-12) var(--exec-space-16);
+  color: var(--executar-web-ink);
+  text-align: left;
+  background: var(--executar-web-surface);
+  border: 0;
+  border-top: 1px solid var(--executar-web-line);
+}
+
+.executarWorkspaceTask.active {
+  background: color-mix(
+    in srgb,
+    var(--exec-color-brand) 8%,
+    var(--executar-web-surface)
+  );
+  box-shadow: inset 3px 0 0 var(--exec-color-brand);
+}
+
+.executarWorkspaceTask.done {
+  opacity: 0.62;
+}
+
+.executarWorkspaceStatus {
+  display: grid;
+  place-items: center;
+  color: var(--executar-web-muted);
+}
+
+.executarWorkspaceTask.active .executarWorkspaceStatus {
+  color: var(--exec-color-brand);
+}
+
+.executarWorkspaceStatus svg {
+  width: 20px;
+  height: 20px;
+}
+
+.executarWorkspaceTaskCopy {
+  min-width: 0;
+}
+
+.executarWorkspaceTaskCopy b,
+.executarWorkspaceTaskCopy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.executarWorkspaceTaskCopy b {
+  font-size: var(--exec-text-body-1);
+}
+
+.executarWorkspaceTaskCopy small,
+.executarWorkspaceTask > time {
+  font-size: var(--exec-text-caption);
+  color: var(--executar-web-muted);
+}
+
+.executarWorkspaceTask > time {
+  white-space: nowrap;
+}
+
+.executarWorkspaceEmpty {
+  padding: var(--exec-space-32) var(--exec-space-16);
+  margin: 0;
+  color: var(--executar-web-muted);
+  text-align: center;
+}
+
+.executarWorkspaceActions {
+  position: fixed;
+  bottom: max(var(--exec-space-8), env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 70;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(calc(100% - 18px), 520px);
+  padding: var(--exec-space-8);
+  background: color-mix(in srgb, var(--exec-color-surface) 94%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--exec-color-surface) 76%, transparent);
+  border-radius: var(--exec-radius-overlay);
+  box-shadow: var(--exec-elevation-3);
+  backdrop-filter: blur(22px) saturate(1.2);
+  transform: translateX(-50%);
+}
+
+.executarWorkspaceActions button {
+  display: grid;
+  gap: var(--exec-space-4);
+  place-items: center;
+  min-width: 0;
+  min-height: 58px;
+  padding: var(--exec-space-8);
+  color: var(--executar-web-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--exec-radius-control);
+}
+
+.executarWorkspaceActions button:nth-child(2) {
+  color: var(--exec-color-surface);
+  background: var(--exec-color-brand);
+}
+
+.executarWorkspaceActions svg {
+  width: 21px;
+  height: 21px;
+}
+
+.executarWorkspaceActions span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--exec-text-caption);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.executarWorkspaceTaskLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  display: grid;
+  align-items: end;
+}
+
+.executarWorkspaceTaskSheet {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 760px);
+  max-height: calc(100dvh - env(safe-area-inset-top));
+  padding: var(--exec-space-48) var(--exec-space-12)
+    calc(var(--exec-space-16) + env(safe-area-inset-bottom));
+  margin: 0 auto;
+  overflow: auto;
+  background: var(--executar-web-canvas);
+  border-radius: var(--exec-radius-overlay) var(--exec-radius-overlay) 0 0;
+  box-shadow: var(--exec-elevation-3);
+}
+
+.executarWorkspaceTaskClose {
+  position: absolute;
+  top: var(--exec-space-8);
+  right: var(--exec-space-12);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: var(--exec-touch-min);
+  height: var(--exec-touch-min);
+  padding: 0;
+  color: var(--executar-web-ink);
+  background: var(--exec-color-surface);
+  border: 1px solid var(--executar-web-line);
+  border-radius: 50%;
+}
+
+.executarWorkspaceTaskClose svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (max-width: 640px) {
+  #app > .main {
+    padding: calc(96px + env(safe-area-inset-top)) var(--exec-space-8)
+      calc(108px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .executarWorkspaceHeader {
+    min-height: 80px;
+  }
+
+  .executarWorkspaceSurface {
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .executarWorkspaceTask {
+    min-height: 68px;
+    padding-right: var(--exec-space-12);
+    padding-left: var(--exec-space-12);
+  }
+}

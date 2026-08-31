@@ -25,8 +25,13 @@
   flex-direction: column;
   gap: var(--exec-space-16);
   align-items: center;
-  min-height: 100vh;
-  padding: var(--exec-space-24) var(--exec-space-16) var(--exec-space-64);
+  width: 100%;
+  min-height: 100dvh;
+  padding: calc(var(--exec-space-24) + env(safe-area-inset-top))
+    calc(var(--exec-space-16) + env(safe-area-inset-right))
+    calc(var(--exec-space-64) + env(safe-area-inset-bottom))
+    calc(var(--exec-space-16) + env(safe-area-inset-left));
+  overflow-x: clip;
   font-family: var(--exec-font-body);
   color: var(--scanner-color-foreground);
   background: var(--scanner-color-bg);
@@ -86,8 +91,9 @@
 
 .scannerCameraFrame {
   position: relative;
-  width: 320px;
-  height: 320px;
+  width: min(100%, 320px);
+  height: auto;
+  aspect-ratio: 1;
   overflow: hidden;
   background: #000;
   border: 1px solid var(--scanner-color-border);
