@@ -48,7 +48,7 @@ export function WorkspaceHeader({
         <small>{projectName}</small>
         <h1>Tarefas</h1>
       </div>
-      <span
+      <output
         aria-label={[
           completedCount,
           "de",
@@ -58,9 +58,27 @@ export function WorkspaceHeader({
       >
         <strong>{completedCount}</strong>
         <small>/{totalCount}</small>
-      </span>
+      </output>
     </header>
   );
+}
+
+function WorkspaceStatusIcon({
+  blocked,
+  done,
+}: {
+  readonly blocked: boolean;
+  readonly done: boolean;
+}) {
+  if (done) {
+    return <Check />;
+  }
+
+  if (blocked) {
+    return <LockKeyhole />;
+  }
+
+  return <Circle />;
 }
 
 interface WorkspaceSurfaceProperties {
@@ -105,18 +123,12 @@ export function WorkspaceSurface({
                   done ? "done" : "",
                 ].join(" ")}
                 disabled={blocked || done}
-                id={"executar-task-" + task.id}
+                id={`executar-task-${task.id}`}
                 onClick={() => onFocus(task.id)}
                 type="button"
               >
                 <span aria-hidden="true" className="executarWorkspaceStatus">
-                  {done ? (
-                    <Check />
-                  ) : blocked ? (
-                    <LockKeyhole />
-                  ) : (
-                    <Circle />
-                  )}
+                  <WorkspaceStatusIcon blocked={blocked} done={done} />
                 </span>
                 <span className="executarWorkspaceTaskCopy">
                   <b>{task.title}</b>
