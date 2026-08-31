@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+const RESULTADO_FINAL = /pass|fail/;
+
 interface ResultadoOcr {
   readonly expected: string;
   readonly latencyMs: number;
@@ -11,7 +13,9 @@ test("reconhece os cinco símbolos em menos de três segundos", async ({
   page,
 }) => {
   await page.goto("/tests/e2e/scanner-ocr-playwright.html");
-  await expect(page.locator("#status")).toHaveAttribute("data-result", "pass");
+  const status = page.locator("#status");
+  await expect(status).toHaveAttribute("data-result", RESULTADO_FINAL);
+  await expect(status).toHaveAttribute("data-result", "pass");
 
   const resultados = await page.evaluate(
     () =>
