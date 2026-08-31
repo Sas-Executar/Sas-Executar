@@ -104,6 +104,10 @@ jobs:
         run: bun run check
       - name: Executar testes do aplicativo
         run: bunx turbo run test --filter=app
+      - name: Instalar Chromium para o gate OCR
+        run: bunx playwright install --with-deps chromium
+      - name: Validar símbolos do Scanner em menos de 3 segundos
+        run: bun run test:scanner-ocr
       - name: Executar testes da fundação mobile
         run: bunx turbo run test --filter=mobile
       - name: Construir o aplicativo SaaS
