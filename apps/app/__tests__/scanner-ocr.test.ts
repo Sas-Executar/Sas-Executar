@@ -25,6 +25,10 @@ describe("resolverTextoScanner", () => {
     expect(resolverTextoScanner("COPILOTO 02")).toBe("copiloto");
   });
 
+  it("rejeita duas ações no mesmo recorte físico", () => {
+    expect(resolverTextoScanner("ENTRADA COPILOTO")).toBeNull();
+  });
+
   it("rejeita texto fora do vocabulário fechado", () => {
     expect(resolverTextoScanner("DOCUMENTOS")).toBeNull();
     expect(resolverTextoScanner("")).toBeNull();
