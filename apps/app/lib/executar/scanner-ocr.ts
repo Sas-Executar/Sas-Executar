@@ -37,7 +37,9 @@ export function resolverTextoScanner(texto: string): AcaoScannerId | null {
     item.aliases.some((alias) => normalizado.includes(alias))
   );
 
-  return correspondencias.length === 1 ? (correspondencias[0]?.id ?? null) : null;
+  return correspondencias.length === 1
+    ? (correspondencias[0]?.id ?? null)
+    : null;
 }
 
 export const CARACTERES_OCR_SCANNER = "ABCDEFGHIJKLMNOPQRSTUVWXYZÁÀÂÃÉÊÍÓÔÕÚÇ";
