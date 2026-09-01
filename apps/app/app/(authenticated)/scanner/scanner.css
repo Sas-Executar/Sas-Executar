@@ -120,9 +120,42 @@
 }
 
 .scannerAviso {
+  display: flex;
+  flex-direction: column;
+  gap: var(--exec-space-8);
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: var(--exec-space-12);
   font-size: var(--exec-text-caption);
   color: var(--scanner-color-aviso);
   text-align: center;
+  background: color-mix(in srgb, var(--scanner-color-aviso) 8%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--scanner-color-aviso) 35%, transparent);
+  border-radius: var(--exec-radius-control);
+}
+
+.scannerAviso p,
+.scannerAviso small {
+  margin: 0;
+}
+
+.scannerAviso small {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: var(--scanner-color-foreground-muted);
+}
+
+.scannerAviso button {
+  min-height: var(--exec-touch-min);
+  padding: var(--exec-space-8) var(--exec-space-16);
+  font-weight: 600;
+  color: var(--scanner-color-bg);
+  cursor: pointer;
+  background: var(--scanner-color-aviso);
+  border: none;
+  border-radius: var(--exec-radius-control);
 }
 
 .scannerDica {
