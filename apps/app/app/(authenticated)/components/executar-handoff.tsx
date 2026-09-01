@@ -21,6 +21,7 @@ import {
   Menu,
   MessageCircle,
   Paperclip,
+  Printer,
   RefreshCw,
   ScanLine,
   Search,
@@ -936,12 +937,14 @@ export function ReplanSurface({
 type DocumentFilter = "projects" | "lists" | "recent";
 
 interface DocumentsSurfaceProperties {
+  readonly onOpenMapaOS: () => void;
   readonly onOpenProjects: () => void;
   readonly onSelectProject: (projectId: string) => void;
   readonly state: EstadoOperacional;
 }
 
 export function DocumentsSurface({
+  onOpenMapaOS,
   onOpenProjects,
   onSelectProject,
   state,
@@ -995,6 +998,20 @@ export function DocumentsSurface({
           value={query}
         />
       </label>
+      <button
+        className="executarMapaOsDocument"
+        onClick={onOpenMapaOS}
+        type="button"
+      >
+        <span className="executarMapaOsDocumentIcon">
+          <Printer aria-hidden="true" />
+        </span>
+        <span>
+          <b>Mapa-OS do projeto</b>
+          <small>Visualizar e imprimir em Prisma ou Tripé A4</small>
+        </span>
+        <ChevronRight aria-hidden="true" />
+      </button>
       <div className="executarDocumentTabs" role="tablist">
         {(
           [

@@ -414,8 +414,10 @@
 
 .mapaOsAdminAction > span {
   font-family: var(--mo-font-base);
-  font-size: calc(6pt * var(--mo-scale));
-  font-weight: 500;
+  font-size: calc(8pt * var(--mo-scale));
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* ---------- A2 · Ciclo ---------- */

@@ -1119,6 +1119,58 @@
   border: 0;
 }
 
+.executarMapaOsDocument {
+  display: flex;
+  gap: var(--exec-space-12);
+  align-items: center;
+  width: 100%;
+  min-height: 76px;
+  padding: var(--exec-space-12) var(--exec-space-16);
+  margin-top: var(--exec-space-12);
+  color: var(--executar-text);
+  text-align: left;
+  cursor: pointer;
+  background: var(--exec-color-surface);
+  border: 1px solid var(--executar-border);
+  border-radius: var(--exec-radius-control);
+}
+
+.executarMapaOsDocument > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.executarMapaOsDocument b,
+.executarMapaOsDocument small {
+  display: block;
+}
+
+.executarMapaOsDocument small {
+  margin-top: var(--exec-space-4);
+  color: var(--executar-text-muted);
+}
+
+.executarMapaOsDocumentIcon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: var(--exec-touch-min);
+  height: var(--exec-touch-min);
+  color: var(--exec-color-acao);
+  background: color-mix(
+    in srgb,
+    var(--exec-color-acao) 10%,
+    var(--exec-color-surface)
+  );
+  border-radius: var(--exec-radius-control);
+}
+
+.executarMapaOsDocumentIcon svg,
+.executarMapaOsDocument > svg {
+  width: 20px;
+  height: 20px;
+}
+
 .executarDocumentTabs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

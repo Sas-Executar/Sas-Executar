@@ -29,7 +29,7 @@ const FRACAO_ROI_DO_VIDEO = 0.5;
 
 interface UseSymbolScannerOptions {
   readonly ativo: boolean;
-  readonly onReconhecido: (id: AcaoScannerId) => void;
+  readonly onReconhecido: (id: AcaoScannerId, latencyMs: number) => void;
   readonly videoRef: RefObject<HTMLVideoElement | null>;
 }
 
@@ -61,6 +61,7 @@ export function useSymbolScanner({
     let ultimoId: AcaoScannerId | null = null;
     let streak = 0;
     let disparadoParaAtual = false;
+    let exposicaoInicio = 0;
 
     const amostrar = () => {
       if (video.readyState < video.HAVE_CURRENT_DATA || !video.videoWidth) {
@@ -95,6 +96,7 @@ export function useSymbolScanner({
         ultimoId = null;
         streak = 0;
         disparadoParaAtual = false;
+        exposicaoInicio = 0;
         return;
       }
 
@@ -104,11 +106,15 @@ export function useSymbolScanner({
         ultimoId = resultado.id;
         streak = 1;
         disparadoParaAtual = false;
+        exposicaoInicio = performance.now();
       }
 
       if (streak >= QUADROS_ESTAVEIS_PARA_DISPARAR && !disparadoParaAtual) {
         disparadoParaAtual = true;
-        onReconhecidoRef.current(resultado.id);
+        onReconhecidoRef.current(
+          resultado.id,
+          Math.round(performance.now() - exposicaoInicio)
+        );
       }
     };
 

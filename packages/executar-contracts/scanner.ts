@@ -95,6 +95,6 @@ export const ATALHOS_PADRAO_SELETOR: readonly AtalhoSeletor[] = [
   { id: "documentos", label: "Documentos", destino: "documents" },
   { id: "roadmap", label: "Roadmap", destino: "calendar" },
   { id: "sprint", label: "Sprint", destino: "overview" },
-  { id: "hoje", label: "Hoje", destino: "today" },
-  { id: "tarefas_feitas", label: "Tarefas feitas", destino: "done" },
+  { id: "hoje", label: "Hoje", destino: "workspace" },
+  { id: "tarefas_feitas", label: "Tarefas feitas", destino: "workspace" },
 ];
