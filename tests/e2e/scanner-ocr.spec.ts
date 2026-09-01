@@ -47,7 +47,8 @@ test("reconhece os cinco símbolos em menos de três segundos", async ({
   const resultados: ResultadoOcr[] = [];
   const amostras = page.locator(".sample");
   for (const [index, palavra] of PALAVRAS.entries()) {
-    const imagem = await amostras.nth(index).screenshot();
+    const imagem = testInfo.outputPath(`ocr-${palavra.toLowerCase()}.png`);
+    await amostras.nth(index).screenshot({ path: imagem });
     const inicio = performance.now();
     const reconhecimento = await worker.recognize(imagem);
     const latencyMs = Math.round(performance.now() - inicio);
