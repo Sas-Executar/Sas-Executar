@@ -40,7 +40,7 @@ test("reconhece os cinco símbolos em menos de três segundos", async ({
   });
   await worker.setParameters({
     tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-    tessedit_pageseg_mode: PSM.SINGLE_WORD,
+    tessedit_pageseg_mode: PSM.SPARSE_TEXT,
     user_defined_dpi: "300",
   });
 
