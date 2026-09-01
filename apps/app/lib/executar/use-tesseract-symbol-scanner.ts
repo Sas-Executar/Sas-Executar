@@ -6,7 +6,7 @@ import type { AcaoScannerId } from "./mapa-os-projection.ts";
 import { CARACTERES_OCR_SCANNER, resolverTextoScanner } from "./scanner-ocr.ts";
 
 const INTERVALO_OCR_MS = 650;
-const FRACAO_ROI_OCR = 0.5;
+const FRACAO_ROI_OCR = 0.36;
 const CONFIANCA_MINIMA = 45;
 const TEMPO_MAXIMO_PREPARO_MS = 12_000;
 const WORKER_PATH =
