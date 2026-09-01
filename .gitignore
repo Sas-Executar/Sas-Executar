@@ -210,7 +210,6 @@ dist
 **/*.back.*
 
 node_modules
-tests/e2e/ocr-assets/
 
 *.sublime*
 
