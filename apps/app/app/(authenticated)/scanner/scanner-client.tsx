@@ -181,7 +181,9 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
     const acao = resolverPayloadScanner(payload);
 
     if (!acao) {
-      setErro("QR não reconhecido pelo EXECUTAR.");
+      if (metodo === "manual") {
+        setErro("Código EXECUTAR não reconhecido.");
+      }
       return;
     }
 
@@ -220,11 +222,11 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
       return;
     }
 
-    // WebKit/iOS exige reprodução inline para manter o stream da câmera ativo.
     video.autoplay = true;
     video.muted = true;
     video.playsInline = true;
     video.setAttribute("playsinline", "true");
+    video.dataset.cameraAttempt = String(cameraTentativa);
 
     let ativo = true;
     setCameraIndisponivel(false);
@@ -245,8 +247,8 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
       }
     );
 
-    void scanner
-      .start()
+    const inicioScanner = scanner.start();
+    inicioScanner
       .then(() => {
         if (ativo) {
           setCameraIndisponivel(false);
@@ -275,10 +277,6 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
     };
   }, [cameraTentativa, loaded, fase]);
 
-  // Reconhecimento dos 5 símbolos administrativos (Entrada/Copiloto/
-  // Seletor/Feito/Saída) — roda em paralelo ao decode de QR acima, lendo o
-  // mesmo <video> por um <canvas> independente. Sem QR nesses 5 símbolos
-  // (decisão do usuário, 28/08/2026) — ver lib/executar/symbol-recognizer.ts.
   useSymbolScanner({
     ativo: loaded && fase === "camera" && !cameraIndisponivel,
     onReconhecido: (id, latencyMs) =>
@@ -363,7 +361,6 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
       {fase === "camera" && (
         <section className="scannerCameraArea">
           <div className="scannerCameraFrame">
-            {/** biome-ignore lint/a11y/useMediaCaption: vídeo é a prévia ao vivo da câmera, sem trilha de áudio/legenda aplicável. */}
             <video
               autoPlay
               className="scannerVideo"
@@ -374,16 +371,17 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
             <div aria-hidden="true" className="scannerSymbolGuide" />
           </div>
           <p className="scannerDica">
-            QR de tarefa/documento: qualquer posição. Símbolo de ação
-            (Entrada/Copiloto/Seletor/Feito/Saída): centralize o ícone e o nome
-            no quadro.
+            QR de tarefa/documento: qualquer posição. Para ações, enquadre um
+            único símbolo por vez e centralize somente o ícone no quadro azul;
+            mantenha o nome logo abaixo.
           </p>
           {cameraIndisponivel && (
             <div className="scannerAviso" role="alert">
               <p>{cameraFalha?.mensagem ?? "Câmera indisponível."}</p>
               {cameraFalha && (
                 <small>
-                  Diagnóstico: {cameraFalha.codigo} · {cameraFalha.detalheTecnico}
+                  Diagnóstico: {cameraFalha.codigo} ·{" "}
+                  {cameraFalha.detalheTecnico}
                 </small>
               )}
               <button onClick={tentarCameraNovamente} type="button">
@@ -400,8 +398,10 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
             }}
           >
             <input
+              aria-label="Código EXECUTAR para teste manual"
               onChange={(event) => setEntradaManual(event.target.value)}
               placeholder="executar://scan/entrada"
+              required
               value={entradaManual}
             />
             <button type="submit">Processar</button>
@@ -414,10 +414,10 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
             data-latency-budget-ms="3000"
             data-ocr-state={estadoTesseract}
           >
-            OCR {estadoTesseract}
+            Leitura visual ativa · OCR {estadoTesseract}
             {diagnostico
               ? ` · ${diagnostico.metodo} · ${diagnostico.latencyMs} ms`
-              : " · aguardando símbolo"}
+              : " · aguardando um símbolo"}
           </p>
         </section>
       )}
