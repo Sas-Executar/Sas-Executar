@@ -77,7 +77,8 @@ export function diagnosticarFalhaCamera(
       return {
         codigo: "abortada",
         detalheTecnico,
-        mensagem: "A inicialização da câmera foi interrompida. Tente novamente.",
+        mensagem:
+          "A inicialização da câmera foi interrompida. Tente novamente.",
       };
     default:
       return {
