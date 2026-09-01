@@ -18,6 +18,10 @@ import {
   resolverPayloadScanner,
   ScannerConfirmacaoNecessariaError,
 } from "@/lib/executar/scanner";
+import {
+  diagnosticarFalhaCamera,
+  type FalhaCamera,
+} from "@/lib/executar/scanner-camera";
 import { useEstadoOperacionalLocal } from "@/lib/executar/use-estado-local";
 import { useSymbolScanner } from "@/lib/executar/use-symbol-scanner";
 import { useTesseractSymbolScanner } from "@/lib/executar/use-tesseract-symbol-scanner";
@@ -55,6 +59,8 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
   const [cameraIndisponivel, setCameraIndisponivel] = useState(false);
+  const [cameraFalha, setCameraFalha] = useState<FalhaCamera | null>(null);
+  const [cameraTentativa, setCameraTentativa] = useState(0);
   const [entradaManual, setEntradaManual] = useState("");
   const [undoDisponivel, setUndoDisponivel] =
     useState<EstadoOperacional | null>(null);
@@ -209,13 +215,23 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
   });
 
   useEffect(() => {
-    if (!(loaded && fase === "camera" && videoRef.current)) {
+    const video = videoRef.current;
+    if (!(loaded && fase === "camera" && video)) {
       return;
     }
 
+    // WebKit/iOS exige reprodução inline para manter o stream da câmera ativo.
+    video.autoplay = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.setAttribute("playsinline", "true");
+
     let ativo = true;
+    setCameraIndisponivel(false);
+    setCameraFalha(null);
+
     const scanner = new QrScanner(
-      videoRef.current,
+      video,
       (result) => {
         if (ativo) {
           processarPayloadRef.current(result.data, "qr", 0);
@@ -225,17 +241,39 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
         highlightScanRegion: true,
         highlightCodeOutline: true,
         maxScansPerSecond: 5,
+        preferredCamera: "environment",
       }
     );
 
-    scanner.start().catch(() => setCameraIndisponivel(true));
+    void scanner
+      .start()
+      .then(() => {
+        if (ativo) {
+          setCameraIndisponivel(false);
+          setCameraFalha(null);
+        }
+      })
+      .catch((falha: unknown) => {
+        if (!ativo) {
+          return;
+        }
+
+        const possuiGetUserMedia = Boolean(navigator.mediaDevices?.getUserMedia);
+        const diagnosticoCamera = diagnosticarFalhaCamera(
+          falha,
+          window.isSecureContext,
+          possuiGetUserMedia
+        );
+        setCameraFalha(diagnosticoCamera);
+        setCameraIndisponivel(true);
+      });
 
     return () => {
       ativo = false;
       scanner.stop();
       scanner.destroy();
     };
-  }, [loaded, fase]);
+  }, [cameraTentativa, loaded, fase]);
 
   // Reconhecimento dos 5 símbolos administrativos (Entrada/Copiloto/
   // Seletor/Feito/Saída) — roda em paralelo ao decode de QR acima, lendo o
@@ -282,6 +320,12 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
     setFase("camera");
   }
 
+  function tentarCameraNovamente() {
+    setCameraIndisponivel(false);
+    setCameraFalha(null);
+    setCameraTentativa((tentativa) => tentativa + 1);
+  }
+
   if (!loaded) {
     return null;
   }
@@ -320,7 +364,13 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
         <section className="scannerCameraArea">
           <div className="scannerCameraFrame">
             {/** biome-ignore lint/a11y/useMediaCaption: vídeo é a prévia ao vivo da câmera, sem trilha de áudio/legenda aplicável. */}
-            <video className="scannerVideo" ref={videoRef} />
+            <video
+              autoPlay
+              className="scannerVideo"
+              muted
+              playsInline
+              ref={videoRef}
+            />
             <div aria-hidden="true" className="scannerSymbolGuide" />
           </div>
           <p className="scannerDica">
@@ -329,10 +379,17 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
             no quadro.
           </p>
           {cameraIndisponivel && (
-            <p className="scannerAviso">
-              Câmera indisponível neste navegador/aparelho. Digite o conteúdo do
-              QR manualmente abaixo (útil também para testes).
-            </p>
+            <div className="scannerAviso" role="alert">
+              <p>{cameraFalha?.mensagem ?? "Câmera indisponível."}</p>
+              {cameraFalha && (
+                <small>
+                  Diagnóstico: {cameraFalha.codigo} · {cameraFalha.detalheTecnico}
+                </small>
+              )}
+              <button onClick={tentarCameraNovamente} type="button">
+                Tentar câmera novamente
+              </button>
+            </div>
           )}
           <form
             className="scannerManualForm"
@@ -353,6 +410,7 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
           <p
             aria-live="polite"
             className="scannerDiagnostico"
+            data-camera-error={cameraFalha?.codigo ?? "none"}
             data-latency-budget-ms="3000"
             data-ocr-state={estadoTesseract}
           >
