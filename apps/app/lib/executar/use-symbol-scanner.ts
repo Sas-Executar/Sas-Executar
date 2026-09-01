@@ -47,12 +47,7 @@ function capturarEscala(
   const sx = (video.videoWidth - lado) / 2;
   const sy = (video.videoHeight - lado) / 2;
 
-  ctx.clearRect(
-    0,
-    0,
-    RASTER_SIZE_RECONHECIMENTO,
-    RASTER_SIZE_RECONHECIMENTO
-  );
+  ctx.clearRect(0, 0, RASTER_SIZE_RECONHECIMENTO, RASTER_SIZE_RECONHECIMENTO);
   ctx.drawImage(
     video,
     sx,
