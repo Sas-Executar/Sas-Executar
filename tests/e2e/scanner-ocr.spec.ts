@@ -4,10 +4,15 @@ import { createWorker, OEM, PSM } from "tesseract.js";
 
 const PALAVRAS = ["ENTRADA", "COPILOTO", "SELETOR", "FEITO", "SAIDA"];
 
-test("reconhece os cinco símbolos em menos de três segundos", async (
-  { page },
-  testInfo
-) => {
+interface ResultadoOcr {
+  readonly expected: string;
+  readonly latencyMs: number;
+  readonly text: string;
+}
+
+test("reconhece os cinco símbolos em menos de três segundos", async ({
+  page,
+}, testInfo) => {
   await page.setContent(`
     <style>
       body { margin: 0; background: #f5f5f5; }
@@ -39,7 +44,7 @@ test("reconhece os cinco símbolos em menos de três segundos", async (
     user_defined_dpi: "300",
   });
 
-  const resultados = [];
+  const resultados: ResultadoOcr[] = [];
   const amostras = page.locator(".sample");
   for (const [index, palavra] of PALAVRAS.entries()) {
     const imagem = await amostras.nth(index).screenshot();
