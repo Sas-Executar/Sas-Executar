@@ -5,9 +5,14 @@ import type { Worker } from "tesseract.js";
 import type { AcaoScannerId } from "./mapa-os-projection.ts";
 import { CARACTERES_OCR_SCANNER, resolverTextoScanner } from "./scanner-ocr.ts";
 
-const INTERVALO_OCR_MS = 620;
-const FRACAO_ROI_OCR = 0.82;
-const CONFIANCA_MINIMA = 58;
+const INTERVALO_OCR_MS = 650;
+const FRACAO_ROI_OCR = 0.5;
+const CONFIANCA_MINIMA = 45;
+const TEMPO_MAXIMO_PREPARO_MS = 12_000;
+const WORKER_PATH =
+  "https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/worker.min.js";
+const CORE_PATH = "https://cdn.jsdelivr.net/npm/tesseract.js-core@7.0.0";
+const LANG_PATH = "https://tessdata.projectnaptha.com/4.0.0";
 
 export type EstadoTesseract = "carregando" | "indisponivel" | "pronto";
 
@@ -39,7 +44,7 @@ function capturarRoi(video: HTMLVideoElement): HTMLCanvasElement | null {
     return null;
   }
 
-  contexto.filter = "grayscale(1) contrast(1.65)";
+  contexto.filter = "grayscale(1) contrast(1.85)";
   contexto.drawImage(
     video,
     (video.videoWidth - lado) / 2,
@@ -52,6 +57,15 @@ function capturarRoi(video: HTMLVideoElement): HTMLCanvasElement | null {
     canvas.height
   );
   return canvas;
+}
+
+function limiteDeTempo(): Promise<never> {
+  return new Promise((_, reject) => {
+    window.setTimeout(
+      () => reject(new Error("Tesseract não inicializou no tempo limite.")),
+      TEMPO_MAXIMO_PREPARO_MS
+    );
+  });
 }
 
 export function useTesseractSymbolScanner({
@@ -73,7 +87,19 @@ export function useTesseractSymbolScanner({
     async function prepararWorker() {
       try {
         const { createWorker, OEM, PSM } = await import("tesseract.js");
-        const worker = await createWorker("eng", OEM.LSTM_ONLY);
+        const workerPromise = createWorker("eng", OEM.LSTM_ONLY, {
+          corePath: CORE_PATH,
+          langPath: LANG_PATH,
+          workerBlobURL: true,
+          workerPath: WORKER_PATH,
+        });
+        const worker = await Promise.race([workerPromise, limiteDeTempo()]);
+
+        if (cancelado) {
+          await worker.terminate();
+          return;
+        }
+
         await worker.setParameters({
           preserve_interword_spaces: "0",
           tessedit_char_whitelist: CARACTERES_OCR_SCANNER,
@@ -95,7 +121,11 @@ export function useTesseractSymbolScanner({
       }
     }
 
-    prepararWorker();
+    prepararWorker().catch(() => {
+      if (!cancelado) {
+        setEstado("indisponivel");
+      }
+    });
 
     return () => {
       cancelado = true;
@@ -151,7 +181,7 @@ export function useTesseractSymbolScanner({
     }
 
     const intervalo = window.setInterval(reconhecer, INTERVALO_OCR_MS);
-    reconhecer();
+    reconhecer().catch(() => setEstado("indisponivel"));
     return () => {
       cancelado = true;
       window.clearInterval(intervalo);
