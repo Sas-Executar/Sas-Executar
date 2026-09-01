@@ -20,6 +20,11 @@ describe("resolverTextoScanner", () => {
     expect(resolverTextoScanner("xx-ENTRADA-xx")).toBe("entrada");
   });
 
+  it("tolera metadados impressos ao redor do rótulo", () => {
+    expect(resolverTextoScanner("A1 ADMIN 01 ENTRADA")).toBe("entrada");
+    expect(resolverTextoScanner("COPILOTO 02")).toBe("copiloto");
+  });
+
   it("rejeita texto fora do vocabulário fechado", () => {
     expect(resolverTextoScanner("DOCUMENTOS")).toBeNull();
     expect(resolverTextoScanner("")).toBeNull();
