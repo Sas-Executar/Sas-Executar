@@ -260,7 +260,9 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
           return;
         }
 
-        const possuiGetUserMedia = Boolean(navigator.mediaDevices?.getUserMedia);
+        const possuiGetUserMedia = Boolean(
+          navigator.mediaDevices?.getUserMedia
+        );
         const diagnosticoCamera = diagnosticarFalhaCamera(
           falha,
           window.isSecureContext,
