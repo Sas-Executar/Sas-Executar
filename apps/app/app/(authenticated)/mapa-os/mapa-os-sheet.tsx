@@ -25,7 +25,11 @@ export function MapaOSSheet({
   return (
     <div className={`mapaOsSheet ${format} ${showGuides ? "showGuides" : ""}`}>
       <div className="mapaOsSafeArea">
-        <AdminFace admin={projecao.admin} />
+        <AdminFace
+          admin={projecao.admin}
+          progress={projecao.progress}
+          project={projecao.project}
+        />
         <div aria-hidden="true" className="mapaOsFold">
           <span>DOBRA</span>
         </div>

@@ -377,6 +377,42 @@
 }
 
 /* ---------- A1 · Admin ---------- */
+.mapaOsFace.admin .mapaOsFaceMain {
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+/* Hero "Centro de Comando" (protótipo Mapaos.html) — nome do projeto +
+   progresso agregado; as 4 estatísticas do protótipo (Planos/Epics/
+   Entregáveis/Progresso) foram substituídas pelas 5 ações do Scanner
+   abaixo, não convivem lado a lado (decisão do usuário, 30/08/2026). */
+.mapaOsHero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6mm;
+  padding: 1.5mm var(--mo-space-2) 2.5mm;
+  border-bottom: 0.18mm solid var(--mo-color-hairline-subtle);
+}
+
+.mapaOsHeroEyebrow {
+  font: 600 calc(4.4pt * var(--mo-scale)) / 1 var(--mo-font-mono);
+  color: var(--mo-color-ink-muted);
+  letter-spacing: 0.14em;
+}
+
+.mapaOsHeroTitle {
+  font-family: var(--mo-font-base);
+  font-size: calc(8pt * var(--mo-scale));
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.mapaOsHeroProgress {
+  font: 500 calc(5pt * var(--mo-scale)) / 1 var(--mo-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--mo-color-ink-muted);
+}
+
 .mapaOsAdminActions {
   display: flex;
   flex-wrap: wrap;
@@ -508,9 +544,15 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+/*
+ * Epic-card — mesma anatomia do protótipo "Centro de Comando" (numeral +
+ * meta + progresso, entregável em destaque, checklist de tarefas), mantendo
+ * o footprint mm já validado (6 cards numa grade 3×2/2×3) em vez dos 2-3
+ * cards largos do protótipo original — ver comentário em ciclo-face.tsx.
+ */
 .mapaOsDayCard {
   display: grid;
-  grid-template-rows: 5.5mm 9mm 1fr;
+  grid-template-rows: 7mm 7.5mm 1fr;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -524,40 +566,87 @@
   opacity: 0.55;
 }
 
-.mapaOsDayMeta {
+.mapaOsEpicHead {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 5mm 1fr auto;
+  gap: 1.2mm;
   align-items: center;
-  padding: 0 1.8mm;
-  font: 500 calc(4.2pt * var(--mo-scale)) / 1 var(--mo-font-mono);
-  color: var(--mo-color-ink-muted);
-  letter-spacing: 0.03em;
+  padding: 0 1.6mm;
   border-bottom: 0.18mm solid var(--mo-color-hairline-subtle);
 }
 
-.mapaOsDayMeta span {
-  text-align: center;
+.mapaOsEpicNum {
+  display: grid;
+  place-items: center;
+  width: 5mm;
+  height: 5mm;
+  font: 700 calc(4.4pt * var(--mo-scale)) / 1 var(--mo-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--mo-color-ink-muted);
+  background: var(--mo-color-bg);
+  border: 0.18mm solid var(--mo-color-hairline-default);
+  border-radius: 1mm;
 }
 
-.mapaOsDayMeta time {
-  text-align: right;
+.mapaOsEpicMeta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
 }
 
-.mapaOsDayMeta strong {
-  font-weight: 600;
+.mapaOsEpicMeta strong {
+  font-family: var(--mo-font-mono);
+  font-size: calc(4.6pt * var(--mo-scale));
+  font-weight: 700;
   color: var(--mo-color-ink);
 }
 
-.mapaOsDayCard h3 {
+.mapaOsEpicMeta time,
+.mapaOsEpicMeta span {
+  font: 500 calc(3.8pt * var(--mo-scale)) / 1.3 var(--mo-font-mono);
+  color: var(--mo-color-ink-muted);
+}
+
+.mapaOsEpicProgress {
   display: flex;
-  align-items: center;
-  padding: 1.4mm 1.8mm;
+  flex-direction: column;
+  gap: 0.5mm;
+  align-items: flex-end;
+  min-width: 10mm;
+}
+
+.mapaOsEpicProgress b {
+  font: 700 calc(4.4pt * var(--mo-scale)) / 1 var(--mo-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--mo-color-ink);
+}
+
+.mapaOsEpicTrack {
+  width: 10mm;
+  height: 0.9mm;
+  overflow: hidden;
+  background: var(--mo-color-hairline-default);
+  border-radius: 999px;
+}
+
+.mapaOsEpicFill {
+  height: 100%;
+  background: var(--mo-color-acao);
+  border-radius: 999px;
+}
+
+.mapaOsDayCard h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  padding: 1.2mm 1.8mm;
   margin: 0;
   overflow: hidden;
+  -webkit-line-clamp: 2;
   font-family: var(--mo-font-base);
-  font-size: calc(6.2pt * var(--mo-scale));
+  font-size: calc(5.6pt * var(--mo-scale));
   font-weight: 600;
-  line-height: 1.18;
+  line-height: 1.2;
   border-bottom: 0.18mm solid var(--mo-color-hairline-subtle);
 }
 
@@ -567,57 +656,57 @@
   color: var(--mo-color-ink-muted);
 }
 
-.mapaOsWorkflowGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  min-height: 0;
-}
-
-.mapaOsWorkflowCard {
+.mapaOsEpicTasks {
   display: flex;
   flex-direction: column;
-  gap: 1mm;
-  min-width: 0;
-  padding: 1.2mm 1.1mm 1mm;
+  gap: 0.8mm;
+  min-height: 0;
+  padding: 1.2mm 1.8mm;
   overflow: hidden;
-  border-right: 0.18mm solid var(--mo-color-hairline-subtle);
 }
 
-.mapaOsWorkflowCard:last-child {
-  border-right: 0;
-}
-
-.mapaOsWorkflowMeta {
+.mapaOsEpicTask {
   display: flex;
-  justify-content: flex-end;
+  gap: 1.2mm;
+  align-items: flex-start;
+  min-width: 0;
 }
 
-.mapaOsWorkflowMeta span {
-  display: grid;
-  place-items: center;
-  width: 3.6mm;
-  height: 3.6mm;
-  font: 500 calc(4pt * var(--mo-scale)) / 1 var(--mo-font-mono);
-  color: var(--mo-color-ink-muted);
+.mapaOsEpicTaskCircle {
+  flex: none;
+  width: 2.6mm;
+  height: 2.6mm;
+  margin-top: 0.3mm;
   border: 0.18mm solid var(--mo-color-hairline-strong);
   border-radius: 50%;
 }
 
-.mapaOsWorkflowCard p {
+.mapaOsEpicTask.done .mapaOsEpicTaskCircle {
+  background: var(--mo-color-entregavel);
+  border-color: var(--mo-color-entregavel);
+}
+
+.mapaOsEpicTask p {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   margin: 0;
   overflow: hidden;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 1;
   font-family: var(--mo-font-base);
-  font-size: calc(5pt * var(--mo-scale));
+  font-size: calc(4.6pt * var(--mo-scale));
   font-weight: 500;
-  line-height: 1.22;
+  line-height: 1.2;
 }
 
-.mapaOsWorkflowCard.placeholder p {
+.mapaOsEpicTask.done p {
+  color: var(--mo-color-ink-muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 0.5px;
+}
+
+.mapaOsEpicTaskMore {
+  font: 500 calc(4.2pt * var(--mo-scale)) / 1 var(--mo-font-mono);
   font-style: italic;
-  font-weight: 400;
   color: var(--mo-color-ink-muted);
 }
 

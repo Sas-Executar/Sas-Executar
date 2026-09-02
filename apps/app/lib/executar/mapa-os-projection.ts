@@ -33,9 +33,9 @@ const OPERACOES_ADMIN = [
   { id: "saida", label: "Saída" },
 ] as const;
 const DIAS_UTEIS_ROADMAP = 6;
-const WORKFLOWS_POR_DIA = 3;
+/** Linhas de checklist visíveis por epic-card antes de dobrar o resto num "+N". */
+const MAX_TAREFAS_VISIVEIS_POR_DIA = 4;
 const LIMITE_PALAVRAS_ENTREGAVEL = 2;
-const LIMITE_PALAVRAS_WORKFLOW = 5;
 /** Dias de tolerância antes de assumir que uma data "DD/MM" já virou o ano seguinte. */
 const JANELA_INFERENCIA_ANO_DIAS = 200;
 const MS_POR_DIA = 86_400_000;
@@ -70,20 +70,25 @@ export interface RotinaNoProjetado {
   readonly status: string;
 }
 
-export interface WorkflowProjetado {
-  readonly label: string;
-  readonly placeholder: boolean;
-  readonly steps: number;
+export interface EpicTaskProjetado {
+  readonly done: boolean;
+  readonly id: string;
+  readonly title: string;
 }
 
 export interface DayCardProjetado {
+  readonly completedCount: number;
   readonly date: string;
   readonly day: string;
   readonly deliverable: string | null;
   readonly duration: string;
+  readonly percentage: number;
   readonly placeholder: boolean;
   readonly qrPayload: string;
-  readonly workflows: readonly WorkflowProjetado[];
+  readonly tasks: readonly EpicTaskProjetado[];
+  /** Quantas tarefas do dia ficaram de fora de `tasks` (0 quando nenhuma). */
+  readonly tasksOverflow: number;
+  readonly totalCount: number;
 }
 
 export interface NotasLaneProjetada {
@@ -154,10 +159,6 @@ function inferirData(dateDDMM: string, referencia: Date): Date | null {
 function abreviarDiaSemana(dateDDMM: string, referencia: Date): string {
   const data = inferirData(dateDDMM, referencia);
   return data ? DIAS_SEMANA[data.getDay()] : "—";
-}
-
-function calcularSteps(task: Entrega): number {
-  return Math.max(1, Math.ceil(task.mins / 15));
 }
 
 function estadoDoDiaSemana(diffDias: number): EstadoDiaSemana {
@@ -252,66 +253,51 @@ function projetarRotina(
   return nos;
 }
 
-function workflowPlaceholder(): WorkflowProjetado {
-  return { label: "— sem tarefa", steps: 0, placeholder: true };
-}
-
-function projetarWorkflows(
-  tasks: readonly Entrega[]
-): readonly WorkflowProjetado[] {
+/**
+ * Checklist de tarefas do dia (epic-card) — capado em
+ * `MAX_TAREFAS_VISIVEIS_POR_DIA` linhas visíveis; o resto vira uma contagem
+ * de overflow (`tasksOverflow`), que o componente renderiza como uma linha
+ * "+N tarefas" à parte, sem inventar um estado de conclusão para ela.
+ */
+function projetarTarefasCard(
+  tasks: readonly Entrega[],
+  state: EstadoOperacional
+): { tasks: readonly EpicTaskProjetado[]; tasksOverflow: number } {
   const ordenadas = [...tasks].sort((left, right) => left.stage - right.stage);
+  const todas = ordenadas.map<EpicTaskProjetado>((task) => ({
+    id: task.id,
+    title: task.title,
+    done: state.done.includes(task.id),
+  }));
 
-  if (ordenadas.length <= WORKFLOWS_POR_DIA) {
-    const workflows = ordenadas.map<WorkflowProjetado>((task) => ({
-      label: limitarPalavras(task.title, LIMITE_PALAVRAS_WORKFLOW),
-      steps: calcularSteps(task),
-      placeholder: false,
-    }));
-
-    while (workflows.length < WORKFLOWS_POR_DIA) {
-      workflows.push(workflowPlaceholder());
-    }
-
-    return workflows;
+  if (todas.length <= MAX_TAREFAS_VISIVEIS_POR_DIA) {
+    return { tasks: todas, tasksOverflow: 0 };
   }
 
-  const visiveis = ordenadas
-    .slice(0, WORKFLOWS_POR_DIA - 1)
-    .map<WorkflowProjetado>((task) => ({
-      label: limitarPalavras(task.title, LIMITE_PALAVRAS_WORKFLOW),
-      steps: calcularSteps(task),
-      placeholder: false,
-    }));
-  const extras = ordenadas.slice(WORKFLOWS_POR_DIA - 1);
-  const stepsExtras = extras.reduce(
-    (total, task) => total + calcularSteps(task),
-    0
-  );
+  const visiveis = todas.slice(0, MAX_TAREFAS_VISIVEIS_POR_DIA - 1);
 
-  return [
-    ...visiveis,
-    {
-      label: `+${extras.length} tarefas`,
-      steps: stepsExtras,
-      placeholder: false,
-    },
-  ];
+  return { tasks: visiveis, tasksOverflow: todas.length - visiveis.length };
 }
 
 function diaCardPlaceholder(): DayCardProjetado {
   return {
+    completedCount: 0,
     date: "—",
     day: "—",
     deliverable: null,
     duration: "—",
+    percentage: 0,
     placeholder: true,
     qrPayload: "executar://roadmap",
-    workflows: Array.from({ length: WORKFLOWS_POR_DIA }, workflowPlaceholder),
+    tasks: [],
+    tasksOverflow: 0,
+    totalCount: 0,
   };
 }
 
 function projetarDayCards(
   dias: readonly DiaOperacional[],
+  state: EstadoOperacional,
   referencia: Date
 ): readonly DayCardProjetado[] {
   const inicioDeHoje = new Date(referencia);
@@ -328,19 +314,26 @@ function projetarDayCards(
 
   const cards = selecionados.map<DayCardProjetado>((dia) => {
     const principal = dia.tasks[0] ?? null;
+    const { tasks, tasksOverflow } = projetarTarefasCard(dia.tasks, state);
+    const snapshot = progresso(dia.tasks, state);
+    const completedCount = dia.tasks.filter((task) =>
+      state.done.includes(task.id)
+    ).length;
 
     return {
+      completedCount,
       date: dia.date,
       day: abreviarDiaSemana(dia.date, referencia),
-      deliverable: principal
-        ? limitarPalavras(principal.title, LIMITE_PALAVRAS_ENTREGAVEL)
-        : null,
+      deliverable: principal ? principal.title : null,
       duration: `${dia.plannedMinutes} MIN`,
+      percentage: snapshot.percentage,
       placeholder: false,
       qrPayload: principal
         ? `executar://task/${principal.id}`
         : "executar://roadmap",
-      workflows: projetarWorkflows(dia.tasks),
+      tasks,
+      tasksOverflow,
+      totalCount: dia.tasks.length,
     };
   });
 
@@ -377,7 +370,7 @@ export function projetarMapaOS(
     },
     ciclo: {
       routine: projetarRotina(tasks, state),
-      dayCards: projetarDayCards(dias, referencia),
+      dayCards: projetarDayCards(dias, state, referencia),
     },
     notas: {
       lanes: NOTAS_LANES,

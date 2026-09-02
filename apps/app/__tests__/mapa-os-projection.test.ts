@@ -37,13 +37,13 @@ describe("projetarMapaOS", () => {
     for (const card of projecao.ciclo.dayCards) {
       expect(card.placeholder).toBe(true);
       expect(card.deliverable).toBeNull();
-      for (const workflow of card.workflows) {
-        expect(workflow.placeholder).toBe(true);
-      }
+      expect(card.tasks).toHaveLength(0);
+      expect(card.tasksOverflow).toBe(0);
+      expect(card.percentage).toBe(0);
     }
   });
 
-  it("um dia com 1 tarefa gera 1 workflow real e 2 placeholders", () => {
+  it("um dia com 1 tarefa aparece no checklist do epic-card, não concluída", () => {
     const task = tarefa({
       id: "t1",
       date: "28/08",
@@ -59,16 +59,15 @@ describe("projetarMapaOS", () => {
     const card = projecao.ciclo.dayCards.find((item) => item.date === "28/08");
     expect(card).toBeDefined();
     expect(card?.placeholder).toBe(false);
-    expect(card?.workflows[0]).toMatchObject({
-      label: "Revisar contrato",
-      steps: 2,
-      placeholder: false,
-    });
-    expect(card?.workflows[1]?.placeholder).toBe(true);
-    expect(card?.workflows[2]?.placeholder).toBe(true);
+    expect(card?.tasks).toEqual([
+      { id: "t1", title: "Revisar contrato", done: false },
+    ]);
+    expect(card?.tasksOverflow).toBe(0);
+    expect(card?.totalCount).toBe(1);
+    expect(card?.completedCount).toBe(0);
   });
 
-  it("um dia com 5 tarefas rola as extras para o 3º slot sem estourar a grade", () => {
+  it("um dia com 5 tarefas mostra 3 no checklist e dobra as outras 2 num overflow", () => {
     const tasks = Array.from({ length: 5 }, (_, index) =>
       tarefa({
         id: `t${index}`,
@@ -85,13 +84,32 @@ describe("projetarMapaOS", () => {
     );
 
     const card = projecao.ciclo.dayCards.find((item) => item.date === "28/08");
-    expect(card?.workflows).toHaveLength(3);
-    expect(card?.workflows[0]?.label).toBe("Tarefa 1");
-    expect(card?.workflows[1]?.label).toBe("Tarefa 2");
-    expect(card?.workflows[2]).toMatchObject({ label: "+3 tarefas", steps: 3 });
+    expect(card?.tasks).toHaveLength(3);
+    expect(card?.tasks[0]?.title).toBe("Tarefa 1");
+    expect(card?.tasks[2]?.title).toBe("Tarefa 3");
+    expect(card?.tasksOverflow).toBe(2);
+    expect(card?.totalCount).toBe(5);
   });
 
-  it("trunca o entregável em no máximo 2 palavras", () => {
+  it("marca as tarefas concluídas no checklist e calcula o percentual do dia", () => {
+    const tasks = [
+      tarefa({ id: "t1", date: "28/08", mins: 30, title: "Tarefa 1" }),
+      tarefa({ id: "t2", date: "28/08", mins: 30, title: "Tarefa 2" }),
+    ];
+    const projecao = projetarMapaOS(
+      estadoCom(tasks, { done: ["t1"] }),
+      REFERENCIA.toISOString(),
+      REFERENCIA
+    );
+    const card = projecao.ciclo.dayCards.find((item) => item.date === "28/08");
+
+    expect(card?.tasks.find((task) => task.id === "t1")?.done).toBe(true);
+    expect(card?.tasks.find((task) => task.id === "t2")?.done).toBe(false);
+    expect(card?.completedCount).toBe(1);
+    expect(card?.percentage).toBe(50);
+  });
+
+  it("usa o título completo da tarefa principal como entregável, sem truncar", () => {
     const task = tarefa({
       id: "t1",
       date: "28/08",
@@ -104,7 +122,7 @@ describe("projetarMapaOS", () => {
     );
     const card = projecao.ciclo.dayCards.find((item) => item.date === "28/08");
 
-    expect(card?.deliverable).toBe("Consolidar licenças…");
+    expect(card?.deliverable).toBe("Consolidar licenças e contratos");
   });
 
   it("sem tarefa liberada, a rotina não tem nó 'current'", () => {
