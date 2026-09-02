@@ -24,34 +24,57 @@ function RoutineBar({ routine }: RoutineBarProperties) {
 
 interface DayCardProperties {
   readonly card: MapaOSProjecao["ciclo"]["dayCards"][number];
+  readonly index: number;
 }
 
-function DayCard({ card }: DayCardProperties) {
+/**
+ * Epic-card — mesma anatomia do protótipo "Centro de Comando" (numeral +
+ * meta + barra de progresso, entregável em destaque, checklist de tarefas),
+ * adaptada pra caber no footprint mm já aprovado do Prisma/Tripé (6 cards
+ * numa grade 3×2/2×3, não os 2-3 cards largos do protótipo original).
+ */
+function DayCard({ card, index }: DayCardProperties) {
   return (
     <article
       className={`mapaOsDayCard ${card.placeholder ? "placeholder" : ""}`}
     >
-      <div className="mapaOsDayMeta">
-        <strong>{card.day}</strong>
-        <span>{card.duration}</span>
-        <time>{card.date}</time>
+      <div className="mapaOsEpicHead">
+        <span className="mapaOsEpicNum">
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <div className="mapaOsEpicMeta">
+          <strong>{card.day}</strong>
+          <time>{card.date}</time>
+          <span>{card.duration}</span>
+        </div>
+        <div className="mapaOsEpicProgress">
+          <b>{card.percentage}%</b>
+          <div className="mapaOsEpicTrack">
+            <div
+              className="mapaOsEpicFill"
+              style={{ width: `${card.percentage}%` }}
+            />
+          </div>
+        </div>
       </div>
       <h3 className={card.deliverable ? "" : "placeholder"}>
         {card.deliverable ?? "— sem entrega"}
       </h3>
-      <div className="mapaOsWorkflowGrid">
-        {card.workflows.map((workflow, index) => (
+      <div className="mapaOsEpicTasks">
+        {card.tasks.map((task) => (
           <div
-            className={`mapaOsWorkflowCard ${workflow.placeholder ? "placeholder" : ""}`}
-            // biome-ignore lint/suspicious/noArrayIndexKey: slots são posicionais e fixos (sempre 3)
-            key={index}
+            className={`mapaOsEpicTask ${task.done ? "done" : ""}`}
+            key={task.id}
           >
-            <div className="mapaOsWorkflowMeta">
-              <span>{workflow.placeholder ? "—" : workflow.steps}</span>
-            </div>
-            <p>{workflow.label}</p>
+            <span aria-hidden="true" className="mapaOsEpicTaskCircle" />
+            <p>{task.title}</p>
           </div>
         ))}
+        {card.tasksOverflow > 0 && (
+          <div className="mapaOsEpicTaskMore">
+            +{card.tasksOverflow} tarefa{card.tasksOverflow > 1 ? "s" : ""}
+          </div>
+        )}
       </div>
     </article>
   );
@@ -72,7 +95,7 @@ export function CicloFace({ ciclo }: CicloFaceProperties) {
         <div className="mapaOsRoadmapGrid">
           {ciclo.dayCards.map((card, index) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: sempre 6 slots fixos, mesmo com placeholders repetidos
-            <DayCard card={card} key={`${card.date}-${index}`} />
+            <DayCard card={card} index={index} key={`${card.date}-${index}`} />
           ))}
         </div>
       </div>
