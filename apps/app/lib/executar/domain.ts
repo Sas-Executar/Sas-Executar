@@ -225,6 +225,7 @@ export interface EnvelopeSincronizacao {
 export interface EstadoOperacional {
   readonly activeProjectId: string;
   readonly collaboration: ColaboracaoOperacional;
+  readonly documents: readonly DocumentoMarkdown[];
   readonly done: readonly string[];
   readonly events: readonly EventoOperacional[];
   readonly evidence: readonly Evidencia[];
@@ -234,6 +235,23 @@ export interface EstadoOperacional {
   readonly revision: number;
   readonly schemaVersion: "2.0.0";
   readonly started: Readonly<Record<string, number>>;
+}
+
+/**
+ * Documento Markdown local-first da área de Documentos (área "Notas"),
+ * renderizado pelo Obsidian React (`documents/obsidian-markdown-renderer.tsx`).
+ * Guardado no mesmo `EstadoOperacional` do resto do app — sem backend novo,
+ * sem serviço novo. Escopo desta primeira versão: leitura/renderização e
+ * edição simples (textarea); um editor rico fica documentado como próximo
+ * passo.
+ */
+export interface DocumentoMarkdown {
+  readonly content: string;
+  readonly createdAt: string;
+  readonly id: string;
+  readonly projectId: string;
+  readonly title: string;
+  readonly updatedAt: string;
 }
 
 export interface RespostaCopiloto {
@@ -424,6 +442,7 @@ export function novoEstado(
     ],
     activeProjectId: "sprint-principal",
     done: [],
+    documents: [],
     focus: null,
     evidence: [],
     started: {},
@@ -571,6 +590,17 @@ export function restaurarEstado(
       eventosSaneados.length > MAX_EVENTOS_RETIDOS
         ? eventosSaneados.slice(-MAX_EVENTOS_RETIDOS)
         : eventosSaneados;
+    const documents = Array.isArray(state.documents)
+      ? state.documents.filter(
+          (document): document is DocumentoMarkdown =>
+            Boolean(document) &&
+            typeof document === "object" &&
+            typeof document.id === "string" &&
+            typeof document.title === "string" &&
+            typeof document.content === "string" &&
+            typeof document.projectId === "string"
+        )
+      : [];
 
     return {
       ...defaults,
@@ -583,6 +613,7 @@ export function restaurarEstado(
         organizationId,
         projects
       ),
+      documents,
       events,
       started:
         state.started && typeof state.started === "object" ? state.started : {},
@@ -678,6 +709,86 @@ export function projetoAtivo(state: EstadoOperacional): ProjetoOperacional {
 
 export function entregasAtivas(state: EstadoOperacional): readonly Entrega[] {
   return projetoAtivo(state).tasks;
+}
+
+export function documentosDoProjeto(
+  state: EstadoOperacional,
+  projectId: string
+): readonly DocumentoMarkdown[] {
+  return state.documents.filter((document) => document.projectId === projectId);
+}
+
+export function criarDocumento(
+  state: EstadoOperacional,
+  title: string,
+  content = ""
+): EstadoOperacional {
+  const trimmedTitle = title.trim();
+
+  if (!trimmedTitle) {
+    throw new Error("O documento precisa de um título.");
+  }
+
+  const project = projetoAtivo(state);
+  const now = new Date().toISOString();
+  const documento: DocumentoMarkdown = {
+    id: `${state.organizationId}:${project.id}:documento:${state.revision + 1}`,
+    title: trimmedTitle,
+    content,
+    projectId: project.id,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  return registrar(state, "documento.criado", null, {
+    documents: [...state.documents, documento],
+  });
+}
+
+export function editarDocumento(
+  state: EstadoOperacional,
+  documentId: string,
+  changes: Partial<Pick<DocumentoMarkdown, "content" | "title">>
+): EstadoOperacional {
+  const existing = state.documents.find(
+    (document) => document.id === documentId
+  );
+
+  if (!existing) {
+    throw new Error("Documento não encontrado.");
+  }
+
+  const title = changes.title?.trim() ?? existing.title;
+
+  if (!title) {
+    throw new Error("O documento precisa de um título.");
+  }
+
+  return registrar(state, "documento.editado", null, {
+    documents: state.documents.map((document) =>
+      document.id === documentId
+        ? {
+            ...document,
+            ...changes,
+            title,
+            updatedAt: new Date().toISOString(),
+          }
+        : document
+    ),
+  });
+}
+
+export function removerDocumento(
+  state: EstadoOperacional,
+  documentId: string
+): EstadoOperacional {
+  if (!state.documents.some((document) => document.id === documentId)) {
+    throw new Error("Documento não encontrado.");
+  }
+
+  return registrar(state, "documento.removido", null, {
+    documents: state.documents.filter((document) => document.id !== documentId),
+  });
 }
 
 function slugProjeto(name: string): string {

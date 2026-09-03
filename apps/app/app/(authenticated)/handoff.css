@@ -1237,6 +1237,72 @@
   margin-left: auto;
 }
 
+/* Notas (área de Documentos, correção da auditoria de 02/09/2026, PR E) —
+   os itens de nota reaproveitam a lista de .executarDocumentsStack, mas sem
+   o cartão de projeto (gradiente roxo): mesmo visual neutro dos itens de
+   Listas/Recentes. */
+.executarDocumentsStack > button.execDocNoteButton {
+  min-height: 82px;
+  color: var(--executar-text);
+  background: var(--exec-color-surface);
+}
+
+.executarDocumentsStack > button.execDocNoteButton small {
+  color: var(--executar-text-muted);
+}
+
+.execDocNewForm {
+  margin-bottom: var(--exec-space-12);
+}
+
+.execDocEditor {
+  display: grid;
+  gap: var(--exec-space-16);
+}
+
+.execDocEditorHead {
+  display: flex;
+  gap: var(--exec-space-12);
+  align-items: center;
+}
+
+.execDocEditorHead h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.execDocEditorTitle {
+  flex: 1;
+  min-width: 0;
+  padding: var(--exec-space-8) var(--exec-space-12);
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--exec-color-surface);
+  border: 1px solid var(--executar-border);
+  border-radius: var(--exec-radius-control);
+}
+
+.execDocEditorActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--exec-space-8);
+  align-items: center;
+}
+
+.execDocEditorTextarea {
+  min-height: 50vh;
+  padding: var(--exec-space-16);
+  font-family: var(--exec-font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--executar-text);
+  resize: vertical;
+  background: var(--exec-color-surface);
+  border: 1px solid var(--executar-border);
+  border-radius: var(--exec-radius-control);
+}
+
 .executarEmptySurface {
   display: grid;
   place-items: center;
