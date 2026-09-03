@@ -37,6 +37,22 @@ const REPLAN_COMMAND_PATTERN =
   /^\/replanejamento\s+([A-Za-z0-9_-]+)(?:\s+([\s\S]+))?$/i;
 const CAPACITY_COMMAND_PATTERN = /^\/capacidade\s+(\d+)$/i;
 const WHITESPACE_PATTERN = /\s+/;
+/**
+ * Quantos eventos o estado local-first retém em `events[]`. Achado da
+ * auditoria de 02/09/2026: cada mutação apendava um evento sem limite,
+ * e o objeto inteiro (histórico incluso) era regravado no localStorage e
+ * reenviado ao servidor a cada mudança — o log de eventos crescia pra
+ * sempre. O histórico de auditoria continua completo no servidor (tabela
+ * `executar_events`, alimentada de forma incremental via
+ * `eventosPendentes`/`prepararSincronizacao`, que já olha só pra revisão
+ * ainda não sincronizada — nunca lê `events` além dela). Localmente só
+ * precisamos das entradas recentes o bastante pra cobrir uma sessão
+ * offline razoável antes de sincronizar; 200 é generoso pra isso (uma
+ * sessão offline mais longa que isso perde só a *entrada de auditoria*
+ * dos eventos mais antigos — o estado funcional em si, projects/done/
+ * evidence, nunca depende de replay de `events`).
+ */
+const MAX_EVENTOS_RETIDOS = 200;
 
 export type EstadoEntrega =
   | "BACKLOG_VALIDATED"
@@ -529,7 +545,7 @@ export function restaurarEstado(
       ? state.activeProjectId
       : defaults.activeProjectId;
 
-    const events = Array.isArray(state.events)
+    const eventosSaneados = Array.isArray(state.events)
       ? state.events
           .filter((event) => event.organizationId === organizationId)
           .map((event, index) => ({
@@ -543,6 +559,12 @@ export function restaurarEstado(
               : index + 1,
           }))
       : [];
+    // Também saneia estado já persistido antes desta correção (02/09/2026),
+    // que pode ter acumulado um `events[]` sem limite — ver MAX_EVENTOS_RETIDOS.
+    const events =
+      eventosSaneados.length > MAX_EVENTOS_RETIDOS
+        ? eventosSaneados.slice(-MAX_EVENTOS_RETIDOS)
+        : eventosSaneados;
 
     return {
       ...defaults,
@@ -583,25 +605,32 @@ function registrar(
     );
   }
 
+  const events = [
+    ...state.events,
+    {
+      organizationId: state.organizationId,
+      projectId: changes.activeProjectId ?? state.activeProjectId,
+      revision: state.revision + 1,
+      action,
+      taskId,
+      at: new Date().toISOString(),
+      actor: "humano" as const,
+      // biome-ignore lint/suspicious/noBitwiseOperators: o deslocamento converte o hash FNV-1a para uint32 sem alterar seu contrato.
+      fingerprint: (fingerprint >>> 0).toString(16).padStart(8, "0"),
+    },
+  ];
+
   return {
     ...state,
     ...changes,
     organizationId: state.organizationId,
     revision: state.revision + 1,
-    events: [
-      ...state.events,
-      {
-        organizationId: state.organizationId,
-        projectId: changes.activeProjectId ?? state.activeProjectId,
-        revision: state.revision + 1,
-        action,
-        taskId,
-        at: new Date().toISOString(),
-        actor: "humano",
-        // biome-ignore lint/suspicious/noBitwiseOperators: o deslocamento converte o hash FNV-1a para uint32 sem alterar seu contrato.
-        fingerprint: (fingerprint >>> 0).toString(16).padStart(8, "0"),
-      },
-    ],
+    // Mantém só os MAX_EVENTOS_RETIDOS mais recentes — o corte cai sempre
+    // no lado antigo/já sincronizado (ver comentário da constante acima).
+    events:
+      events.length > MAX_EVENTOS_RETIDOS
+        ? events.slice(-MAX_EVENTOS_RETIDOS)
+        : events,
   };
 }
 
