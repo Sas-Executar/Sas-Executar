@@ -57,6 +57,7 @@ export function ProductSurface({
           onSelectProject={(projectId) =>
             onStateChange(selecionarProjeto(state, projectId))
           }
+          onStateChange={onStateChange}
           state={state}
         />
       );

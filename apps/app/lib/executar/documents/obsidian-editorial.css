@@ -1,0 +1,174 @@
+/*
+ * Renderer Markdown estilo Obsidian (área de Documentos) — portado de
+ * HANDOFF_OBSIDIAN_REACT/03_REACT_HANDOFF. A paleta original DESK-OS
+ * (papel/tinta/laranja) foi realiasada para os tokens `--exec-color-*` já
+ * existentes (`exec-tokens.css`), em vez de importar uma quinta paleta —
+ * mesma disciplina das migrações de token anteriores desta sessão.
+ * Correção da auditoria de 02/09/2026, PR E.
+ */
+
+.execDocument {
+  max-width: 920px;
+  margin-inline: auto;
+  color: var(--exec-color-foreground);
+}
+
+.execDocument h1 {
+  padding-bottom: var(--exec-space-8);
+  font-size: clamp(1.75rem, 4vw, 2.55rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  border-bottom: 2px solid var(--exec-color-foreground);
+}
+
+.execDocument h2 {
+  padding-bottom: var(--exec-space-8);
+  margin-top: 2.4em;
+  font-size: 1.08rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+  border-bottom: 1px solid var(--exec-color-stroke-strong);
+}
+
+.execDocument h3 {
+  color: var(--exec-color-foreground-secondary);
+}
+
+.execDocument p,
+.execDocument li {
+  line-height: 1.58;
+}
+
+.execDocument a {
+  color: var(--exec-color-brand-hover);
+}
+
+.execDocument a:hover {
+  color: var(--exec-color-brand);
+}
+
+.execDocument table {
+  width: 100%;
+  font-size: 0.92rem;
+  border-collapse: collapse;
+}
+
+.execDocument th,
+.execDocument td {
+  padding: var(--exec-space-8) 0.65rem;
+  vertical-align: top;
+  border: 1px solid var(--exec-color-stroke-strong);
+}
+
+.execDocument th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--exec-color-surface-subtle);
+}
+
+.execDocument code {
+  font-family: var(--exec-font-mono);
+  color: var(--exec-color-brand-hover);
+}
+
+.execDocument pre {
+  border: 1px solid var(--exec-color-stroke-strong);
+  border-radius: var(--exec-radius-object);
+}
+
+.execDocument hr {
+  border: 0;
+  border-top: 1px solid var(--exec-color-stroke-strong);
+}
+
+.execDocument input[type="checkbox"] {
+  accent-color: var(--exec-color-brand);
+}
+
+.execDocProperties {
+  display: grid;
+  gap: var(--exec-space-4);
+  padding-block: 0.75rem;
+  margin: 0 0 var(--exec-space-16);
+  border-block: 1px solid var(--exec-color-stroke-strong);
+}
+
+.execDocPropertiesRow {
+  display: grid;
+  grid-template-columns: minmax(8rem, 12rem) 1fr;
+  gap: var(--exec-space-16);
+}
+
+.execDocPropertiesRow dt {
+  font-weight: 700;
+}
+
+.execDocPropertiesRow dd {
+  margin: 0;
+}
+
+.execDocCallout {
+  margin: var(--exec-space-16) 0;
+  background: var(--exec-color-surface-subtle);
+  border: 1px solid var(--exec-color-stroke-default);
+  border-left: 3px solid var(--exec-color-brand);
+  border-radius: var(--exec-radius-object);
+}
+
+.execDocCalloutTitle {
+  display: flex;
+  gap: var(--exec-space-8);
+  align-items: center;
+  width: 100%;
+  padding: var(--exec-space-12) var(--exec-space-16);
+  font: inherit;
+  font-weight: 700;
+  color: var(--exec-color-foreground);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--exec-color-stroke-default);
+}
+
+.execDocCalloutBody {
+  padding: var(--exec-space-4) var(--exec-space-16) var(--exec-space-16);
+}
+
+.execDocTableViewport {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 700px) {
+  .execDocument {
+    padding-inline: var(--exec-space-12);
+  }
+
+  .execDocument table {
+    font-size: 0.82rem;
+  }
+
+  .execDocument th,
+  .execDocument td {
+    padding: var(--exec-space-4);
+  }
+}
+
+@media print {
+  .execDocument {
+    color: #000;
+  }
+
+  .execDocument a {
+    color: #000;
+  }
+
+  .execDocCallout,
+  .execDocument table,
+  .execDocument pre {
+    break-inside: avoid;
+  }
+}

@@ -6,9 +6,11 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Circle,
   Clock3,
+  Eye,
   FileCheck2,
   FileText,
   Folder,
@@ -20,24 +22,34 @@ import {
   MapPin,
   Menu,
   MessageCircle,
+  NotebookText,
   Paperclip,
+  Pencil,
+  Plus,
   Printer,
   RefreshCw,
   ScanLine,
   Search,
   Sparkles,
+  Trash2,
   Wrench,
 } from "lucide-react";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
+import { ObsidianMarkdownRenderer } from "@/lib/executar/documents/obsidian-markdown-renderer";
 import {
+  criarDocumento,
   type DiaOperacional,
+  type DocumentoMarkdown,
   dependenciasPendentes,
+  documentosDoProjeto,
   type Entrega,
   type EstadoOperacional,
+  editarDocumento,
   estadoEntrega,
   type ProjetoOperacional,
   ROTULOS_ESTADO,
+  removerDocumento,
 } from "@/lib/executar/domain";
 
 export type ProductView =
@@ -934,23 +946,162 @@ export function ReplanSurface({
   );
 }
 
-type DocumentFilter = "projects" | "lists" | "recent";
+type DocumentFilter = "projects" | "lists" | "recent" | "notes";
+
+function mensagemDocumentosVazios(
+  filter: DocumentFilter,
+  normalizedQuery: string
+): string {
+  if (normalizedQuery) {
+    return "Tente outra busca.";
+  }
+
+  return filter === "notes"
+    ? "Crie sua primeira nota acima."
+    : "Os registros aparecerão aqui.";
+}
 
 interface DocumentsSurfaceProperties {
   readonly onOpenMapaOS: () => void;
   readonly onOpenProjects: () => void;
   readonly onSelectProject: (projectId: string) => void;
+  readonly onStateChange: (state: EstadoOperacional) => void;
   readonly state: EstadoOperacional;
+}
+
+/**
+ * Estado e mutações da aba "Notas" — extraído da própria `DocumentsSurface`
+ * para manter a complexidade de cada função dentro do limite do linter.
+ */
+function useNotasDocumento(
+  state: EstadoOperacional,
+  onStateChange: (state: EstadoOperacional) => void
+) {
+  const [newDocumentTitle, setNewDocumentTitle] = useState("");
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
+    null
+  );
+  const [editingDocument, setEditingDocument] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftContent, setDraftContent] = useState("");
+  const [pendingDocumentRemovalId, setPendingDocumentRemovalId] = useState<
+    string | null
+  >(null);
+  const [documentError, setDocumentError] = useState("");
+  const selectedDocument =
+    state.documents.find((note) => note.id === selectedDocumentId) ?? null;
+
+  function openDocument(note: DocumentoMarkdown) {
+    setSelectedDocumentId(note.id);
+    setDraftTitle(note.title);
+    setDraftContent(note.content);
+    setEditingDocument(false);
+    setPendingDocumentRemovalId(null);
+    setDocumentError("");
+  }
+
+  function closeDocument() {
+    setSelectedDocumentId(null);
+    setEditingDocument(false);
+    setPendingDocumentRemovalId(null);
+    setDocumentError("");
+  }
+
+  function handleCreateDocument(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    try {
+      const next = criarDocumento(state, newDocumentTitle);
+      const created = next.documents.at(-1);
+      onStateChange(next);
+      setNewDocumentTitle("");
+      setDocumentError("");
+
+      if (created) {
+        openDocument(created);
+        setEditingDocument(true);
+      }
+    } catch (error) {
+      setDocumentError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível criar o documento."
+      );
+    }
+  }
+
+  function handleSaveDocument() {
+    if (!selectedDocument) {
+      return;
+    }
+
+    try {
+      onStateChange(
+        editarDocumento(state, selectedDocument.id, {
+          content: draftContent,
+          title: draftTitle,
+        })
+      );
+      setDocumentError("");
+      setEditingDocument(false);
+    } catch (error) {
+      setDocumentError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar o documento."
+      );
+    }
+  }
+
+  function handleRemoveDocument(documentId: string) {
+    if (pendingDocumentRemovalId !== documentId) {
+      setPendingDocumentRemovalId(documentId);
+      return;
+    }
+
+    try {
+      onStateChange(removerDocumento(state, documentId));
+      closeDocument();
+    } catch (error) {
+      setPendingDocumentRemovalId(null);
+      setDocumentError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível remover o documento."
+      );
+    }
+  }
+
+  return {
+    closeDocument,
+    documentError,
+    draftContent,
+    draftTitle,
+    editingDocument,
+    handleCreateDocument,
+    handleRemoveDocument,
+    handleSaveDocument,
+    newDocumentTitle,
+    openDocument,
+    pendingDocumentRemovalId,
+    selectedDocument,
+    setDraftContent,
+    setDraftTitle,
+    setEditingDocument,
+    setNewDocumentTitle,
+  };
 }
 
 export function DocumentsSurface({
   onOpenMapaOS,
   onOpenProjects,
   onSelectProject,
+  onStateChange,
   state,
 }: DocumentsSurfaceProperties) {
   const [filter, setFilter] = useState<DocumentFilter>("projects");
   const [query, setQuery] = useState("");
+  const notes = useNotasDocumento(state, onStateChange);
   const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
   const activeProject = state.projects.find(
     (project) => project.id === state.activeProjectId
@@ -970,6 +1121,12 @@ export function DocumentsSurface({
       .toLocaleLowerCase("pt-BR")
       .includes(normalizedQuery)
   );
+  const documents = (
+    activeProject ? documentosDoProjeto(state, activeProject.id) : []
+  ).filter((note) =>
+    note.title.toLocaleLowerCase("pt-BR").includes(normalizedQuery)
+  );
+  const { selectedDocument } = notes;
 
   return (
     <section className="executarDocumentsSurface">
@@ -986,117 +1143,275 @@ export function DocumentsSurface({
           <Folder aria-hidden="true" />
         </button>
       </header>
-      <label className="executarDocumentsSearch">
-        <Search aria-hidden="true" />
-        <span className="executarVisuallyHidden">
-          Buscar documentos, projetos e listas
-        </span>
-        <input
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar documentos, projetos, listas..."
-          type="search"
-          value={query}
+      {filter === "notes" && selectedDocument ? (
+        <NoteEditor
+          draftContent={notes.draftContent}
+          draftTitle={notes.draftTitle}
+          editing={notes.editingDocument}
+          error={notes.documentError}
+          note={selectedDocument}
+          onBack={notes.closeDocument}
+          onChangeContent={notes.setDraftContent}
+          onChangeTitle={notes.setDraftTitle}
+          onRemove={() => notes.handleRemoveDocument(selectedDocument.id)}
+          onSave={notes.handleSaveDocument}
+          onToggleEdit={() => notes.setEditingDocument((value) => !value)}
+          pendingRemoval={
+            notes.pendingDocumentRemovalId === selectedDocument.id
+          }
         />
-      </label>
-      <button
-        className="executarMapaOsDocument"
-        onClick={onOpenMapaOS}
-        type="button"
-      >
-        <span className="executarMapaOsDocumentIcon">
-          <Printer aria-hidden="true" />
-        </span>
-        <span>
-          <b>Mapa-OS do projeto</b>
-          <small>Visualizar e imprimir em Prisma ou Tripé A4</small>
-        </span>
-        <ChevronRight aria-hidden="true" />
-      </button>
-      <div className="executarDocumentTabs" role="tablist">
-        {(
-          [
-            ["projects", "Projetos", FolderKanban],
-            ["lists", "Listas", ListChecks],
-            ["recent", "Recentes", Clock3],
-          ] as const
-        ).map(([id, label, Icon]) => (
+      ) : (
+        <>
+          <label className="executarDocumentsSearch">
+            <Search aria-hidden="true" />
+            <span className="executarVisuallyHidden">
+              Buscar documentos, projetos e listas
+            </span>
+            <input
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar documentos, projetos, listas..."
+              type="search"
+              value={query}
+            />
+          </label>
           <button
-            aria-selected={filter === id}
-            key={id}
-            onClick={() => setFilter(id)}
-            role="tab"
+            className="executarMapaOsDocument"
+            onClick={onOpenMapaOS}
             type="button"
           >
-            <Icon aria-hidden="true" /> {label}
+            <span className="executarMapaOsDocumentIcon">
+              <Printer aria-hidden="true" />
+            </span>
+            <span>
+              <b>Mapa-OS do projeto</b>
+              <small>Visualizar e imprimir em Prisma ou Tripé A4</small>
+            </span>
+            <ChevronRight aria-hidden="true" />
           </button>
-        ))}
-      </div>
-      <div className="executarDocumentsStack">
-        {filter === "projects" &&
-          projects.map((project) => (
-            <button
-              className={project.id === state.activeProjectId ? "active" : ""}
-              key={project.id}
-              onClick={() => onSelectProject(project.id)}
-              type="button"
-            >
-              <span className="executarFolderTab" />
-              <span>
-                <b>{project.name}</b>
-                <small>
-                  {project.tasks.length} tarefas · {state.evidence.length}{" "}
-                  registros
-                </small>
-              </span>
-              <ChevronRight aria-hidden="true" />
-            </button>
-          ))}
-        {filter === "lists" &&
-          tasks.map((task) => (
-            <article key={task.id}>
-              <ListChecks aria-hidden="true" />
-              <span>
-                <b>{task.title}</b>
-                <small>
-                  {task.date} · {task.front}
-                </small>
-              </span>
-              {state.done.includes(task.id) && (
-                <CheckCircle2 aria-label="Concluída" />
-              )}
-            </article>
-          ))}
-        {filter === "recent" &&
-          evidence
-            .slice()
-            .reverse()
-            .map((item) => (
-              <article key={`${item.taskId}-${item.createdAt}`}>
-                <FileCheck2 aria-hidden="true" />
-                <span>
-                  <b>{item.note || item.file?.name || "Evidência salva"}</b>
-                  <small>
-                    {item.taskId} ·{" "}
-                    {new Date(item.createdAt).toLocaleDateString("pt-BR")}
-                  </small>
-                </span>
-                {item.file && <Paperclip aria-label="Possui arquivo" />}
-              </article>
+          <div className="executarDocumentTabs" role="tablist">
+            {(
+              [
+                ["projects", "Projetos", FolderKanban],
+                ["lists", "Listas", ListChecks],
+                ["recent", "Recentes", Clock3],
+                ["notes", "Notas", NotebookText],
+              ] as const
+            ).map(([id, label, Icon]) => (
+              <button
+                aria-selected={filter === id}
+                key={id}
+                onClick={() => setFilter(id)}
+                role="tab"
+                type="button"
+              >
+                <Icon aria-hidden="true" /> {label}
+              </button>
             ))}
-        {((filter === "projects" && !projects.length) ||
-          (filter === "lists" && !tasks.length) ||
-          (filter === "recent" && !evidence.length)) && (
-          <EmptySurface
-            message={
-              normalizedQuery
-                ? "Tente outra busca."
-                : "Os registros aparecerão aqui."
-            }
-            title="Nada encontrado"
-          />
-        )}
-      </div>
+          </div>
+          {filter === "notes" && (
+            <form
+              className="executarTaskForm execDocNewForm"
+              onSubmit={notes.handleCreateDocument}
+            >
+              <div className="executarFieldRow">
+                <input
+                  onChange={(event) =>
+                    notes.setNewDocumentTitle(event.target.value)
+                  }
+                  placeholder="Título do novo documento"
+                  value={notes.newDocumentTitle}
+                />
+                <button className="primaryBtn" type="submit">
+                  <Plus aria-hidden="true" /> Novo
+                </button>
+              </div>
+              {notes.documentError && (
+                <p className="executarErro" role="alert">
+                  {notes.documentError}
+                </p>
+              )}
+            </form>
+          )}
+          <div className="executarDocumentsStack">
+            {filter === "projects" &&
+              projects.map((project) => (
+                <button
+                  className={
+                    project.id === state.activeProjectId ? "active" : ""
+                  }
+                  key={project.id}
+                  onClick={() => onSelectProject(project.id)}
+                  type="button"
+                >
+                  <span className="executarFolderTab" />
+                  <span>
+                    <b>{project.name}</b>
+                    <small>
+                      {project.tasks.length} tarefas · {state.evidence.length}{" "}
+                      registros
+                    </small>
+                  </span>
+                  <ChevronRight aria-hidden="true" />
+                </button>
+              ))}
+            {filter === "lists" &&
+              tasks.map((task) => (
+                <article key={task.id}>
+                  <ListChecks aria-hidden="true" />
+                  <span>
+                    <b>{task.title}</b>
+                    <small>
+                      {task.date} · {task.front}
+                    </small>
+                  </span>
+                  {state.done.includes(task.id) && (
+                    <CheckCircle2 aria-label="Concluída" />
+                  )}
+                </article>
+              ))}
+            {filter === "recent" &&
+              evidence
+                .slice()
+                .reverse()
+                .map((item) => (
+                  <article key={`${item.taskId}-${item.createdAt}`}>
+                    <FileCheck2 aria-hidden="true" />
+                    <span>
+                      <b>{item.note || item.file?.name || "Evidência salva"}</b>
+                      <small>
+                        {item.taskId} ·{" "}
+                        {new Date(item.createdAt).toLocaleDateString("pt-BR")}
+                      </small>
+                    </span>
+                    {item.file && <Paperclip aria-label="Possui arquivo" />}
+                  </article>
+                ))}
+            {filter === "notes" &&
+              documents.map((note) => (
+                <button
+                  className="execDocNoteButton"
+                  key={note.id}
+                  onClick={() => notes.openDocument(note)}
+                  type="button"
+                >
+                  <NotebookText aria-hidden="true" />
+                  <span>
+                    <b>{note.title}</b>
+                    <small>
+                      Atualizado em{" "}
+                      {new Date(note.updatedAt).toLocaleDateString("pt-BR")}
+                    </small>
+                  </span>
+                  <ChevronRight aria-hidden="true" />
+                </button>
+              ))}
+            {((filter === "projects" && !projects.length) ||
+              (filter === "lists" && !tasks.length) ||
+              (filter === "recent" && !evidence.length) ||
+              (filter === "notes" && !documents.length)) && (
+              <EmptySurface
+                message={mensagemDocumentosVazios(filter, normalizedQuery)}
+                title="Nada encontrado"
+              />
+            )}
+          </div>
+        </>
+      )}
     </section>
+  );
+}
+
+function NoteEditor({
+  draftContent,
+  draftTitle,
+  editing,
+  error,
+  note,
+  onBack,
+  onChangeContent,
+  onChangeTitle,
+  onRemove,
+  onSave,
+  onToggleEdit,
+  pendingRemoval,
+}: {
+  readonly draftContent: string;
+  readonly draftTitle: string;
+  readonly editing: boolean;
+  readonly error: string;
+  readonly note: DocumentoMarkdown;
+  readonly onBack: () => void;
+  readonly onChangeContent: (value: string) => void;
+  readonly onChangeTitle: (value: string) => void;
+  readonly onRemove: () => void;
+  readonly onSave: () => void;
+  readonly onToggleEdit: () => void;
+  readonly pendingRemoval: boolean;
+}) {
+  return (
+    <div className="execDocEditor">
+      <div className="execDocEditorHead">
+        <button
+          aria-label="Voltar para Notas"
+          className="iconBtn"
+          onClick={onBack}
+          type="button"
+        >
+          <ChevronLeft aria-hidden="true" />
+        </button>
+        {editing ? (
+          <input
+            className="execDocEditorTitle"
+            onChange={(event) => onChangeTitle(event.target.value)}
+            value={draftTitle}
+          />
+        ) : (
+          <h2>{note.title}</h2>
+        )}
+        <div className="execDocEditorActions">
+          <button className="softBtn" onClick={onToggleEdit} type="button">
+            {editing ? (
+              <Eye aria-hidden="true" />
+            ) : (
+              <Pencil aria-hidden="true" />
+            )}
+            {editing ? "Visualizar" : "Editar"}
+          </button>
+          {editing && (
+            <button className="primaryBtn" onClick={onSave} type="button">
+              Salvar
+            </button>
+          )}
+          <button
+            aria-label="Remover documento"
+            className="iconBtn"
+            onClick={onRemove}
+            type="button"
+          >
+            <Trash2 aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+      {pendingRemoval && (
+        <output className="executarNotice">
+          Confirme a remoção clicando novamente.
+        </output>
+      )}
+      {error && (
+        <p className="executarErro" role="alert">
+          {error}
+        </p>
+      )}
+      {editing ? (
+        <textarea
+          className="execDocEditorTextarea"
+          onChange={(event) => onChangeContent(event.target.value)}
+          value={draftContent}
+        />
+      ) : (
+        <ObsidianMarkdownRenderer source={note.content} />
+      )}
+    </div>
   );
 }
 
