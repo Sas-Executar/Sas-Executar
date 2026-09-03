@@ -577,13 +577,37 @@ test("fila recalculada após edição continua respeitando todas as dependência
 });
 
 test("interface conecta CRUD, importação e evidências ao projeto ativo", async () => {
-  const component = await readFile(
-    new URL(
-      "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
-      import.meta.url
+  // Achado da correção estrutural de 02/09/2026: o CRUD de projeto/entrega
+  // e a importação/exportação vivem hoje em executar-project-manager.tsx,
+  // e o calendário/caminho crítico em executar-views.tsx — extraídos de
+  // executar-operacional.tsx, que continua sendo quem lê o arquivo de
+  // evidência. Concatena as três fontes: o teste verifica que o fluxo
+  // está conectado em algum lugar da superfície do dashboard, não que
+  // more num arquivo específico.
+  const [component, projectManager, views] = await Promise.all([
+    readFile(
+      new URL(
+        "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
+        import.meta.url
+      ),
+      "utf8"
     ),
-    "utf8"
-  );
+    readFile(
+      new URL(
+        "../../apps/app/app/(authenticated)/components/executar-project-manager.tsx",
+        import.meta.url
+      ),
+      "utf8"
+    ),
+    readFile(
+      new URL(
+        "../../apps/app/app/(authenticated)/components/executar-views.tsx",
+        import.meta.url
+      ),
+      "utf8"
+    ),
+  ]);
+  const surface = `${component}\n${projectManager}\n${views}`;
 
   for (const expected of [
     "criarProjeto(state, newProjectName)",
@@ -596,6 +620,6 @@ test("interface conecta CRUD, importação e evidências ao projeto ativo", asyn
     "calendarioProjeto(state)",
     "caminhoCritico(tasks)",
   ]) {
-    assert.ok(component.includes(expected), `Fluxo não conectado: ${expected}`);
+    assert.ok(surface.includes(expected), `Fluxo não conectado: ${expected}`);
   }
 });

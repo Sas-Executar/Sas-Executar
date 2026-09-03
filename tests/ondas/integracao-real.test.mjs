@@ -520,21 +520,43 @@ test("rotas servidor derivam usuário e organização exclusivamente do Clerk", 
 });
 
 test("interface mantém offline e sincroniza pelo servidor autenticado", async () => {
-  const component = await readFile(
-    new URL(
-      "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
-      import.meta.url
+  // Achado da correção estrutural de 02/09/2026: a gravação local, o
+  // fetch de estado ao servidor e a reconciliação (`receberAtualizacaoCompartilhada`)
+  // vivem em use-sincronizacao-remota.ts; a exibição da evidência (com
+  // `storagePath`) vive em executar-project-manager.tsx. O disparo das
+  // ações do Copiloto/evidência e o mapa de aprovações continuam em
+  // executar-operacional.tsx.
+  const [component, sincronizacao, projectManager] = await Promise.all([
+    readFile(
+      new URL(
+        "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
+        import.meta.url
+      ),
+      "utf8"
     ),
-    "utf8"
-  );
+    readFile(
+      new URL(
+        "../../apps/app/lib/executar/use-sincronizacao-remota.ts",
+        import.meta.url
+      ),
+      "utf8"
+    ),
+    readFile(
+      new URL(
+        "../../apps/app/app/(authenticated)/components/executar-project-manager.tsx",
+        import.meta.url
+      ),
+      "utf8"
+    ),
+  ]);
 
-  assert.match(component, /window\.localStorage\.setItem/);
+  assert.match(sincronizacao, /window\.localStorage\.setItem/);
   assert.match(component, /fetch\("\/api\/executar\/state"/);
   assert.match(component, /fetch\("\/api\/executar\/approvals"/);
   assert.match(component, /fetch\("\/api\/executar\/evidence"/);
-  assert.match(component, /proof\.file\.storagePath/);
-  assert.match(component, /expectedRevision: remoteRevision\.current/);
-  assert.match(component, /receberAtualizacaoCompartilhada/);
+  assert.match(projectManager, /proof\.file\.storagePath/);
+  assert.match(sincronizacao, /expectedRevision: remoteRevision\.current/);
+  assert.match(sincronizacao, /receberAtualizacaoCompartilhada/);
   assert.match(component, /serverApprovals\.current\.get/);
 });
 
