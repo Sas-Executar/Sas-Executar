@@ -740,18 +740,31 @@ test("módulo do agente não instala dependências nem fixa provedor", async () 
 });
 
 test("chat executa no estado canônico e exibe aprovação humana explícita", async () => {
-  const source = await readFile(
-    new URL(
-      "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
-      import.meta.url
+  // Achado da correção estrutural de 02/09/2026: o painel do Copiloto (a
+  // UI de "Aprovar ação"/"Recusar") foi extraído pra
+  // executar-copilot-panel.tsx; a lógica de execução/aprovação continua
+  // em executar-operacional.tsx.
+  const [source, copilotPanel] = await Promise.all([
+    readFile(
+      new URL(
+        "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
+        import.meta.url
+      ),
+      "utf8"
     ),
-    "utf8"
-  );
+    readFile(
+      new URL(
+        "../../apps/app/app/(authenticated)/components/executar-copilot-panel.tsx",
+        import.meta.url
+      ),
+      "utf8"
+    ),
+  ]);
 
   assert.match(source, /executarAcaoCopiloto\(state, question\)/);
   assert.match(source, /setState\(answer\.state\)/);
   assert.match(source, /resolverAprovacaoCopiloto\(/);
   assert.match(source, /pendingApproval/);
-  assert.match(source, /Aprovar ação/);
-  assert.match(source, /Recusar/);
+  assert.match(copilotPanel, /Aprovar ação/);
+  assert.match(copilotPanel, /Recusar/);
 });

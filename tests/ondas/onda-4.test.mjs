@@ -603,13 +603,27 @@ test("página deriva organização e usuário diretamente da sessão Clerk", asy
 });
 
 test("interface oferece presença, comentários e notificações no mesmo plano", async () => {
-  const component = await readFile(
-    new URL(
-      "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
-      import.meta.url
+  // Achado da correção estrutural de 02/09/2026: o painel de
+  // colaboração foi extraído pra executar-collaboration-panel.tsx, e os 6
+  // laços de sincronização (incluindo o listener de `storage` entre abas)
+  // pra use-sincronizacao-remota.ts.
+  const [collaborationPanel, sincronizacao] = await Promise.all([
+    readFile(
+      new URL(
+        "../../apps/app/app/(authenticated)/components/executar-collaboration-panel.tsx",
+        import.meta.url
+      ),
+      "utf8"
     ),
-    "utf8"
-  );
+    readFile(
+      new URL(
+        "../../apps/app/lib/executar/use-sincronizacao-remota.ts",
+        import.meta.url
+      ),
+      "utf8"
+    ),
+  ]);
+  const surface = `${collaborationPanel}\n${sincronizacao}`;
 
   for (const expected of [
     "Presença no projeto",
@@ -621,10 +635,7 @@ test("interface oferece presença, comentários e notificações no mesmo plano"
     'window.addEventListener("storage"',
     "o estado local foi preservado",
   ]) {
-    assert.ok(
-      component.includes(expected),
-      `Ausente na interface: ${expected}`
-    );
+    assert.ok(surface.includes(expected), `Ausente na interface: ${expected}`);
   }
 });
 

@@ -473,20 +473,50 @@ test("a página principal usa Clerk e não bloqueia esperando banco", async () =
 });
 
 test("produto mantém estado único com lista, drawer e Copiloto", async () => {
-  const component = await readFile(
-    new URL(
-      "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
-      import.meta.url
-    ),
-    "utf8"
-  );
-  const workspace = await readFile(
-    new URL(
-      "../../apps/app/app/(authenticated)/components/executar-workspace.tsx",
-      import.meta.url
-    ),
-    "utf8"
-  );
+  // Achado da correção estrutural de 02/09/2026: MobileDrawer,
+  // CopilotModelSelector/CopilotPanel (com <AiMessage) e as constantes de
+  // view (rótulos "Documentos"/"Calendário"/"Caminho", modos do Copiloto)
+  // foram extraídos pra arquivos próprios; a sincronização
+  // (chaveOrganizacao) foi pro hook dedicado.
+  const [component, workspace, copilotPanel, viewTypes, sincronizacao] =
+    await Promise.all([
+      readFile(
+        new URL(
+          "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
+          import.meta.url
+        ),
+        "utf8"
+      ),
+      readFile(
+        new URL(
+          "../../apps/app/app/(authenticated)/components/executar-workspace.tsx",
+          import.meta.url
+        ),
+        "utf8"
+      ),
+      readFile(
+        new URL(
+          "../../apps/app/app/(authenticated)/components/executar-copilot-panel.tsx",
+          import.meta.url
+        ),
+        "utf8"
+      ),
+      readFile(
+        new URL(
+          "../../apps/app/app/(authenticated)/components/executar-view-types.ts",
+          import.meta.url
+        ),
+        "utf8"
+      ),
+      readFile(
+        new URL(
+          "../../apps/app/lib/executar/use-sincronizacao-remota.ts",
+          import.meta.url
+        ),
+        "utf8"
+      ),
+    ]);
+  const surface = `${component}\n${workspace}\n${copilotPanel}\n${viewTypes}`;
 
   for (const label of [
     "Tarefas",
@@ -498,48 +528,66 @@ test("produto mantém estado único com lista, drawer e Copiloto", async () => {
     "Automático",
     "Operacional local",
   ]) {
-    assert.ok(
-      component.includes(label) || workspace.includes(label),
-      `Ausente: ${label}`
-    );
+    assert.ok(surface.includes(label), `Ausente: ${label}`);
   }
 
   assert.match(component, /executarAcaoCopiloto\(state, question\)/);
   assert.match(component, /entregasAtivas\(state\)/);
-  assert.match(component, /chaveOrganizacao\(organizationId\)/);
-  assert.match(component, /function MobileDrawer/);
-  assert.match(component, /function CopilotModelSelector/);
+  assert.match(sincronizacao, /chaveOrganizacao\(organizationId\)/);
+  assert.match(
+    await readFile(
+      new URL(
+        "../../apps/app/app/(authenticated)/components/executar-mobile-drawer.tsx",
+        import.meta.url
+      ),
+      "utf8"
+    ),
+    /function MobileDrawer/
+  );
+  assert.match(copilotPanel, /function CopilotModelSelector/);
   assert.match(component, /useState<View>\("workspace"\)/);
   assert.doesNotMatch(component, /<OperationalNavigation/);
   assert.match(workspace, /function WorkspaceSurface/);
   assert.match(workspace, /function WorkspaceActions/);
   assert.match(workspace, /Scanner/);
   assert.match(workspace, />IA</);
-  assert.match(component, /<AiMessage/);
+  assert.match(copilotPanel, /<AiMessage/);
 });
 
 test("handoff simplificado remove Home e mantém três ações persistentes", async () => {
-  const component = await readFile(
-    new URL(
-      "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
-      import.meta.url
+  // Achado da correção estrutural de 02/09/2026: o dispatcher de view
+  // (que renderiza <WorkspaceSurface) foi extraído pra
+  // executar-product-surface.tsx.
+  const [component, productSurface, styles] = await Promise.all([
+    readFile(
+      new URL(
+        "../../apps/app/app/(authenticated)/components/executar-operacional.tsx",
+        import.meta.url
+      ),
+      "utf8"
     ),
-    "utf8"
-  );
-  const styles = await readFile(
-    new URL(
-      "../../apps/app/app/(authenticated)/web-surface.css",
-      import.meta.url
+    readFile(
+      new URL(
+        "../../apps/app/app/(authenticated)/components/executar-product-surface.tsx",
+        import.meta.url
+      ),
+      "utf8"
     ),
-    "utf8"
-  );
+    readFile(
+      new URL(
+        "../../apps/app/app/(authenticated)/web-surface.css",
+        import.meta.url
+      ),
+      "utf8"
+    ),
+  ]);
 
   assert.doesNotMatch(component, /selectProductView\("home"\)/);
   assert.doesNotMatch(component, /<HomeSurface/);
   assert.doesNotMatch(component, /<TimelineSurface/);
   assert.match(component, /<WorkspaceHeader/);
   assert.match(component, /<WorkspaceActions/);
-  assert.match(component, /<WorkspaceSurface/);
+  assert.match(productSurface, /<WorkspaceSurface/);
 
   for (const className of [
     ".executarWorkspaceHeader",
