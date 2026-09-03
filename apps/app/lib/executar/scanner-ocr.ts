@@ -23,8 +23,8 @@ export function normalizarTextoScanner(texto: string): string {
 
 /**
  * Converte a saída ruidosa do Tesseract para o vocabulário fechado do
- * Mapa-OS. O OCR lê o rótulo impresso junto ao símbolo; a forma do ícone é
- * reconhecida em paralelo por `symbol-recognizer.ts`.
+ * Mapa-OS. Se o recorte contiver mais de uma ação impressa, falha fechado em
+ * vez de escolher arbitrariamente a primeira — o operador deve isolar um alvo.
  */
 export function resolverTextoScanner(texto: string): AcaoScannerId | null {
   const normalizado = normalizarTextoScanner(texto);
@@ -33,13 +33,13 @@ export function resolverTextoScanner(texto: string): AcaoScannerId | null {
     return null;
   }
 
-  for (const item of VOCABULARIO_OCR) {
-    if (item.aliases.some((alias) => normalizado.includes(alias))) {
-      return item.id;
-    }
-  }
+  const correspondencias = VOCABULARIO_OCR.filter((item) =>
+    item.aliases.some((alias) => normalizado.includes(alias))
+  );
 
-  return null;
+  return correspondencias.length === 1
+    ? (correspondencias[0]?.id ?? null)
+    : null;
 }
 
 export const CARACTERES_OCR_SCANNER = "ABCDEFGHIJKLMNOPQRSTUVWXYZÁÀÂÃÉÊÍÓÔÕÚÇ";

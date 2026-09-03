@@ -6,13 +6,9 @@
  * (`qr-scanner`, em `scanner-client.tsx`), lendo o mesmo `<video>` por um
  * `<canvas>` próprio, sem interferir um no outro.
  *
- * "Tão instantâneo quanto um QR code, <3s": amostra a ROI central a ~11/s e
- * exige `QUADROS_ESTAVEIS_PARA_DISPARAR` leituras seguidas iguais antes de
- * disparar (~270ms de exposição estável) — suficiente para não reagir a um
- * ruído de 1 quadro, e uma ordem de grandeza abaixo do orçamento de 3s.
- * Dispara uma única vez por "sessão de exposição" do símbolo (precisa sair
- * de quadro e voltar para disparar de novo) — mesmo comportamento esperado
- * de aproximar/afastar um QR.
+ * O reconhecimento usa múltiplas escalas centrais para isolar o ícone do
+ * cartão físico e ignorar borda/rótulo ao redor; isso reduz a dependência de
+ * enquadramento pixel a pixel e mantém a resposta dentro do orçamento de 3s.
  */
 
 import { type RefObject, useEffect, useRef } from "react";
@@ -22,15 +18,101 @@ import {
   reconhecerSimbolo,
 } from "./symbol-recognizer.ts";
 
-const INTERVALO_AMOSTRAGEM_MS = 90;
-const QUADROS_ESTAVEIS_PARA_DISPARAR = 3;
-/** Recorte central quadrado — metade do menor lado do vídeo. */
-const FRACAO_ROI_DO_VIDEO = 0.5;
+const INTERVALO_AMOSTRAGEM_MS = 80;
+const QUADROS_ESTAVEIS_PARA_DISPARAR = 2;
+const FRACOES_ROI_DO_VIDEO = [0.18, 0.22, 0.26, 0.3] as const;
+
+type ResultadoSimbolo = ReturnType<typeof reconhecerSimbolo>;
 
 interface UseSymbolScannerOptions {
   readonly ativo: boolean;
   readonly onReconhecido: (id: AcaoScannerId, latencyMs: number) => void;
   readonly videoRef: RefObject<HTMLVideoElement | null>;
+}
+
+interface RastreamentoSimbolo {
+  disparadoParaAtual: boolean;
+  exposicaoInicio: number;
+  streak: number;
+  ultimoId: AcaoScannerId | null;
+}
+
+function capturarEscala(
+  video: HTMLVideoElement,
+  ctx: CanvasRenderingContext2D,
+  fracao: number
+): ResultadoSimbolo {
+  const menorLado = Math.min(video.videoWidth, video.videoHeight);
+  const lado = menorLado * fracao;
+  const sx = (video.videoWidth - lado) / 2;
+  const sy = (video.videoHeight - lado) / 2;
+
+  ctx.clearRect(0, 0, RASTER_SIZE_RECONHECIMENTO, RASTER_SIZE_RECONHECIMENTO);
+  ctx.drawImage(
+    video,
+    sx,
+    sy,
+    lado,
+    lado,
+    0,
+    0,
+    RASTER_SIZE_RECONHECIMENTO,
+    RASTER_SIZE_RECONHECIMENTO
+  );
+
+  return reconhecerSimbolo(
+    ctx.getImageData(
+      0,
+      0,
+      RASTER_SIZE_RECONHECIMENTO,
+      RASTER_SIZE_RECONHECIMENTO
+    )
+  );
+}
+
+function melhorResultadoDoFrame(
+  video: HTMLVideoElement,
+  ctx: CanvasRenderingContext2D
+): ResultadoSimbolo {
+  let melhor: ResultadoSimbolo = null;
+
+  for (const fracao of FRACOES_ROI_DO_VIDEO) {
+    const atual = capturarEscala(video, ctx, fracao);
+    if (atual && (!melhor || atual.distancia < melhor.distancia)) {
+      melhor = atual;
+    }
+  }
+
+  return melhor;
+}
+
+function zerarRastreamento(rastreamento: RastreamentoSimbolo) {
+  rastreamento.ultimoId = null;
+  rastreamento.streak = 0;
+  rastreamento.disparadoParaAtual = false;
+  rastreamento.exposicaoInicio = 0;
+}
+
+function registrarResultado(
+  resultado: NonNullable<ResultadoSimbolo>,
+  rastreamento: RastreamentoSimbolo
+) {
+  if (resultado.id === rastreamento.ultimoId) {
+    rastreamento.streak += 1;
+    return;
+  }
+
+  rastreamento.ultimoId = resultado.id;
+  rastreamento.streak = 1;
+  rastreamento.disparadoParaAtual = false;
+  rastreamento.exposicaoInicio = performance.now();
+}
+
+function deveDisparar(rastreamento: RastreamentoSimbolo): boolean {
+  return (
+    rastreamento.streak >= QUADROS_ESTAVEIS_PARA_DISPARAR &&
+    !rastreamento.disparadoParaAtual
+  );
 }
 
 export function useSymbolScanner({
@@ -58,64 +140,34 @@ export function useSymbolScanner({
       return;
     }
 
-    let ultimoId: AcaoScannerId | null = null;
-    let streak = 0;
-    let disparadoParaAtual = false;
-    let exposicaoInicio = 0;
+    const rastreamento: RastreamentoSimbolo = {
+      disparadoParaAtual: false,
+      exposicaoInicio: 0,
+      streak: 0,
+      ultimoId: null,
+    };
 
     const amostrar = () => {
       if (video.readyState < video.HAVE_CURRENT_DATA || !video.videoWidth) {
         return;
       }
 
-      const lado =
-        Math.min(video.videoWidth, video.videoHeight) * FRACAO_ROI_DO_VIDEO;
-      const sx = (video.videoWidth - lado) / 2;
-      const sy = (video.videoHeight - lado) / 2;
-
-      ctx.drawImage(
-        video,
-        sx,
-        sy,
-        lado,
-        lado,
-        0,
-        0,
-        RASTER_SIZE_RECONHECIMENTO,
-        RASTER_SIZE_RECONHECIMENTO
-      );
-      const imagem = ctx.getImageData(
-        0,
-        0,
-        RASTER_SIZE_RECONHECIMENTO,
-        RASTER_SIZE_RECONHECIMENTO
-      );
-      const resultado = reconhecerSimbolo(imagem);
-
+      const resultado = melhorResultadoDoFrame(video, ctx);
       if (!resultado) {
-        ultimoId = null;
-        streak = 0;
-        disparadoParaAtual = false;
-        exposicaoInicio = 0;
+        zerarRastreamento(rastreamento);
         return;
       }
 
-      if (resultado.id === ultimoId) {
-        streak += 1;
-      } else {
-        ultimoId = resultado.id;
-        streak = 1;
-        disparadoParaAtual = false;
-        exposicaoInicio = performance.now();
+      registrarResultado(resultado, rastreamento);
+      if (!deveDisparar(rastreamento)) {
+        return;
       }
 
-      if (streak >= QUADROS_ESTAVEIS_PARA_DISPARAR && !disparadoParaAtual) {
-        disparadoParaAtual = true;
-        onReconhecidoRef.current(
-          resultado.id,
-          Math.round(performance.now() - exposicaoInicio)
-        );
-      }
+      rastreamento.disparadoParaAtual = true;
+      onReconhecidoRef.current(
+        resultado.id,
+        Math.round(performance.now() - rastreamento.exposicaoInicio)
+      );
     };
 
     const intervalo = window.setInterval(amostrar, INTERVALO_AMOSTRAGEM_MS);

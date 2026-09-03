@@ -106,13 +106,11 @@
   object-fit: cover;
 }
 
-/* Guia visual da ROI de reconhecimento de símbolo (metade do menor lado do
- * vídeo — ver FRACAO_ROI_DO_VIDEO em use-symbol-scanner.ts). O QR continua
- * sendo lido em qualquer posição do quadro (qr-scanner cobre o frame todo);
- * este guia é só para os 5 símbolos administrativos. */
+/* Guia da maior ROI usada pelo matcher multiescala. O usuário deve colocar
+ * somente um ícone dentro da área; QR continua sendo lido no frame inteiro. */
 .scannerSymbolGuide {
   position: absolute;
-  inset: 25%;
+  inset: 35%;
   pointer-events: none;
   border: 2px dashed
     color-mix(in srgb, var(--scanner-color-accent) 70%, transparent);
@@ -120,9 +118,42 @@
 }
 
 .scannerAviso {
+  display: flex;
+  flex-direction: column;
+  gap: var(--exec-space-8);
+  align-items: center;
+  width: 100%;
+  padding: var(--exec-space-12);
+  margin: 0;
   font-size: var(--exec-text-caption);
   color: var(--scanner-color-aviso);
   text-align: center;
+  background: color-mix(in srgb, var(--scanner-color-aviso) 8%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--scanner-color-aviso) 35%, transparent);
+  border-radius: var(--exec-radius-control);
+}
+
+.scannerAviso p,
+.scannerAviso small {
+  margin: 0;
+}
+
+.scannerAviso small {
+  max-width: 100%;
+  color: var(--scanner-color-foreground-muted);
+  overflow-wrap: anywhere;
+}
+
+.scannerAviso button {
+  min-height: var(--exec-touch-min);
+  padding: var(--exec-space-8) var(--exec-space-16);
+  font-weight: 600;
+  color: var(--scanner-color-bg);
+  cursor: pointer;
+  background: var(--scanner-color-aviso);
+  border: none;
+  border-radius: var(--exec-radius-control);
 }
 
 .scannerDica {
