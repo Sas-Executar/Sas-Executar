@@ -1842,12 +1842,23 @@ export function ExecutarOperacional({
   }, [deepLinkTaskId, loaded, remotePersistenceAvailable, remoteReady, state]);
 
   useEffect(() => {
-    if (loaded && state.organizationId === organizationId) {
+    if (!(loaded && state.organizationId === organizationId)) {
+      return;
+    }
+
+    // Debounce de 250ms — mesma janela já usada pro POST remoto logo abaixo.
+    // Sem isso, cada tecla digitada (nota, URL, seletor) disparava uma
+    // gravação síncrona de JSON.stringify(state) inteiro no localStorage,
+    // bloqueando a thread principal a cada tecla (achado da auditoria de
+    // 02/09/2026).
+    const timer = window.setTimeout(() => {
       window.localStorage.setItem(
         chaveOrganizacao(organizationId),
         JSON.stringify(state)
       );
-    }
+    }, 250);
+
+    return () => window.clearTimeout(timer);
   }, [loaded, organizationId, state]);
 
   useEffect(() => {
@@ -1913,7 +1924,7 @@ export function ExecutarOperacional({
       return;
     }
 
-    const interval = window.setInterval(() => {
+    function pollRemoteState() {
       fetch("/api/executar/state", { cache: "no-store" })
         .then(async (response) => {
           if (!response.ok) {
@@ -1952,9 +1963,47 @@ export function ExecutarOperacional({
         .catch(() => {
           // O estado local permanece disponível durante falhas de rede.
         });
-    }, 15_000);
+    }
 
-    return () => window.clearInterval(interval);
+    // Pausa o poll com a aba em segundo plano — sem isso ele rodava pra
+    // sempre a cada 15s mesmo minimizado, gastando rede e CPU sem ninguém
+    // olhando (achado da auditoria de 02/09/2026, relevante sobretudo no
+    // celular). Ao voltar o foco, poll imediato em vez de esperar o
+    // próximo tick de 15s.
+    let interval: number | undefined;
+
+    function startInterval() {
+      if (interval === undefined) {
+        interval = window.setInterval(pollRemoteState, 15_000);
+      }
+    }
+
+    function stopInterval() {
+      if (interval !== undefined) {
+        window.clearInterval(interval);
+        interval = undefined;
+      }
+    }
+
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        pollRemoteState();
+        startInterval();
+      } else {
+        stopInterval();
+      }
+    }
+
+    if (document.visibilityState === "visible") {
+      startInterval();
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      stopInterval();
+    };
   }, [actor, organizationId, remotePersistenceAvailable, remoteReady]);
 
   useEffect(() => {
@@ -2047,7 +2096,17 @@ export function ExecutarOperacional({
           );
         }
 
-        file = { ...file, storagePath: result.path };
+        // Não propaga `file.data` (base64) daqui pra frente: o upload já
+        // confirmou o arquivo no armazenamento remoto, então manter o
+        // base64 no estado local-first só duplicaria o payload pra sempre
+        // (achado da auditoria de 02/09/2026 — ver docs/design-system ou o
+        // relatório publicado na sessão).
+        file = {
+          name: file.name,
+          size: file.size,
+          storagePath: result.path,
+          type: file.type,
+        };
       }
 
       const withEvidence = registrarEvidencia(
