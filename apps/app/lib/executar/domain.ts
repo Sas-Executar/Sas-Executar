@@ -1,4 +1,10 @@
 import {
+  formatarPendencias,
+  normalizarPlano,
+  renderizarFraseAcao,
+  type UnidadeAcao,
+} from "./action-unit-normalizer.ts";
+import {
   listarComandosCopiloto,
   resolverComandoCopiloto,
 } from "./command-catalog.ts";
@@ -1139,13 +1145,77 @@ function parseImportacao(
       });
     });
 
-  if (!tasks.length) {
+  if (tasks.length) {
+    return tasks;
+  }
+
+  return parseImportacaoSemantica(text);
+}
+
+const FRENTE_POR_INTENT: Readonly<Record<UnidadeAcao["intent"], string>> = {
+  ACQUIRE: "Descoberta",
+  DISCOVER: "Descoberta",
+  MAP: "Descoberta",
+  STRUCTURE: "Execução",
+  CREATE: "Execução",
+  GENERATE: "Execução",
+  TRANSFORM: "Execução",
+  MIGRATE: "Execução",
+  INTEGRATE: "Execução",
+  CONFIGURE: "Execução",
+  IMPLEMENT: "Execução",
+  REPAIR: "Execução",
+  OPTIMIZE: "Execução",
+  DEPLOY: "Execução",
+  VALIDATE: "Validação",
+  TEST: "Validação",
+  COMPARE: "Validação",
+  EVALUATE: "Validação",
+  AUDIT: "Validação",
+  MONITOR: "Validação",
+  PRIORITIZE: "Decisão",
+  SELECT: "Decisão",
+  DECIDE: "Decisão",
+  APPROVE: "Decisão",
+  PUBLISH: "Comunicação",
+  DOCUMENT: "Comunicação",
+};
+
+/**
+ * Fallback de `parseImportacao` para texto livre (prosa) que não é JSON,
+ * CSV nem lista Markdown reconhecida: decompõe o texto via o normalizador
+ * semântico ACTION-UNIT (`action-unit-normalizer.ts`) em transformações de
+ * estado, e só converte em `Entrega[]` quando toda ação está `READY`. Se
+ * `normalization_status` for `NEEDS_RESOLUTION`, a importação não completa
+ * silenciosamente — lança um erro com as pendências codificadas, no padrão
+ * "○ pronto / △ pendente / [ RESOLVER · N PENDÊNCIAS ]", para o chamador
+ * (Copiloto ou criação manual) exibir como decisões a resolver.
+ */
+function parseImportacaoSemantica(text: string): readonly Entrega[] {
+  const normalizado = normalizarPlano(text);
+
+  if (!normalizado.actions.length) {
     throw new Error(
       "Formato não reconhecido. Use JSON, CSV ou lista Markdown."
     );
   }
 
-  return tasks;
+  if (normalizado.normalization_status === "NEEDS_RESOLUTION") {
+    throw new Error(formatarPendencias(normalizado));
+  }
+
+  const hoje = new Date().toLocaleDateString("pt-BR").slice(0, 5);
+
+  return normalizado.actions.map((action, index) =>
+    normalizarImportacao({
+      id: `plano-acao-${index + 1}`,
+      title: renderizarFraseAcao(action),
+      front: FRENTE_POR_INTENT[action.intent],
+      date: hoje,
+      stage: index + 1,
+      ...(action.expected_result ? { dod: action.expected_result } : {}),
+    })
+  );
 }
 
 export function importarPlano(
