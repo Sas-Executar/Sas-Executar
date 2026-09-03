@@ -68,7 +68,14 @@ export interface Evidencia {
 }
 
 export interface ArquivoEvidencia {
-  readonly data: string;
+  /**
+   * Cópia inline em base64 do arquivo (data URL), lida no navegador antes do
+   * upload. Ausente quando o arquivo já foi migrado pro armazenamento remoto
+   * (ver `storagePath`) — não duplicamos o payload em base64 dentro do
+   * `EstadoOperacional` depois que o upload é confirmado, pra não fazer o
+   * estado local-first crescer sem limite a cada evidência anexada.
+   */
+  readonly data?: string;
   readonly name: string;
   readonly size: number;
   readonly storagePath?: string;
@@ -1397,7 +1404,15 @@ export function registrarEvidencia(
   }
 
   if (file) {
-    if (!(file.name.trim() && file.data.startsWith("data:"))) {
+    // `data` (base64 inline) e `storagePath` (referência remota) são as duas
+    // formas válidas de um arquivo já lido — nunca as duas ausentes juntas.
+    // Depois de um upload remoto bem-sucedido, o chamador limpa `data` de
+    // propósito (ver executar-operacional.tsx) pra não duplicar o payload
+    // no estado local-first; `storagePath` sozinho já é uma prova válida.
+    const temDadoInlineValido = Boolean(file.data?.startsWith("data:"));
+    const temReferenciaRemota = Boolean(file.storagePath);
+
+    if (!(file.name.trim() && (temDadoInlineValido || temReferenciaRemota))) {
       throw new Error("O arquivo da evidência precisa ser válido.");
     }
 
