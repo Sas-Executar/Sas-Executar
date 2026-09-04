@@ -73,7 +73,26 @@ comparar, usando a mesma whitelist de caracteres/DPI já em produção
 (Latências são só do `worker.recognize()` sobre a imagem já pronta — não
 incluem captura de câmera/gate de qualidade/ROI; o orçamento ponta-a-ponta
 de 3.000 ms e os percentis p50/p95/p99 do pipeline completo são medidos na
-PR-10, "Performance Gate CI".)
+PR-10, "Performance Gate CI" — ver `tests/e2e/scanner-performance-gate.spec.ts`.)
+
+### Gate de performance automatizado (PR-10)
+
+`bun run test:scanner-performance-gate` transforma a medição acima num
+GATE de CI: falha o build se a latência regredir além do critério de
+aceite do handoff (`warm p50<1200ms/p95<2200ms/p99<3000ms`) ou se o cold
+start do worker OCR passar de uma folga generosa (15s — sem medição de
+dispositivo real disponível pra apertar mais, o alvo é pegar regressão
+grosseira, não calibrar fino). Modela "latência de tentativa" como
+`INTERVALO_RECONHECIMENTO_MS (620ms, a cadência real de amostragem) +
+T_ocr medido` — uma aproximação do caminho comum (confiança alta,
+confirmação numa única leitura), não uma medição de câmera real ponta-a-
+ponta (essa prova é a PR-09). Ver o comentário do arquivo de teste para o
+raciocínio completo, incluindo os limites dessa aproximação.
+
+Medido neste ambiente (30/30 fixtures, `SPARSE_TEXT`): p50≈656ms,
+p95≈680ms, p99≈740ms, cold start≈500-650ms — bem dentro dos limites,
+com folga suficiente pra absorver runners de CI mais lentos que este
+sandbox.
 
 ## Decisões de calibração
 

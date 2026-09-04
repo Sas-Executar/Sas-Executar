@@ -45,7 +45,8 @@ import type { ScannerEngineSnapshot } from "./types";
  * própria.
  */
 
-const INTERVALO_RECONHECIMENTO_MS = 620;
+/** Cadência de amostragem de produção — também referenciada pelo gate de performance (PR-10, tests/e2e/scanner-performance-gate.spec.ts). */
+export const INTERVALO_RECONHECIMENTO_MS = 620;
 
 export interface UseScannerEngineOptions {
   readonly ativo: boolean;
