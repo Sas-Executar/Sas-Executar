@@ -1,4 +1,13 @@
 export {
+  type ComandoDespachado,
+  criarObservadorLockClear,
+  type DespacharComandoOpcoes,
+  despacharComando,
+  LIMITES_LOCK_CLEAR_PADRAO,
+  type LimitesLockClear,
+  type ObservadorLockClear,
+} from "./command-dispatcher";
+export {
   type AvaliacaoQualidadeFrame,
   avaliarQualidadeFrame,
   calcularContraste,
