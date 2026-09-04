@@ -16,5 +16,6 @@ export {
   ATALHOS_PADRAO_SELETOR,
   type AtalhoSeletor,
   idempotencyKeyScanner,
+  type RecognitionResult,
   resolverPayloadScanner,
 } from "./scanner.ts";

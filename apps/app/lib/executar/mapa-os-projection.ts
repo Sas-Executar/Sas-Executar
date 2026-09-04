@@ -12,6 +12,7 @@
  * (Prisma A4 retrato ou Tripé A4 paisagem) escolhida pelo renderer.
  */
 
+import type { AcaoAdminId } from "@repo/executar-contracts/scanner";
 import {
   calendarioProjeto,
   type DiaOperacional,
@@ -43,12 +44,17 @@ const ESPACOS_PATTERN = /\s+/;
 
 export type EstadoRotina = "current" | "done" | "next" | "planned";
 export type EstadoDiaSemana = "current" | "done" | "planned";
-export type AcaoScannerId =
-  | "copiloto"
-  | "entrada"
-  | "feito"
-  | "saida"
-  | "seletor";
+/**
+ * Alias de compatibilidade — o vocabulário fechado das 5 ações
+ * administrativas físicas é definido uma única vez, em
+ * `packages/executar-contracts/scanner.ts` (`AcaoAdminId`), compartilhado
+ * com o Scanner (OCR/QR) e com `apps/mobile`. Mantido como reexport aqui
+ * para não obrigar `scanner-ocr.ts`/`symbol-recognizer.ts`/
+ * `use-symbol-scanner.ts`/`use-tesseract-symbol-scanner.ts` a mudar de
+ * import nesta PR — migrar esses consumidores para importar `AcaoAdminId`
+ * diretamente fica para a extração do `scanner-engine` (PR-02+).
+ */
+export type AcaoScannerId = AcaoAdminId;
 export type NotasLaneId = "agora" | "depois" | "proximo";
 
 export interface AcaoAdminProjetada {

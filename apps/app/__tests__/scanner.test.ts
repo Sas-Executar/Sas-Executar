@@ -1,11 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import type { Entrega, EstadoOperacional } from "@/lib/executar/domain";
 import { novoEstado, POLITICA_CONCLUSAO_PADRAO } from "@/lib/executar/domain";
+import type { AcaoScannerId } from "@/lib/executar/mapa-os-projection";
 import {
+  type AcaoAdminId,
   executarAcaoEntrada,
   executarAcaoFeito,
   executarAcaoSaida,
   idempotencyKeyScanner,
+  type RecognitionResult,
   resolverPayloadScanner,
   ScannerConfirmacaoNecessariaError,
 } from "@/lib/executar/scanner";
@@ -158,5 +161,34 @@ describe("executarAcaoSaida", () => {
 
     const resultado = executarAcaoSaida(tasks, state, referencia);
     expect(resultado.resumoAmanha).toContain("Nenhuma entrega planejada");
+  });
+});
+
+describe("contrato compartilhado do Scanner (PR-01 — Scanner Contracts)", () => {
+  it("AcaoScannerId (mapa-os-projection) é o mesmo tipo que AcaoAdminId (contrato compartilhado)", () => {
+    // Prova em tempo de compilação que não há dois vocabulários fechados
+    // divergentes — só um alias. Se algum dia divergirem, este teste para
+    // de compilar.
+    expectTypeOf<AcaoScannerId>().toEqualTypeOf<AcaoAdminId>();
+  });
+
+  it("RecognitionResult carrega toda a instrumentação de latência do orçamento de performance", () => {
+    const inicio = 1000;
+    const fim = 1180;
+    const resultado: RecognitionResult = {
+      actionId: "feito",
+      capturedAt: inicio,
+      confidence: 92,
+      normalizedText: "FEITO",
+      rawText: "F E1TO",
+      recognitionEndedAt: fim,
+      recognitionLatencyMs: fim - inicio,
+      recognitionStartedAt: inicio,
+    };
+
+    expect(resultado.recognitionLatencyMs).toBe(
+      resultado.recognitionEndedAt - resultado.recognitionStartedAt
+    );
+    expect(resultado.actionId).toBe("feito");
   });
 });
