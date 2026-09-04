@@ -127,3 +127,56 @@ para mudar 0.82 na escala usada pelo fixture de câmera; para um token
 bem mais perto da câmera, o resultado foi instável em toda fração
 testada, incluindo a atual — investigação mais ampla fica como próximo
 passo, ver detalhes no README do L2.
+
+## Independência de QR (PR-11 — última do plano)
+
+O handoff original descreve a arquitetura de hoje como "3 scanners
+independentes convergindo em `processarPayload()`" (QR via `qr-scanner`,
+forma via `useSymbolScanner`, OCR via `useTesseractSymbolScanner`) e pede
+pra inverter isso: OCR vira o caminho primário dos 5 comandos
+administrativos, QR sai de dependência operacional pra compatibilidade
+legada — mas só depois de provado, nunca antes ("Não remover QR no
+início. Primeiro comprovar que o caminho TESSERACT → ACTION passa em todo
+o gate.").
+
+`apps/app/__tests__/scanner-qr-independencia.test.ts` é essa prova:
+`vi.mock("qr-scanner", ...)` faz qualquer importação do pacote lançar, e
+o teste despacha os 5 comandos administrativos numa sessão contínua
+(entrada→copiloto→seletor→feito→saida) pela cadeia real de produção
+(`criarScannerEngine` → `criarConsensusEngine`/`processarReconhecimento` →
+`despacharComando` → domínio) — se qualquer módulo desse caminho
+importasse `qr-scanner`, mesmo indiretamente, o teste falharia
+imediatamente. Ele passa: nenhum arquivo de `scanner-engine/` importa
+`qr-scanner` (confirmado por inspeção direta — o único import real do
+pacote no repositório inteiro é em `scanner-client.tsx`, pro laço de
+decodificação de QR em si).
+
+**O que muda:** nada no código de produção — `scanner-client.tsx` continua
+com seu `<QrScanner>` ativo, exatamente como antes. O que muda é o que
+fica provado e documentado: os 5 comandos administrativos não dependem
+mais de QR nenhum (o pipeline OCR-first das PR-02 a PR-10 já os resolve
+sozinho); QR permanece só para os payloads que esse vocabulário fechado
+nunca cobriu — link de tarefa/documento e atalho de destino
+(`resolverPayloadScanner`, kinds `"tarefa"`/`"destino"`/`"qr_jump"`).
+Remover o `<QrScanner>` de fato (ou os cartões impressos com QR do
+Mapa-OS) é uma decisão de produto separada, fora do escopo desta prova
+técnica.
+
+## Resumo do plano "Scanner OCR-first V2" (PR-01 a PR-11)
+
+| Critério de aceite (handoff) | Onde foi provado |
+| ------------------------------ | ------------------- |
+| 5/5 comandos funcionando | PR-09 (câmera falsa e2e) + PR-11 (unitário) |
+| Independência de QR comprovável desabilitando `qr-scanner` | PR-11 (`scanner-qr-independencia.test.ts`) |
+| ≥99% acerto / ≈0 ação falsa em corpus controlado | PR-08: 30/30 (100%), 0 ação falsa, `SPARSE_TEXT` |
+| warm p50<1200ms / p95<2200ms / p99<3000ms | PR-10 (gate automatizado): ~656/667/713ms medido |
+| Idempotência — um token retido = uma ação | ACTION LOCK (PR-02) + consenso (PR-05) + observador de lock-clear (PR-06/07) |
+| Falha de OCR nunca quebra câmera/domínio | QR mantém laço próprio, independente do estado do engine OCR (`scanner-client.tsx`) |
+| Observabilidade estruturada por tentativa | `RecognitionResult` com instrumentação completa de latência (PR-01/03) + métricas do engine (PR-02) |
+
+Os 11 PRs, em ordem: PR-01 Scanner Contracts · PR-02 Scanner Engine ·
+PR-03 Persistent OCR Worker · PR-04 Frame/ROI Pipeline · PR-05 Recognition
++ Consensus · PR-06 Command Dispatcher · PR-07 ScannerClient Adapter ·
+PR-08 OCR Fixture Corpus (este README) · PR-09 Playwright Fake Camera
+(`tests/fixtures/scanner-camera/`) · PR-10 Performance Gate CI · PR-11
+QR Independence.

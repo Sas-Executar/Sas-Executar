@@ -39,8 +39,11 @@ export default defineConfig({
     },
     {
       // Gate de regressão de performance (p50/p95/p99 + cold start) — PR-10.
-      // Reservado também para futuros testes de regressão funcional (ex.:
-      // independência de QR, PR-11) que não precisem dos flags de câmera.
+      // Reservado também para futuros testes de regressão funcional que
+      // não precisem dos flags de câmera (a independência de QR, PR-11,
+      // acabou provada como teste unitário — apps/app/__tests__/
+      // scanner-qr-independencia.test.ts — não precisou de um spec e2e
+      // próprio).
       name: "scanner-regression",
       testMatch: /scanner-performance-gate\.spec\.ts$/,
     },

@@ -288,9 +288,15 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
   // (forma) e `useTesseractSymbolScanner` (OCR ad hoc, laço próprio) por um
   // único pipeline CAMERA→FRAME SOURCE→QUALITY GATE→ROI→OCR→RESOLVER→
   // CONSENSUS (`scanner-engine/`, PR-02 a PR-05). QR continua com seu
-  // próprio laço de decodificação acima (`qr-scanner`) — unificar os dois
-  // consumidores de câmera é um passo maior, fora do escopo desta PR (ver
-  // PR-11 "QR Independence" e o comentário em `use-scanner-engine.ts`).
+  // próprio laço de decodificação acima (`qr-scanner`) — a PR-11 (última
+  // do plano) provou que isso não é mais uma dependência funcional: os 5
+  // comandos abaixo resolvem inteiramente pelo caminho OCR, sem QR em
+  // lugar nenhum (ver `apps/app/__tests__/scanner-qr-independencia.test.ts`
+  // e o comentário em `use-scanner-engine.ts`). QR permanece só para os
+  // payloads que esse vocabulário nunca cobriu (link de tarefa/documento,
+  // atalho de destino) — unificar os dois laços de captura continua fora
+  // de escopo, agora só por arquitetura/risco de regressão, não por
+  // independência.
   const scannerEngine = useScannerEngine({
     ativo: loaded && fase === "camera" && !cameraIndisponivel,
     videoRef,
