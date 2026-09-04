@@ -1,9 +1,17 @@
 import type { AcaoScannerId } from "./mapa-os-projection.ts";
 
-const VOCABULARIO_OCR: ReadonlyArray<{
+export interface ItemVocabularioOcr {
   readonly aliases: readonly string[];
   readonly id: AcaoScannerId;
-}> = [
+}
+
+/**
+ * Vocabulário fechado dos 5 comandos administrativos + aliases — fonte
+ * única também para o matching fuzzy do `recognition-resolver.ts`
+ * (scanner-engine, PR-05), pra nunca divergir do resolver exato usado
+ * aqui.
+ */
+export const VOCABULARIO_OCR: readonly ItemVocabularioOcr[] = [
   { id: "entrada", aliases: ["ENTRADA", "ENTRAR"] },
   { id: "copiloto", aliases: ["COPILOTO", "BOT"] },
   { id: "seletor", aliases: ["SELETOR", "SELECAO"] },
