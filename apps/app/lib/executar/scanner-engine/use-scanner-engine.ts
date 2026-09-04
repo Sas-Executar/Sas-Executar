@@ -31,9 +31,15 @@ import type { ScannerEngineSnapshot } from "./types";
  * próprio laço de decodificação sobre o mesmo `<video>`, um "segundo
  * consumidor de câmera" que a unificação total do handoff (§"frame-
  * source.ts") ainda não cobre — decisão documentada também em
- * `scanner-client.tsx`. QR entra na análise de independência só na PR-11;
- * juntar os dois laços de captura é um passo maior demais para empacotar
- * nesta PR sem medir o risco de regressão no caminho já em produção.
+ * `scanner-client.tsx`. A PR-11 (última do plano) provou que os 5
+ * comandos administrativos não dependem de QR nenhum — este hook já os
+ * resolve sozinho, sem QR em lugar nenhum do caminho (ver
+ * `apps/app/__tests__/scanner-qr-independencia.test.ts`); QR continua
+ * existindo só para os payloads que o vocabulário fechado nunca cobriu
+ * (link de tarefa/documento, atalho de destino). Juntar os dois laços de
+ * captura num único frame source continua fora de escopo — não é mais
+ * uma questão de independência funcional, só de arquitetura/risco de
+ * regressão no caminho QR já em produção.
  *
  * Escopo: só a etapa de RECONHECIMENTO. Despachar a ação confirmada pro
  * domínio é responsabilidade do chamador (`command-dispatcher.ts`,
