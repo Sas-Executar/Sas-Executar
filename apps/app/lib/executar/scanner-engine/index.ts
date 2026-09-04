@@ -24,6 +24,21 @@ export {
   prepararOcrWorker,
 } from "./ocr-worker";
 export {
+  type ConsensusEngine,
+  criarConsensusEngine,
+  type DecisaoConsenso,
+  LIMITES_CONSENSO_PADRAO,
+  type LimitesConsenso,
+  processarReconhecimento,
+} from "./recognition-consensus";
+export {
+  type CorrespondenciaVocabulario,
+  calcularSimilaridade,
+  construirRecognitionResult,
+  LIMIAR_SIMILARIDADE_PADRAO,
+  resolverVocabularioFechado,
+} from "./recognition-resolver";
+export {
   type ContextoDesenho2DLike,
   calcularRetanguloRoi,
   desenharRoiEmContexto,
