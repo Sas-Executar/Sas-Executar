@@ -22,6 +22,7 @@
     "fix": "ultracite fix",
     "test": "turbo test",
     "test:scanner-ocr": "playwright test tests/e2e/scanner-ocr.spec.ts",
+    "test:scanner-fake-camera": "playwright test tests/e2e/scanner-fake-camera.spec.ts",
     "analyze": "turbo analyze",
     "translate": "turbo translate",
     "boundaries": "turbo boundaries",
