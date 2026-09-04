@@ -16,11 +16,15 @@ import type { ScannerEngine } from "./scanner-engine";
  * Este módulo garante isso por construção: o worker é criado uma única
  * vez em `prepararOcrWorker()` e só é destruído em `terminate()`.
  *
- * PSM.SPARSE_TEXT é mantido como configuração atual (idêntica à existente
- * em `use-tesseract-symbol-scanner.ts`) — o handoff pede para *benchmarkar*
- * PSM.SINGLE_WORD/SINGLE_LINE/RAW_LINE contra esse baseline antes de trocar
- * "não assumir o vencedor, medir precisão e latência" — essa comparação
- * fica para o corpus de fixtures (PR-08), não é decidida aqui.
+ * PSM.SPARSE_TEXT é mantido — medido na PR-08 contra o corpus de fixtures
+ * (`tests/fixtures/scanner/`, ver README lá) nos 4 modos que o handoff
+ * pede pra comparar: SPARSE_TEXT e SINGLE_LINE resolveram 100% do corpus
+ * sem nenhuma ação falsa (empatados em latência, diferença dentro do
+ * ruído de medição); SINGLE_WORD e RAW_LINE falharam quase totalmente
+ * (esperam um recorte exato ao redor de uma única palavra, sem a margem/
+ * ícone que o ROI real do cartão impresso inclui). Mantido SPARSE_TEXT
+ * entre os dois empatados por ser estruturalmente mais tolerante a mais
+ * de um elemento visual no recorte — não foi trocado às cegas.
  */
 
 const CONFIANCA_MINIMA = 58;

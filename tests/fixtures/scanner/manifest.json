@@ -1,0 +1,152 @@
+[
+  {
+    "actionId": "entrada",
+    "path": "entrada/base.png",
+    "variation": "base"
+  },
+  {
+    "actionId": "entrada",
+    "path": "entrada/distancia-longe.png",
+    "variation": "distancia-longe"
+  },
+  {
+    "actionId": "entrada",
+    "path": "entrada/distancia-perto.png",
+    "variation": "distancia-perto"
+  },
+  {
+    "actionId": "entrada",
+    "path": "entrada/perspectiva.png",
+    "variation": "perspectiva"
+  },
+  {
+    "actionId": "entrada",
+    "path": "entrada/contraste-baixo.png",
+    "variation": "contraste-baixo"
+  },
+  {
+    "actionId": "entrada",
+    "path": "entrada/desfoque.png",
+    "variation": "desfoque"
+  },
+  {
+    "actionId": "copiloto",
+    "path": "copiloto/base.png",
+    "variation": "base"
+  },
+  {
+    "actionId": "copiloto",
+    "path": "copiloto/distancia-longe.png",
+    "variation": "distancia-longe"
+  },
+  {
+    "actionId": "copiloto",
+    "path": "copiloto/distancia-perto.png",
+    "variation": "distancia-perto"
+  },
+  {
+    "actionId": "copiloto",
+    "path": "copiloto/perspectiva.png",
+    "variation": "perspectiva"
+  },
+  {
+    "actionId": "copiloto",
+    "path": "copiloto/contraste-baixo.png",
+    "variation": "contraste-baixo"
+  },
+  {
+    "actionId": "copiloto",
+    "path": "copiloto/desfoque.png",
+    "variation": "desfoque"
+  },
+  {
+    "actionId": "seletor",
+    "path": "seletor/base.png",
+    "variation": "base"
+  },
+  {
+    "actionId": "seletor",
+    "path": "seletor/distancia-longe.png",
+    "variation": "distancia-longe"
+  },
+  {
+    "actionId": "seletor",
+    "path": "seletor/distancia-perto.png",
+    "variation": "distancia-perto"
+  },
+  {
+    "actionId": "seletor",
+    "path": "seletor/perspectiva.png",
+    "variation": "perspectiva"
+  },
+  {
+    "actionId": "seletor",
+    "path": "seletor/contraste-baixo.png",
+    "variation": "contraste-baixo"
+  },
+  {
+    "actionId": "seletor",
+    "path": "seletor/desfoque.png",
+    "variation": "desfoque"
+  },
+  {
+    "actionId": "feito",
+    "path": "feito/base.png",
+    "variation": "base"
+  },
+  {
+    "actionId": "feito",
+    "path": "feito/distancia-longe.png",
+    "variation": "distancia-longe"
+  },
+  {
+    "actionId": "feito",
+    "path": "feito/distancia-perto.png",
+    "variation": "distancia-perto"
+  },
+  {
+    "actionId": "feito",
+    "path": "feito/perspectiva.png",
+    "variation": "perspectiva"
+  },
+  {
+    "actionId": "feito",
+    "path": "feito/contraste-baixo.png",
+    "variation": "contraste-baixo"
+  },
+  {
+    "actionId": "feito",
+    "path": "feito/desfoque.png",
+    "variation": "desfoque"
+  },
+  {
+    "actionId": "saida",
+    "path": "saida/base.png",
+    "variation": "base"
+  },
+  {
+    "actionId": "saida",
+    "path": "saida/distancia-longe.png",
+    "variation": "distancia-longe"
+  },
+  {
+    "actionId": "saida",
+    "path": "saida/distancia-perto.png",
+    "variation": "distancia-perto"
+  },
+  {
+    "actionId": "saida",
+    "path": "saida/perspectiva.png",
+    "variation": "perspectiva"
+  },
+  {
+    "actionId": "saida",
+    "path": "saida/contraste-baixo.png",
+    "variation": "contraste-baixo"
+  },
+  {
+    "actionId": "saida",
+    "path": "saida/desfoque.png",
+    "variation": "desfoque"
+  }
+]

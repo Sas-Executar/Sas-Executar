@@ -7,15 +7,19 @@
  *
  * (*) Threshold binário ainda não está aplicado — o filtro CSS
  * `grayscale(1) contrast(1.65)` já em produção (`use-tesseract-symbol-
- * scanner.ts`) é preservado tal qual nesta PR; um threshold determinístico
- * por pixel é um candidato de otimização futura a comparar empiricamente
- * no corpus de fixtures (PR-08), não decidido às cegas aqui.
+ * scanner.ts`, hoje `scanner-engine/`) é preservado tal qual; um threshold
+ * determinístico por pixel é um candidato de otimização futura.
  *
- * A fração de ROI (82% do menor lado do vídeo) também é mantida idêntica
- * à de produção nesta PR — o handoff pede para calibrar isso
- * empiricamente para os 5 comandos padronizados, o que só faz sentido
- * depois de haver um corpus de fixtures para medir contra (PR-08).
- * Reduzir a ROI às cegas, sem medição, arriscaria piorar a precisão.
+ * A fração de ROI (82% do menor lado do vídeo) é mantida idêntica à de
+ * produção — o corpus de fixtures da PR-08 (`tests/fixtures/scanner/`)
+ * mede precisão/latência de OCR sobre imagens JÁ recortadas (o que o
+ * worker recebe depois do crop), então não tem o contexto do quadro
+ * inteiro da câmera necessário pra calibrar ESTA fração especificamente
+ * (isso exige variar tamanho/posição do token DENTRO de um quadro maior).
+ * Essa calibração continua em aberto, documentada, para a PR-09 (câmera
+ * falsa via vídeo `.y4m`), que terá quadros completos de verdade pra medir
+ * contra — mudar a fração agora seria decidir sem medir, o oposto do que o
+ * handoff pede.
  */
 
 /** Fração do menor lado do vídeo usada como ROI — idêntica à de produção. */
