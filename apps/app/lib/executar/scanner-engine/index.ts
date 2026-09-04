@@ -69,3 +69,8 @@ export type {
   ScannerEngineSnapshot,
   ScannerEngineState,
 } from "./types";
+export {
+  type UseScannerEngineOptions,
+  type UseScannerEngineResult,
+  useScannerEngine,
+} from "./use-scanner-engine";
