@@ -106,10 +106,13 @@
   object-fit: cover;
 }
 
-/* Guia visual da ROI de reconhecimento de símbolo (metade do menor lado do
- * vídeo — ver FRACAO_ROI_DO_VIDEO em use-symbol-scanner.ts). O QR continua
- * sendo lido em qualquer posição do quadro (qr-scanner cobre o frame todo);
- * este guia é só para os 5 símbolos administrativos. */
+/* Guia visual central (independente do cálculo real de ROI do OCR — ver
+ * `calcularRetanguloRoi` em `scanner-engine/roi-preprocessor.ts`, hoje 82%
+ * do menor lado). O QR continua sendo lido em qualquer posição do quadro
+ * (qr-scanner cobre o frame todo); este guia é só pra ajudar a enquadrar
+ * os 5 símbolos administrativos. Recalibrar o tamanho do guia visual pra
+ * bater com a ROI real de OCR fica para a PR-08 (corpus de fixtures), que
+ * é onde a fração de ROI em si também pode ser recalibrada por medição. */
 .scannerSymbolGuide {
   position: absolute;
   inset: 25%;

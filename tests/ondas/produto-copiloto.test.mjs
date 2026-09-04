@@ -602,7 +602,7 @@ test("handoff simplificado remove Home e mantém três ações persistentes", as
   assert.match(styles, /repeat\(3, minmax\(0, 1fr\)\)/);
 });
 
-test("Scanner prioritário combina OCR, forma, vibração e impressão do Mapa-OS", async () => {
+test("Scanner prioritário combina OCR-first, vibração e impressão do Mapa-OS", async () => {
   const scanner = await readFile(
     new URL(
       "../../apps/app/app/(authenticated)/scanner/scanner-client.tsx",
@@ -617,15 +617,19 @@ test("Scanner prioritário combina OCR, forma, vibração e impressão do Mapa-O
     ),
     "utf8"
   );
+  // PR-07 "Scanner OCR-first V2": o pipeline OCR (worker persistente,
+  // vocabulário fechado, consenso) foi extraído de
+  // use-tesseract-symbol-scanner.ts para scanner-engine/, consumido pelo
+  // scanner-client.tsx via useScannerEngine().
   const ocr = await readFile(
     new URL(
-      "../../apps/app/lib/executar/use-tesseract-symbol-scanner.ts",
+      "../../apps/app/lib/executar/scanner-engine/ocr-worker.ts",
       import.meta.url
     ),
     "utf8"
   );
 
-  assert.match(scanner, /useTesseractSymbolScanner/);
+  assert.match(scanner, /useScannerEngine/);
   assert.match(scanner, /navigator\.vibrate/);
   assert.match(scanner, /JANELA_RECONHECIMENTO_DUPLICADO_MS/);
   assert.match(ocr, /createWorker\("eng"/);

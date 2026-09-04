@@ -15,12 +15,16 @@ import {
   executarAcaoFeito,
   executarAcaoSaida,
   idempotencyKeyScanner,
+  type RecognitionResult,
   resolverPayloadScanner,
   ScannerConfirmacaoNecessariaError,
 } from "@/lib/executar/scanner";
+import {
+  type ComandoDespachado,
+  despacharComando,
+  useScannerEngine,
+} from "@/lib/executar/scanner-engine";
 import { useEstadoOperacionalLocal } from "@/lib/executar/use-estado-local";
-import { useSymbolScanner } from "@/lib/executar/use-symbol-scanner";
-import { useTesseractSymbolScanner } from "@/lib/executar/use-tesseract-symbol-scanner";
 import "./scanner.css";
 
 const JANELA_UNDO_MS = 8000;
@@ -31,7 +35,7 @@ interface ScannerClientProperties {
 }
 
 type Fase = "camera" | "confirmar-feito" | "resultado" | "seletor";
-type MetodoReconhecimento = "forma" | "manual" | "ocr" | "qr";
+type MetodoReconhecimento = "manual" | "ocr" | "qr";
 
 interface DiagnosticoReconhecimento {
   readonly latencyMs: number;
@@ -127,6 +131,47 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
   ) {
     const view = acao.destino === "roadmap" ? "calendar" : "documents";
     window.location.href = `/?view=${view}`;
+  }
+
+  /**
+   * Aplica um `ComandoDespachado` (`command-dispatcher.ts`, PR-06) no estado
+   * de UI do Scanner — o mesmo formato de resultado que os branches de
+   * `despachar()` abaixo produzem manualmente para o caminho QR. Usado pelo
+   * caminho OCR (`scannerEngine`, via o efeito logo adiante).
+   */
+  function aplicarComando(comando: ComandoDespachado) {
+    switch (comando.kind) {
+      case "entrada":
+      case "feito":
+        atualizarEstadoLocal(comando.stateResultante);
+        vibrarMudancaEstado();
+        setUndoDisponivel(comando.stateAnterior);
+        setMensagem(comando.mensagem);
+        setFase("resultado");
+        return;
+      case "feito_confirmacao_necessaria":
+        setFase("confirmar-feito");
+        return;
+      case "saida":
+        setMensagem(`${comando.relatorioDoDia}\n\n${comando.resumoAmanha}`);
+        setFase("resultado");
+        return;
+      case "copiloto":
+        setMensagem(comando.mensagem);
+        setFase("resultado");
+        return;
+      case "seletor":
+        setFase("seletor");
+        return;
+      case "erro":
+        setErro(comando.mensagem);
+        setFase("resultado");
+        return;
+      default: {
+        const _exaustivo: never = comando;
+        return _exaustivo;
+      }
+    }
   }
 
   function despachar(acao: AcaoScannerReconhecida) {
@@ -237,23 +282,43 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
     };
   }, [loaded, fase]);
 
-  // Reconhecimento dos 5 símbolos administrativos (Entrada/Copiloto/
-  // Seletor/Feito/Saída) — roda em paralelo ao decode de QR acima, lendo o
-  // mesmo <video> por um <canvas> independente. Sem QR nesses 5 símbolos
-  // (decisão do usuário, 28/08/2026) — ver lib/executar/symbol-recognizer.ts.
-  useSymbolScanner({
+  // Reconhecimento OCR-first dos 5 símbolos administrativos (Entrada/
+  // Copiloto/Seletor/Feito/Saída) — PR-07 do plano "Scanner OCR-first V2":
+  // único consumidor OCR/forma do <video>, substituindo `useSymbolScanner`
+  // (forma) e `useTesseractSymbolScanner` (OCR ad hoc, laço próprio) por um
+  // único pipeline CAMERA→FRAME SOURCE→QUALITY GATE→ROI→OCR→RESOLVER→
+  // CONSENSUS (`scanner-engine/`, PR-02 a PR-05). QR continua com seu
+  // próprio laço de decodificação acima (`qr-scanner`) — unificar os dois
+  // consumidores de câmera é um passo maior, fora do escopo desta PR (ver
+  // PR-11 "QR Independence" e o comentário em `use-scanner-engine.ts`).
+  const scannerEngine = useScannerEngine({
     ativo: loaded && fase === "camera" && !cameraIndisponivel,
-    onReconhecido: (id, latencyMs) =>
-      processarPayloadRef.current(`executar://scan/${id}`, "forma", latencyMs),
     videoRef,
   });
 
-  const estadoTesseract = useTesseractSymbolScanner({
-    ativo: loaded && fase === "camera" && !cameraIndisponivel,
-    onReconhecido: ({ id, latencyMs }) =>
-      processarPayloadRef.current(`executar://scan/${id}`, "ocr", latencyMs),
-    videoRef,
+  const ultimaRecognitionDespachada = useRef<RecognitionResult | null>(null);
+  const aplicarComandoRef = useRef(aplicarComando);
+  useEffect(() => {
+    aplicarComandoRef.current = aplicarComando;
   });
+
+  useEffect(() => {
+    const recognition = scannerEngine.snapshot.lastRecognition;
+
+    if (!recognition || recognition === ultimaRecognitionDespachada.current) {
+      return;
+    }
+
+    ultimaRecognitionDespachada.current = recognition;
+    setErro("");
+    setDiagnostico({
+      latencyMs: recognition.recognitionLatencyMs,
+      metodo: "ocr",
+    });
+    aplicarComandoRef.current(
+      despacharComando(recognition, entregasAtivas(state), state)
+    );
+  }, [scannerEngine.snapshot.lastRecognition, state]);
 
   useEffect(() => {
     if (!undoDisponivel) {
@@ -354,9 +419,9 @@ export function ScannerClient({ organizationId }: ScannerClientProperties) {
             aria-live="polite"
             className="scannerDiagnostico"
             data-latency-budget-ms="3000"
-            data-ocr-state={estadoTesseract}
+            data-ocr-state={scannerEngine.snapshot.state}
           >
-            OCR {estadoTesseract}
+            OCR {scannerEngine.snapshot.state}
             {diagnostico
               ? ` · ${diagnostico.metodo} · ${diagnostico.latencyMs} ms`
               : " · aguardando símbolo"}

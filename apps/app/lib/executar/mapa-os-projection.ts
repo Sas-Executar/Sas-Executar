@@ -49,10 +49,12 @@ export type EstadoDiaSemana = "current" | "done" | "planned";
  * administrativas físicas é definido uma única vez, em
  * `packages/executar-contracts/scanner.ts` (`AcaoAdminId`), compartilhado
  * com o Scanner (OCR/QR) e com `apps/mobile`. Mantido como reexport aqui
- * para não obrigar `scanner-ocr.ts`/`symbol-recognizer.ts`/
- * `use-symbol-scanner.ts`/`use-tesseract-symbol-scanner.ts` a mudar de
- * import nesta PR — migrar esses consumidores para importar `AcaoAdminId`
- * diretamente fica para a extração do `scanner-engine` (PR-02+).
+ * para não obrigar `scanner-ocr.ts`/`symbol-recognizer.ts` a mudar de
+ * import — os dois ainda usam este alias: `scanner-ocr.ts` no vocabulário
+ * legado de substring exata, `symbol-recognizer.ts` só para renderizar os
+ * ícones impressos no Mapa-OS (não mais para reconhecimento ao vivo —
+ * `use-symbol-scanner.ts` foi retirado na PR-07, substituído pelo
+ * `scanner-engine/` OCR-first).
  */
 export type AcaoScannerId = AcaoAdminId;
 export type NotasLaneId = "agora" | "depois" | "proximo";
