@@ -100,3 +100,11 @@ de um quadro maior, não só o texto isolado). Essa calibração fica para a
 PR-09 (câmera falsa via vídeo `.y4m`), que terá quadros completos de
 verdade para medir contra — mudar a fração agora seria decidir sem medir,
 exatamente o que o handoff pede para evitar.
+
+**Atualização (PR-09):** com quadros completos disponíveis
+(`tests/fixtures/scanner-camera/README.md`), uma medição preliminar (não
+conclusiva — uma palavra, uma posição, sem repetição) não encontrou sinal
+para mudar 0.82 na escala usada pelo fixture de câmera; para um token
+bem mais perto da câmera, o resultado foi instável em toda fração
+testada, incluindo a atual — investigação mais ampla fica como próximo
+passo, ver detalhes no README do L2.
