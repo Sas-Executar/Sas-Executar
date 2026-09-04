@@ -70,6 +70,7 @@ export type {
   ScannerEngineState,
 } from "./types";
 export {
+  INTERVALO_RECONHECIMENTO_MS,
   type UseScannerEngineOptions,
   type UseScannerEngineResult,
   useScannerEngine,
